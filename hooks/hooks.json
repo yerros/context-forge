@@ -12,18 +12,6 @@
         ]
       }
     ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "Act only if BOTH are true: (1) the project has a context/ folder, and (2) the user's message is a substantive build, feature, or implementation request. For short acknowledgments, casual chat, simple questions, or one-line fixes, output nothing. When you do act, DO NOT rewrite or replace the user's message. Only ADD a short context note: point to the relevant context file, spec, or build unit the request touches, and if the request is materially vague (missing goal, scope, or acceptance), add one suggested sharper phrasing prefixed 'Suggested:' for the user to confirm. Never change the user's intent. Keep the addition to a few lines.",
-            "timeout": 20
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",

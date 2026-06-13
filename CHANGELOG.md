@@ -3,6 +3,20 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.2] — 2026-06-13
+
+### Removed
+- **`UserPromptSubmit` hook.** A prompt-based `UserPromptSubmit` hook can return a
+  `block` decision, and in practice it blocked legitimate user messages it judged
+  "not substantive" (e.g. bug reports and in-progress notes) instead of merely adding
+  context. Because this hook intercepts every prompt and can block input, it is removed
+  for reliability. Prompt optimization remains available, safely and on demand, via the
+  **`context-prompt`** skill.
+
+### Notes
+- Remaining prompt-based hooks are `PreToolUse` (guards invariants on writes) and `Stop`
+  (keeps the tracker in sync); neither blocks user input.
+
 ## [0.6.1] — 2026-06-13
 
 ### Fixed

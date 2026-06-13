@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.6.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.2-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -146,7 +146,6 @@ These run automatically and are silent in projects that don't use the methodolog
 | Hook | What it does |
 | ---- | ------------ |
 | `SessionStart` | If the project has a `context/` folder, injects the current `progress-tracker.md` and a reminder to read the context files first. |
-| `UserPromptSubmit` | For substantive build requests in a `context/` project, augments the prompt with relevant context pointers and (if vague) a suggested sharper phrasing. Never rewrites your message; silent for casual chat and one-line fixes. |
 | `Stop` | After a response that changed code, keeps `progress-tracker.md` in sync and maintains a dated "Resume here:" note for the next session. |
 | `PreToolUse` (Write/Edit) | Checks file changes against the invariants in `architecture.md` and the rules in `code-standards.md`; flags or blocks clear violations. |
 

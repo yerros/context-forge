@@ -1,7 +1,7 @@
 {
   "name": "context-forge",
-  "version": "0.6.1",
-  "description": "Set up and maintain the Six-File Context Methodology in any project (any stack) — initialize context files, refine prompts, plan and add features, run the build/verify/debug/PR loop, log architecture decisions, audit for drift, and resume work. Includes hooks that auto-load context, augment prompts, keep the tracker in sync, and guard invariants.",
+  "version": "0.6.2",
+  "description": "Set up and maintain the Six-File Context Methodology in any project (any stack) — initialize context files, refine prompts, plan and add features, run the build/verify/debug/PR loop, log architecture decisions, audit for drift, and resume work. Includes hooks that auto-load context, keep the tracker in sync, and guard invariants.",
   "author": {
     "name": "yerros",
     "url": "https://github.com/yerros"
