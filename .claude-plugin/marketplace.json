@@ -1,0 +1,31 @@
+{
+  "name": "yerros",
+  "owner": {
+    "name": "yerros",
+    "email": "bahtiaryeris@gmail.com"
+  },
+  "description": "Plugins by yerros — context engineering for AI-driven development.",
+  "plugins": [
+    {
+      "name": "context-forge",
+      "source": "./",
+      "description": "Set up and maintain the Six-File Context Methodology in any project: initialize context files, plan and build features, verify, debug, log decisions, audit for drift, and resume — with hooks that auto-load context and guard invariants.",
+      "version": "0.5.0",
+      "author": {
+        "name": "yerros",
+        "url": "https://github.com/yerros"
+      },
+      "homepage": "https://github.com/yerros/context-forge",
+      "repository": "https://github.com/yerros/context-forge",
+      "license": "MIT",
+      "category": "productivity",
+      "keywords": [
+        "context-engineering",
+        "spec-driven-development",
+        "ai-workflow",
+        "project-setup",
+        "six-file-methodology"
+      ]
+    }
+  ]
+}

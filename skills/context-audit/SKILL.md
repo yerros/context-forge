@@ -1,0 +1,76 @@
+---
+name: context-audit
+description: >
+  This skill should be used to check whether a project's context files still match the
+  actual codebase — phrases like "context-audit", "audit the context files", "are the
+  docs still accurate", "check for context drift", or "sync context with the code". It
+  compares each of the six files against real evidence in the repo and reports drift,
+  then offers to update the docs.
+metadata:
+  version: "0.1.0"
+---
+
+# context-audit
+
+Detect and fix drift between the six context files and the real codebase. Over a long
+build the code moves on; stale context files quietly make the agent guess wrong. This
+skill keeps them honest.
+
+## First: read the state
+
+Run the deterministic detector to know exactly what exists before auditing (read-only):
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/context-init/scripts/detect.sh"
+```
+
+If the `verdict` is `SETUP` (no context files), there's nothing to audit — tell the user
+to run `context-init` first. Otherwise proceed.
+
+## How to audit
+
+Read the six files in `context/`, then compare each against evidence in the repo. Do
+NOT trust the docs — verify against the code.
+
+### architecture.md
+
+- Re-read `package.json` / lockfile / equivalent. Compare the declared stack table to
+  the dependencies actually installed. Flag tech listed that's gone, and tech in use
+  that's undocumented.
+- Compare the documented system boundaries to the actual top-level folder structure.
+- Spot-check each invariant: is there code that violates it? Flag violations.
+
+### code-standards.md
+
+- Open several representative source files. Check whether the documented conventions
+  (TypeScript strictness, component patterns, API structure, naming) still match what's
+  written in the code. Flag rules the code no longer follows.
+
+### ui-context.md
+
+- Compare documented color tokens / typography / radius scale against the real theme,
+  Tailwind config, or token file. Flag tokens that drifted or were added.
+
+### project-overview.md
+
+- Check whether shipped features (evident from routes/folders) are reflected, and
+  whether anything in "Out of Scope" has quietly been built.
+
+### progress-tracker.md
+
+- Check whether "Completed" matches what actually exists, and whether "In Progress" is
+  stale.
+
+## Output
+
+A drift report grouped by file. For each finding: **what the doc says**, **what the
+code shows**, and a **recommended doc edit**. Categorize:
+
+- **Stale** — doc describes something that's changed.
+- **Undocumented** — code has something the docs don't mention.
+- **Violation** — code breaks a documented invariant or standard (this is a code
+  problem, not a doc problem — call it out separately).
+
+Then offer to apply the recommended documentation updates. Apply only what the user
+approves. For violations, recommend fixing the code (or consciously updating the
+invariant) rather than silently rewriting the rule.
