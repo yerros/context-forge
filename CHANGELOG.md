@@ -3,6 +3,25 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-06-14
+
+### Changed
+- **Both prompt-based hooks are now command-based (zero model tokens).** They run small,
+  tested shell scripts instead of per-event model evaluations, removing the recurring
+  token/latency cost while keeping the hooks active.
+  - `PreToolUse` → `hooks/scripts/guard.sh`: deterministic guard that denies edits to
+    generated/lock/vendor files (`node_modules`, `*.lock`, `*-lock.json`, etc.) and to any
+    glob listed in an optional `context/protected-paths` file; allows everything else.
+  - `Stop` → `hooks/scripts/track.sh`: if code changed (per git) without the tracker being
+    updated, writes `context/.last-session.md` (timestamp + changed files). Overwrites, so
+    it never grows; writes nothing to stdout, so it never re-wakes the model.
+- `context-resume` now also reads `context/.last-session.md` when present.
+
+### Notes
+- Semantic/nuanced invariant checking now lives in `context-verify` (run per unit) instead
+  of on every edit. Add `context/.last-session.md` to your project's `.gitignore` if you
+  don't want to commit it.
+
 ## [0.6.2] — 2026-06-13
 
 ### Removed

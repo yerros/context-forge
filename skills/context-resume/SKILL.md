@@ -40,7 +40,9 @@ the project. This solves the "AI has no memory between sessions" problem.
 
 2. From `progress-tracker.md`, extract: current phase, current goal, what's completed,
    what's in progress, what's next up, and any open questions or recent architecture
-   decisions.
+   decisions. If `context/.last-session.md` exists (written by the Stop hook), read it too
+   for a deterministic list of the most recently changed files — useful when the tracker
+   wasn't updated by hand.
 
 3. Give the user a short status briefing: where the project stands, what was last done,
    and the next unit to build. Surface any open questions that need a decision before

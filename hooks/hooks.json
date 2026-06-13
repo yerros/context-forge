@@ -17,9 +17,9 @@
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "A context/architecture.md and/or context/code-standards.md file may define this project's invariants and coding standards. If those files exist, evaluate whether this file change clearly violates a stated invariant or standard. Tool input: $TOOL_INPUT. If it clearly violates a documented rule, block and name the specific rule plus how to comply. If it complies, or no context files exist, or this is a change to the context files themselves, approve without comment.",
-            "timeout": 30
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/guard.sh\"",
+            "timeout": 10
           }
         ]
       }
@@ -29,9 +29,9 @@
         "matcher": "",
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "If this response implemented, modified, or deleted code in a project that has a context/ folder, verify that context/progress-tracker.md reflects the change. If it does not, update progress-tracker.md (Completed, In Progress, Next Up) to match what was just done, and keep the 'Session Notes' section ending with a current dated 'Resume here:' line stating the clear next step. If the project has no context/ folder, or no code changed in this response, do nothing.",
-            "timeout": 30
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/track.sh\"",
+            "timeout": 10
           }
         ]
       }

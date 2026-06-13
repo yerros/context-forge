@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.6.2-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -145,12 +145,23 @@ These run automatically and are silent in projects that don't use the methodolog
 
 | Hook | What it does |
 | ---- | ------------ |
-| `SessionStart` | If the project has a `context/` folder, injects the current `progress-tracker.md` and a reminder to read the context files first. |
-| `Stop` | After a response that changed code, keeps `progress-tracker.md` in sync and maintains a dated "Resume here:" note for the next session. |
-| `PreToolUse` (Write/Edit) | Checks file changes against the invariants in `architecture.md` and the rules in `code-standards.md`; flags or blocks clear violations. |
+All three hooks are **command-based** — they run small shell scripts, not model calls,
+so they add **no token cost**. Each is silent/no-op in projects that don't use the
+methodology.
 
-> The `Stop` and `PreToolUse` hooks are prompt-based and add a small evaluation per
-> response / per edit. To disable one, remove its block from `hooks/hooks.json`.
+| Hook | What it does |
+| ---- | ------------ |
+| `SessionStart` | If the project has a `context/` folder, injects the current `progress-tracker.md` and a reminder to read the context files first. |
+| `PreToolUse` (Write/Edit) | Deterministic guard: denies edits to generated/lock/vendor files and to any glob listed in `context/protected-paths`. Allows everything else. |
+| `Stop` | If code changed (per git) without the tracker being updated, writes `context/.last-session.md` with a timestamp and the changed-file list. Never re-wakes the model. |
+
+> **Token cost:** because all hooks are command scripts, they don't consume model tokens.
+> Nuanced/semantic invariant checking lives in `context-verify` (run per unit) rather than
+> on every edit. To disable a hook, remove its block from `hooks/hooks.json`.
+
+**Optional:** create a `context/protected-paths` file (one glob per line) to extend the
+`PreToolUse` guard — for example `src/generated/*` or `*.snap`. Consider adding
+`context/.last-session.md` to your project's `.gitignore`.
 
 ## The six files
 
@@ -205,7 +216,8 @@ context-forge/
 │   ├── context-decision/    # + decisions (ADR) template
 │   └── ...
 ├── hooks/
-│   └── hooks.json           # SessionStart, Stop, PreToolUse
+│   ├── hooks.json           # SessionStart, PreToolUse, Stop (all command-based)
+│   └── scripts/             # guard.sh (PreToolUse), track.sh (Stop)
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
