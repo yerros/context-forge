@@ -3,6 +3,14 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] — 2026-06-13
+
+### Fixed
+- **Hook loading failure** in Claude Code (`Hook load failed: expected record, received
+  undefined` at path `hooks`). The plugin's `hooks/hooks.json` listed events at the top
+  level; Claude Code requires them wrapped under a top-level `"hooks"` key. All four
+  events are now nested correctly under `hooks`.
+
 ## [0.6.0] — 2026-06-13
 
 ### Added

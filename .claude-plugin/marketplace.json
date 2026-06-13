@@ -10,7 +10,7 @@
       "name": "context-forge",
       "source": "./",
       "description": "Set up and maintain the Six-File Context Methodology in any project: initialize context files, refine prompts, plan and build features, verify, debug, log decisions, audit for drift, and resume — with hooks that auto-load context, augment prompts, and guard invariants.",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "author": {
         "name": "yerros",
         "url": "https://github.com/yerros"
