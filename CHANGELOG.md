@@ -3,6 +3,21 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-06-13
+
+### Added
+- **`context-prompt`** skill — an opt-in prompt refiner that turns a rough request into a
+  high-quality, context-aligned prompt or spec (goal / scope / constraints / acceptance),
+  asking 1–2 clarifying questions only when needed. It never silently changes intent.
+- **`UserPromptSubmit`** hook — a conservative, *augmenting* hook: for substantive build
+  requests in a `context/` project it injects relevant context pointers and, when the
+  request is vague, a suggested sharper phrasing. It never rewrites the user's message and
+  stays silent for casual chat and one-line fixes.
+
+### Notes
+- The plugin now has three prompt-based hooks (`UserPromptSubmit`, `PreToolUse`, `Stop`).
+  Each adds a small evaluation; remove any block from `hooks/hooks.json` to disable it.
+
 ## [0.5.0] — 2026-06-13
 
 ### Added

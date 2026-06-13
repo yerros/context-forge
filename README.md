@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -128,6 +128,7 @@ does this automatically). As the project grows, reach for `/context-feature`,
 | Command | What it does |
 | ------- | ------------ |
 | `context-init` | Reads project state first, then either sets up fresh or **adopts & reconciles** an existing setup (fills gaps only, never overwrites). Detects the stack profile. Greenfield: planning conversation. Brownfield: analyzes the codebase, drafts from real evidence, confirms before writing. |
+| `context-prompt` | Sharpens a rough request into a high-quality, context-aligned prompt or spec — clarifies goal, scope, constraints, and acceptance, then confirms. Never silently changes your intent. |
 | `context-spec` | Spec-driven development: builds the ordered build plan (`context/specs/00-build-plan.md`) and writes a five-section spec file per feature unit. |
 | `context-feature` | Adds a new feature to a working project: updates scope, inserts correctly-ordered units into the build plan, and generates the spec(s) — without breaking existing work. |
 | `context-build` | Runs the disciplined implement → verify → close loop for one spec'd unit, strictly in scope, and keeps the tracker in sync. |
@@ -145,6 +146,7 @@ These run automatically and are silent in projects that don't use the methodolog
 | Hook | What it does |
 | ---- | ------------ |
 | `SessionStart` | If the project has a `context/` folder, injects the current `progress-tracker.md` and a reminder to read the context files first. |
+| `UserPromptSubmit` | For substantive build requests in a `context/` project, augments the prompt with relevant context pointers and (if vague) a suggested sharper phrasing. Never rewrites your message; silent for casual chat and one-line fixes. |
 | `Stop` | After a response that changed code, keeps `progress-tracker.md` in sync and maintains a dated "Resume here:" note for the next session. |
 | `PreToolUse` (Write/Edit) | Checks file changes against the invariants in `architecture.md` and the rules in `code-standards.md`; flags or blocks clear violations. |
 
@@ -198,7 +200,7 @@ context-forge/
 ├── .claude-plugin/
 │   ├── plugin.json          # plugin manifest
 │   └── marketplace.json     # marketplace catalog (makes this repo installable)
-├── skills/                  # the ten context-* skills
+├── skills/                  # the context-* skills
 │   ├── context-init/        # + bundled templates, stack profiles, detect.sh
 │   ├── context-spec/        # + spec template
 │   ├── context-decision/    # + decisions (ADR) template
