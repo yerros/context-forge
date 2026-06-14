@@ -3,6 +3,17 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] — 2026-06-14
+
+### Added
+- **`context-build-all`** skill — runs the implement → verify → close loop across every
+  remaining unit in the build plan, in order, updating the tracker after each. It is the
+  autonomous, multi-unit counterpart to `context-build`. For safety it builds strictly to
+  each spec, verifies every unit, and **stops at the first failure** (missing spec,
+  failed verification, ambiguity, or invariant violation) instead of continuing on an
+  unverified foundation. It does not auto-push or open PRs — shipping stays with
+  `context-pr`. Supports an optional scope (e.g. "build units 3–7").
+
 ## [0.7.0] — 2026-06-14
 
 ### Changed

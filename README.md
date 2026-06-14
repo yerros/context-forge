@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -112,6 +112,7 @@ From inside any project you want to manage:
 /context-init        # set up (or adopt) the context files — detects your stack
 /context-spec        # plan the build and write a spec for the next unit
 /context-build       # implement that unit through the loop, strictly in scope
+/context-build-all   # or: build every remaining unit in one run, stopping on first failure
 /context-verify      # confirm the unit is truly done
 /context-pr          # ship it: branch, conventional commit, pull request
 ```
@@ -132,6 +133,7 @@ does this automatically). As the project grows, reach for `/context-feature`,
 | `context-spec` | Spec-driven development: builds the ordered build plan (`context/specs/00-build-plan.md`) and writes a five-section spec file per feature unit. |
 | `context-feature` | Adds a new feature to a working project: updates scope, inserts correctly-ordered units into the build plan, and generates the spec(s) — without breaking existing work. |
 | `context-build` | Runs the disciplined implement → verify → close loop for one spec'd unit, strictly in scope, and keeps the tracker in sync. |
+| `context-build-all` | Runs the build loop across **all** remaining units in order until the plan is complete, verifying each and **stopping at the first failure**. The autonomous, multi-unit version of `context-build`. |
 | `context-verify` | Runs the unit's verification checklist + build/typecheck/lint + an adversarial subagent review before a unit is closed. |
 | `context-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
 | `context-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
