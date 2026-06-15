@@ -69,7 +69,10 @@ Spec: context/specs/NN-feature-name.md
 ### 4. Record
 
 Note in `progress-tracker.md` that the unit was shipped (branch/PR link), and set the
-next unit as "Next Up".
+next unit as "Next Up". Keep the note to one or two lines, and if the tracker has grown
+past its active window (~10 recent Completed, ~8 recent Session Notes, or ~6 KB), rotate
+the oldest entries into `context/progress-archive.md` (history; never auto-read) so the
+tracker stays lean.
 
 Then make sure the unit is archived (it may already be, if it was closed via
 `forge-build`): its spec should sit in `context/specs/archived/NN-feature-name.md`, and

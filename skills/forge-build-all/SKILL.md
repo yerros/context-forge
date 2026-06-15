@@ -51,10 +51,13 @@ For each pending unit N:
    build/typecheck/lint. For deeper checking, apply the `forge-verify` logic.
 5. **Decide:**
    - **Pass** → mark the unit complete in `progress-tracker.md`, set the next unit as
-     "Next Up", add a Session Note, **move its spec `context/specs/NN-*.md` into
-     `context/specs/archived/`, and move its line in `context/specs/00-build-plan.md`
-     from the active `## Units` list into the `## Completed` section**, then continue to
-     the next unit.
+     "Next Up", add a **one- to two-line** Session Note, **rotate the tracker** if it has
+     grown past its active window (~10 recent Completed, ~8 recent Session Notes, or
+     ~6 KB / ~1,500 tokens) by moving the oldest entries into `context/progress-archive.md`
+     (append newest-first; the archive is never read on resume/build), **move its spec
+     `context/specs/NN-*.md` into `context/specs/archived/`, and move its line in
+     `context/specs/00-build-plan.md` from the active `## Units` list into the
+     `## Completed` section**, then continue to the next unit.
    - **Fail / ambiguous / invariant violation** → **STOP the entire run.** Leave the unit
      as "In Progress", record exactly what failed and why in the tracker, and report to
      the user. Do not proceed to later units.
@@ -83,4 +86,5 @@ unit or in a batch, ship them with `forge-pr`.
 - Stop on the first failure — do not continue building on an unverified unit.
 - Do not auto-push or open PRs as part of this run; leave shipping to `forge-pr` so the
   user keeps control of git history.
-- Keep `progress-tracker.md` accurate after every unit, not just at the end.
+- Keep `progress-tracker.md` accurate AND lean after every unit — rotate old Completed/
+  Session Notes into `context/progress-archive.md` so the active tracker never bloats.

@@ -68,9 +68,34 @@ NOT trust the docs — verify against the code.
   active `## Units` list or loose in `context/specs/`. Flag completed units whose spec is
   still active (not archived), and pending units whose spec was archived too early.
 
+### context budget (token cost)
+
+The six files (plus the entry point) are re-read on every `forge-resume` / `forge-build`,
+so their size is a recurring token cost. Measure it and flag bloat:
+
+```bash
+for f in CLAUDE.md AGENTS.md context/*.md; do
+  [ -f "$f" ] && printf '%-34s %6s bytes  ~%5s tok\n' "$f" "$(wc -c <"$f")" "$(( $(wc -c <"$f") / 4 ))"
+done
+```
+
+Soft budgets (warn when exceeded):
+
+- `progress-tracker.md` — **~6 KB / ~1,500 tokens.** This is the most common offender: it
+  grows every unit. Over budget ⇒ recommend rotating old Completed entries and Session
+  Notes into `context/progress-archive.md` (history, never auto-read).
+- `architecture.md`, `ui-context.md`, `code-standards.md`, `project-overview.md` —
+  **~10 KB / ~2,500 tokens** each. Over budget ⇒ recommend tightening prose, removing
+  examples, or splitting detail into an on-demand reference file.
+- Entry point (`CLAUDE.md`/`AGENTS.md`) — keep lean; large embedded tables/reference
+  blocks belong in a separate file that's read only when needed.
+
+Report each file's size, whether it's within budget, and the recommended trim/rotate when
+it isn't. Rotating completed history is a pure token saving with no loss of active context.
+
 ## Output
 
-A drift report grouped by file. For each finding: **what the doc says**, **what the
+A drift report grouped by file, plus the **context budget** summary above. For each finding: **what the doc says**, **what the
 code shows**, and a **recommended doc edit**. Categorize:
 
 - **Stale** — doc describes something that's changed.

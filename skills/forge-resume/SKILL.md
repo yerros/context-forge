@@ -38,6 +38,11 @@ the project. This solves the "AI has no memory between sessions" problem.
 
    If `context/` doesn't exist, tell the user and suggest running `forge-init` first.
 
+   Read the six files in this order on purpose: the stable files first and the volatile
+   `progress-tracker.md` last, so the unchanged prefix stays prompt-cache-friendly across
+   sessions. Do **not** read `context/progress-archive.md` — it is rotated-out history, not
+   active context; open it only if the user explicitly asks about past work.
+
 2. From `progress-tracker.md`, extract: current phase, current goal, what's completed,
    what's in progress, what's next up, and any open questions or recent architecture
    decisions. If `context/.last-session.md` exists (written by the Stop hook), read it too

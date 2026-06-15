@@ -62,7 +62,15 @@ If something built doesn't match the spec, correct it precisely:
 Only when every verification item passes:
 
 - Update `context/progress-tracker.md`: move the unit to "Completed", set the next unit
-  as "Next Up", and add a Session Note describing what was done and any decisions.
+  as "Next Up", and add a **one- to two-line** Session Note (what shipped + any decision).
+  Keep notes terse — this file is read on every resume/build, so every line costs tokens.
+- **Rotate the tracker if it has grown.** The tracker holds an *active window* only:
+  current phase/goal, In Progress, Next Up, Open Questions, the ~10 most recent Completed
+  units, and the ~8 most recent Session Notes. When closing pushes it past that window (or
+  past ~6 KB / ~1,500 tokens), move the oldest Completed entries and Session Notes into
+  `context/progress-archive.md` (create it if absent; append newest-first). The archive is
+  history — it is NOT read on resume/build, so rotating it out is a pure token saving with
+  no loss of active context.
 - **Archive the spec.** Move `context/specs/NN-feature-name.md` into
   `context/specs/archived/` (create the folder if it doesn't exist). The active
   `context/specs/` folder should now contain only specs for units still pending.

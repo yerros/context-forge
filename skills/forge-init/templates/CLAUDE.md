@@ -17,7 +17,11 @@ or making any architectural decision:
    completed work, open questions, and next steps
 
 Update `context/progress-tracker.md` after each
-meaningful implementation change.
+meaningful implementation change. Keep it lean (active
+window only); older history is rotated into
+`context/progress-archive.md`, which is a record and is
+**not** read on resume/build. Do not load the archive
+unless you specifically need past history.
 
 If implementation changes the architecture, scope, or
 standards documented in the context files, update the

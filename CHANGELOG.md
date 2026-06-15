@@ -3,6 +3,30 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] — 2026-06-15
+
+### Added (token efficiency)
+- **Automatic progress-tracker rotation.** The tracker now holds an *active window* only
+  (current phase/goal, In Progress, Next Up, Open Questions, the ~10 most recent Completed
+  units, and the ~8 most recent Session Notes). When a unit closes and the tracker grows
+  past that window — or past ~6 KB / ~1,500 tokens — `forge-build`, `forge-build-all`, and
+  `forge-pr` move the oldest Completed entries and Session Notes into a new
+  `context/progress-archive.md` (history; appended newest-first). Because the tracker is
+  re-read on every `forge-resume` / `forge-build`, this caps a file that previously grew
+  unbounded — a pure token saving with no loss of active context. The archive is **not**
+  auto-read.
+- **Compact session notes.** Close steps now write a one- to two-line Session Note instead
+  of an open-ended paragraph, keeping the recurring read cost low.
+- **Context budget check in `forge-audit`.** The audit now measures each context file's
+  size (bytes / approx tokens) against soft budgets and recommends trimming or rotating
+  when a file is over — the tracker (~1,500 tokens) and core files (~2,500 tokens each).
+- **Prompt-cache-friendly read order** documented in `forge-resume`: stable files first,
+  the volatile tracker last, so the unchanged prefix stays cacheable across sessions.
+
+### Changed
+- `forge-init` templates (`progress-tracker.md`, `CLAUDE.md`) now declare the lean active
+  window and the `progress-archive.md` convention, so new projects start token-efficient.
+
 ## [0.9.0] — 2026-06-15
 
 ### Changed (breaking)
