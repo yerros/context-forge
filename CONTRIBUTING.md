@@ -15,9 +15,9 @@ is structured and how to propose changes.
 .claude-plugin/plugin.json       # plugin manifest
 .claude-plugin/marketplace.json  # marketplace catalog
 skills/<name>/SKILL.md           # one directory per skill
-skills/context-init/templates/   # the six context templates + entry point
-skills/context-init/references/  # stack profiles
-skills/context-init/scripts/     # deterministic detector (detect.sh)
+skills/forge-init/templates/   # the six context templates + entry point
+skills/forge-init/references/  # stack profiles
+skills/forge-init/scripts/     # deterministic detector (detect.sh)
 hooks/hooks.json                 # SessionStart, Stop, PreToolUse
 ```
 

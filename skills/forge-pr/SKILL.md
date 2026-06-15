@@ -1,22 +1,22 @@
 ---
-name: context-pr
+name: forge-pr
 description: >
   This skill should be used to close out a completed unit with git in a Six-File Context
-  Methodology project — phrases like "context-pr", "open a PR for this unit", "ship this
+  Methodology project — phrases like "forge-pr", "open a PR for this unit", "ship this
   unit", "commit and push", or "close unit NN". It creates the branch, makes a
   conventional commit, and opens a pull request with a spec-derived summary.
 metadata:
   version: "0.1.0"
 ---
 
-# context-pr
+# forge-pr
 
 Automate the close step: turn a verified unit into a clean branch, commit, and PR. Only
 run this once the unit is implemented AND verified.
 
 ## Preconditions
 
-- The unit's verification passed (run `context-verify` first if unsure).
+- The unit's verification passed (run `forge-verify` first if unsure).
 - `progress-tracker.md` shows the unit as complete or ready to close.
 - The repo is a git repository with a clean-enough working tree for this unit's changes.
 
@@ -70,6 +70,12 @@ Spec: context/specs/NN-feature-name.md
 
 Note in `progress-tracker.md` that the unit was shipped (branch/PR link), and set the
 next unit as "Next Up".
+
+Then make sure the unit is archived (it may already be, if it was closed via
+`forge-build`): its spec should sit in `context/specs/archived/NN-feature-name.md`, and
+its line in `context/specs/00-build-plan.md` should be in the `## Completed` section
+with the PR/branch noted. If either is still in the active list, move it now. Commit
+these doc moves together with — or right after — the unit's PR so git history matches.
 
 ## Rules
 

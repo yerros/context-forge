@@ -1,8 +1,8 @@
 ---
-name: context-verify
+name: forge-verify
 description: >
   This skill should be used to verify a build unit before closing it in a project that
-  uses the Six-File Context Methodology — phrases like "context-verify", "verify this
+  uses the Six-File Context Methodology — phrases like "forge-verify", "verify this
   unit", "check the unit is done", "run the verification checklist", or "review before
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
@@ -10,7 +10,7 @@ metadata:
   version: "0.1.0"
 ---
 
-# context-verify
+# forge-verify
 
 Confirm a unit is truly done before it's marked complete. "Done" means the spec's
 checklist passes, the project builds clean, and an adversarial review finds no
@@ -58,7 +58,7 @@ A concise verdict:
 
 - **PASS** — every checklist item passes, automated checks are green, no invariant
   violations, no Critical/Warning findings. Recommend closing the unit (or running
-  `context-build`'s close step).
+  `forge-build`'s close step).
 - **FAIL** — list exactly what failed and the minimal fix needed. Do not fix here
   beyond confirming the problem; stay within the unit's scope when fixing.
 

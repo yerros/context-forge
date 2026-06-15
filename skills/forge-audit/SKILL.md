@@ -1,8 +1,8 @@
 ---
-name: context-audit
+name: forge-audit
 description: >
   This skill should be used to check whether a project's context files still match the
-  actual codebase — phrases like "context-audit", "audit the context files", "are the
+  actual codebase — phrases like "forge-audit", "audit the context files", "are the
   docs still accurate", "check for context drift", or "sync context with the code". It
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
@@ -10,7 +10,7 @@ metadata:
   version: "0.1.0"
 ---
 
-# context-audit
+# forge-audit
 
 Detect and fix drift between the six context files and the real codebase. Over a long
 build the code moves on; stale context files quietly make the agent guess wrong. This
@@ -21,11 +21,11 @@ skill keeps them honest.
 Run the deterministic detector to know exactly what exists before auditing (read-only):
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/context-init/scripts/detect.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/detect.sh"
 ```
 
 If the `verdict` is `SETUP` (no context files), there's nothing to audit — tell the user
-to run `context-init` first. Otherwise proceed.
+to run `forge-init` first. Otherwise proceed.
 
 ## How to audit
 
@@ -60,6 +60,13 @@ NOT trust the docs — verify against the code.
 
 - Check whether "Completed" matches what actually exists, and whether "In Progress" is
   stale.
+
+### specs/ vs build plan (archive hygiene)
+
+- Every unit marked complete should have its spec under `context/specs/archived/` and its
+  line in the `## Completed` section of `context/specs/00-build-plan.md` — not in the
+  active `## Units` list or loose in `context/specs/`. Flag completed units whose spec is
+  still active (not archived), and pending units whose spec was archived too early.
 
 ## Output
 

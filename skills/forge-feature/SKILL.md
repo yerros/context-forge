@@ -1,8 +1,8 @@
 ---
-name: context-feature
+name: forge-feature
 description: >
   This skill should be used to add a new feature to an existing project that uses the
-  Six-File Context Methodology — phrases like "context-feature", "add a feature",
+  Six-File Context Methodology — phrases like "forge-feature", "add a feature",
   "I want to add X to the app", "plan a new feature", or "extend the build plan". It
   updates scope in project-overview.md, inserts correctly-ordered units into the build
   plan, and generates the spec(s) — without breaking existing work.
@@ -10,7 +10,7 @@ metadata:
   version: "0.1.0"
 ---
 
-# context-feature
+# forge-feature
 
 Add a feature to a project that already has its context files, the safe way. The risk
 when adding to a working build is breaking what exists; this skill keeps the new work
@@ -23,7 +23,7 @@ scoped, ordered, and documented before any code is written.
 Read `context/project-overview.md`, `context/architecture.md`, the build plan at
 `context/specs/00-build-plan.md`, and `context/progress-tracker.md`. Understand what
 already exists and what the invariants are. If there's no `context/` folder, tell the
-user to run `context-init` first.
+user to run `forge-init` first.
 
 ### 2. Clarify the feature
 
@@ -35,7 +35,7 @@ the conflict and resolve it before continuing.
 
 Add the feature to `project-overview.md` (Features + In Scope, and adjust Out of Scope
 if needed). If it introduces a real architectural change (new dependency, new boundary,
-new storage), update `architecture.md` too — and log the decision via `context-decision`.
+new storage), update `architecture.md` too — and log the decision via `forge-decision`.
 
 ### 4. Decompose into units and place them in order
 
@@ -49,7 +49,7 @@ Renumber if necessary and note the renumbering.
 ### 5. Generate the spec(s)
 
 Write a spec file per new unit using the five-section pattern (delegate to the same
-template as `context-spec`: `${CLAUDE_PLUGIN_ROOT}/skills/context-spec/templates/spec-template.md`).
+template as `forge-spec`: `${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/templates/spec-template.md`).
 
 ### 6. Update the tracker
 
@@ -58,7 +58,7 @@ Set the first new unit as "Next Up" in `progress-tracker.md` and add a Session N
 ## Output
 
 Tell the user: what changed in the docs, the new unit(s) and where they sit in the build
-order, and that the spec(s) are ready. Suggest running `context-build` on the first new
+order, and that the spec(s) are ready. Suggest running `forge-build` on the first new
 unit.
 
 ## Rules

@@ -3,6 +3,27 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] — 2026-06-15
+
+### Changed (breaking)
+- **All commands renamed from `context-*` to `forge-*`** for a shorter, faster-to-type
+  prefix tied to the plugin name. `context-build` → `forge-build`, `context-spec` →
+  `forge-spec`, and so on for all twelve skills (`forge-audit`, `forge-build`,
+  `forge-build-all`, `forge-debug`, `forge-decision`, `forge-feature`, `forge-init`,
+  `forge-pr`, `forge-prompt`, `forge-resume`, `forge-spec`, `forge-verify`). The
+  **methodology name ("Six-File Context Methodology") and the `context/` data directory
+  are unchanged** — only the command/skill names moved.
+
+### Added
+- **Completed specs are now archived.** When a unit closes, `forge-build` /
+  `forge-build-all` / `forge-pr` move its spec from `context/specs/` into
+  `context/specs/archived/`, and move its line in `context/specs/00-build-plan.md` from
+  the active `## Units` list into a `## Completed` section at the bottom. The active
+  `specs/` folder and build plan therefore only ever show work that is still pending,
+  while finished specs stay on disk as a record. `forge-resume` and `forge-audit` are
+  aware of the `archived/` folder (resume treats the active `specs/` as the remaining
+  work; audit flags archive/build-plan drift).
+
 ## [0.8.0] — 2026-06-14
 
 ### Added

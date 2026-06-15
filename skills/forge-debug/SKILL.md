@@ -1,16 +1,16 @@
 ---
-name: context-debug
+name: forge-debug
 description: >
   This skill should be used when implementation is stuck or the agent keeps getting
   something wrong in a Six-File Context Methodology project — phrases like
-  "context-debug", "this keeps failing", "the agent can't fix this", "we're going in
+  "forge-debug", "this keeps failing", "the agent can't fix this", "we're going in
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
   version: "0.1.0"
 ---
 
-# context-debug
+# forge-debug
 
 When the same problem resists two or more fix attempts, stop guessing. More attempts
 without a model of the failure just compounds damage. Switch to this disciplined loop.
@@ -60,7 +60,7 @@ re-run the reproduction and the unit's verification checklist to confirm.
 
 If the bug came from a wrong assumption or a missing rule, add or clarify the relevant
 rule in `code-standards.md` or `architecture.md`, and note it in `progress-tracker.md`
-so it doesn't recur. If it changed an architectural decision, log it via `context-decision`.
+so it doesn't recur. If it changed an architectural decision, log it via `forge-decision`.
 
 ## When the agent keeps getting it wrong
 

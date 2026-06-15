@@ -1,15 +1,15 @@
 ---
-name: context-decision
+name: forge-decision
 description: >
   This skill should be used to log an architecture decision in a Six-File Context
-  Methodology project — phrases like "context-decision", "log this decision", "record an
+  Methodology project — phrases like "forge-decision", "log this decision", "record an
   ADR", "we decided to...", "document why we chose X", or "add a decision record". It
   appends a structured ADR entry to context/decisions.md.
 metadata:
   version: "0.1.0"
 ---
 
-# context-decision
+# forge-decision
 
 Record architecture decisions as lightweight ADRs (Architecture Decision Records) so the
 "why" behind the system is never lost. Decisions live in `context/decisions.md`.
@@ -24,7 +24,7 @@ other code must follow.
 ## How
 
 1. If `context/decisions.md` doesn't exist, create it from the bundled template at
-   `${CLAUDE_PLUGIN_ROOT}/skills/context-decision/templates/decisions.md`.
+   `${CLAUDE_PLUGIN_ROOT}/skills/forge-decision/templates/decisions.md`.
 2. Determine the next ADR number (increment the highest existing one).
 3. Append a new entry using this structure:
 

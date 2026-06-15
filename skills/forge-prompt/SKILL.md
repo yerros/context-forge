@@ -1,8 +1,8 @@
 ---
-name: context-prompt
+name: forge-prompt
 description: >
   This skill should be used to sharpen a rough or vague request into a high-quality,
-  context-aligned prompt before acting on it — phrases like "context-prompt", "optimize
+  context-aligned prompt before acting on it — phrases like "forge-prompt", "optimize
   this prompt", "refine my request", "make this prompt better", "turn this into a proper
   prompt", or "what's the best way to ask for this". It clarifies intent, grounds the
   request in the project's context files, and outputs a sharp prompt or spec the user
@@ -11,7 +11,7 @@ metadata:
   version: "0.1.0"
 ---
 
-# context-prompt
+# forge-prompt
 
 Turn a rough request into a precise, buildable instruction. The goal is to improve the
 *quality of the thinking* behind the prompt — not to wordsmith. Output a sharpened prompt
@@ -57,14 +57,14 @@ Constraints: <relevant invariants / standards / tech>
 Acceptance: <how done is verified>
 ```
 
-For a feature-sized request, recommend producing a full spec via `context-spec` /
-`context-feature` instead, and hand off.
+For a feature-sized request, recommend producing a full spec via `forge-spec` /
+`forge-feature` instead, and hand off.
 
 ### 5. Confirm, then hand off
 
 Show the optimized prompt and ask the user to confirm or adjust. On approval, either act
-on it directly or route to the right skill (`context-build` to implement, `context-spec`
-to write a spec, `context-debug` when stuck).
+on it directly or route to the right skill (`forge-build` to implement, `forge-spec`
+to write a spec, `forge-debug` when stuck).
 
 ## Rules
 

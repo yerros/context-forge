@@ -1,8 +1,8 @@
 ---
-name: context-spec
+name: forge-spec
 description: >
   This skill should be used for spec-driven development on a project that uses the
-  Six-File Context Methodology — phrases like "context-spec", "create a build plan",
+  Six-File Context Methodology — phrases like "forge-spec", "create a build plan",
   "break this into units", "write a spec for this feature", "generate a spec file",
   or "plan the build". It decomposes a project into ordered, verifiable build units
   and writes detailed per-feature spec files into context/specs/ that a coding agent
@@ -11,13 +11,24 @@ metadata:
   version: "0.1.0"
 ---
 
-# context-spec
+# forge-spec
 
 Turn features into spec-driven, buildable units. Two jobs: produce the **build plan**
 (once per project) and write a **spec file** for each unit (right before building it).
 
 Read `context/project-overview.md` and `context/architecture.md` first for context.
 Specs live in `context/specs/`. Create that folder if it doesn't exist.
+
+### Specs folder layout
+
+- `context/specs/00-build-plan.md` — the build plan (see Job A).
+- `context/specs/NN-feature-name.md` — the spec for each **active or pending** unit.
+- `context/specs/archived/` — specs for **completed** units. When a unit closes it is
+  moved here (by `forge-build` / `forge-build-all` / `forge-pr`) so the active `specs/`
+  folder only ever lists work that is still pending. Create the folder on first archive.
+
+At any moment, the spec files directly inside `context/specs/` are exactly the units
+left to build; everything finished lives under `archived/`.
 
 ## Job A: the build plan (once)
 
@@ -49,10 +60,21 @@ earlier unit; merge adjacent units that always ship together with no standalone 
 Write the result to `context/specs/00-build-plan.md` as a numbered list in build order.
 For each unit: number, name, what it builds, and dependencies that must exist first.
 
+Give the build plan two sections so it stays readable as work progresses:
+
+- `## Units` — the active, in-build-order list of units **not yet complete**. This is the
+  working list and should stay short and current.
+- `## Completed` (at the bottom) — units that have shipped, moved down here when they
+  close, kept for history with their date and PR/branch. New plans start with this
+  section empty.
+
+Keeping completed units out of the active list (and their specs under `specs/archived/`)
+is what keeps the build plan clean.
+
 ## Job B: a feature spec (per unit)
 
 When the user is ready to build a unit, write its spec file. Use the bundled template
-at `${CLAUDE_PLUGIN_ROOT}/skills/context-spec/templates/spec-template.md`. Name the
+at `${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/templates/spec-template.md`. Name the
 file `context/specs/NN-feature-name.md` matching the build plan numbering.
 
 If anything about the unit is unclear, ask the user before writing the spec — a vague
@@ -83,4 +105,6 @@ Once a spec exists, the build runs as:
 - **Correct**: "The [element] does not match the spec. Expected: [X]. Current: [Y]. Fix
   only this. Do not change anything else."
 - **Close**: "Implementation is complete and verified. Mark unit NN complete in
-  context/progress-tracker.md. Push branch feat/NN-feature-name."
+  context/progress-tracker.md, move it to the Completed section of
+  context/specs/00-build-plan.md, move its spec to context/specs/archived/, and push
+  branch feat/NN-feature-name."

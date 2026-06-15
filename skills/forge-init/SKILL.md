@@ -1,9 +1,9 @@
 ---
-name: context-init
+name: forge-init
 description: >
   This skill should be used when the user wants to set up the Six-File Context
   Methodology in a project — phrases like "init context", "set up context files",
-  "scaffold the six files", "context-init", "create CLAUDE.md and context docs",
+  "scaffold the six files", "forge-init", "create CLAUDE.md and context docs",
   "analyze this project and fill the context templates", or "bootstrap AI context
   for this codebase". Works for both new (greenfield) projects via a planning
   conversation and existing (brownfield) projects by analyzing the codebase and
@@ -14,11 +14,11 @@ metadata:
   version: "0.2.0"
 ---
 
-# context-init
+# forge-init
 
 Set up the Six-File Context System in the user's project: the `context/` folder
 with six markdown files plus an agent entry point (`CLAUDE.md` or `AGENTS.md`).
-The blank templates are bundled at `${CLAUDE_PLUGIN_ROOT}/skills/context-init/templates/`.
+The blank templates are bundled at `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/`.
 
 The guiding principle of this methodology: **the user is the architect, the AI is
 the implementation engine.** These files capture the architectural thinking so the
@@ -30,7 +30,7 @@ Never assume the project is empty. Run the deterministic state detector from the
 root and branch on its `verdict`. This is read-only and never writes anything:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/skills/context-init/scripts/detect.sh"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/detect.sh"
 ```
 
 The report gives a `verdict` plus the facts behind it (which of the six files exist, how
@@ -48,7 +48,7 @@ hand:
 
 Determine **greenfield** (empty/near-empty) vs **brownfield** (the report's
 `codebase_detected: yes`). Then pick a stack profile: read
-`${CLAUDE_PLUGIN_ROOT}/skills/context-init/references/stack-profiles.md`, detect the
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-init/references/stack-profiles.md`, detect the
 project type (web frontend, backend/API, mobile, CLI/library, data/ML), and apply the
 matching profile — it says which files matter and when to drop or repurpose
 `ui-context.md`. Tell the user which profile you're applying and why. Keep the entry
@@ -91,11 +91,11 @@ idempotent: running it on a healthy project changes nothing.
      `context/decisions.md` if absent.
 
 4. **Offer a drift check.** For ADOPT projects with a codebase, recommend running
-   `context-audit` to confirm the existing docs still match the code. Don't auto-rewrite
+   `forge-audit` to confirm the existing docs still match the code. Don't auto-rewrite
    accurate content.
 
 5. **Update the tracker** only to reflect this reconcile pass, then stop. Do not start
-   building — hand off to `context-resume` or `context-build`.
+   building — hand off to `forge-resume` or `forge-build`.
 
 ## Brownfield flow — analyze, draft, confirm, then write
 
@@ -160,13 +160,13 @@ the files from their answers.
 
 1. Copy the bundled templates into the project:
    - Create a `context/` folder at the project root.
-   - Copy the six files from `${CLAUDE_PLUGIN_ROOT}/skills/context-init/templates/context/`
+   - Copy the six files from `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/context/`
      into it: `project-overview.md`, `architecture.md`, `ui-context.md`,
      `code-standards.md`, `ai-workflow-rules.md`, `progress-tracker.md`.
 2. Fill each file in, replacing every `[bracketed placeholder]` with concrete,
    specific content. Follow the per-file quality bars below.
 3. Create the entry point at the project root. Use the bundled template at
-   `${CLAUDE_PLUGIN_ROOT}/skills/context-init/templates/CLAUDE.md` (for Claude Code /
+   `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/CLAUDE.md` (for Claude Code /
    Cowork) or `AGENTS.md` (for Codex / Copilot / generic). If one already exists,
    merge the "Application Building Context" section in rather than clobbering it.
 4. Leave `progress-tracker.md` mostly empty for greenfield (just Current Phase +
@@ -196,4 +196,4 @@ the files from their answers.
 
 Tell the user the files are in place and explain the loop: the agent reads the entry
 point at the start of every session, and `progress-tracker.md` is updated after each
-unit. Suggest running `context-spec` next to break the build into spec'd units.
+unit. Suggest running `forge-spec` next to break the build into spec'd units.

@@ -1,8 +1,8 @@
 ---
-name: context-resume
+name: forge-resume
 description: >
   This skill should be used at the start of a work session on a project that uses the
-  Six-File Context Methodology — phrases like "context-resume", "resume the project",
+  Six-File Context Methodology — phrases like "forge-resume", "resume the project",
   "where did we leave off", "pick up where we stopped", "restore context", or "read
   the context files and continue". It reloads full project context from the six files
   and the progress tracker so work continues without drift.
@@ -10,7 +10,7 @@ metadata:
   version: "0.1.0"
 ---
 
-# context-resume
+# forge-resume
 
 Restore full project context in one step and continue the build without re-explaining
 the project. This solves the "AI has no memory between sessions" problem.
@@ -20,11 +20,11 @@ the project. This solves the "AI has no memory between sessions" problem.
 0. Confirm the project is set up. Run the deterministic detector (read-only):
 
    ```bash
-   bash "${CLAUDE_PLUGIN_ROOT}/skills/context-init/scripts/detect.sh"
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/detect.sh"
    ```
 
-   If the `verdict` is `SETUP`, there's nothing to resume — suggest `context-init`. If
-   `REPAIR` (incomplete), mention which files are missing and suggest `context-init`'s
+   If the `verdict` is `SETUP`, there's nothing to resume — suggest `forge-init`. If
+   `REPAIR` (incomplete), mention which files are missing and suggest `forge-init`'s
    reconcile flow, then resume with what exists.
 
 1. Read the entry point (`CLAUDE.md` or `AGENTS.md`) at the project root, then read the
@@ -36,7 +36,7 @@ the project. This solves the "AI has no memory between sessions" problem.
    5. `context/ai-workflow-rules.md`
    6. `context/progress-tracker.md`
 
-   If `context/` doesn't exist, tell the user and suggest running `context-init` first.
+   If `context/` doesn't exist, tell the user and suggest running `forge-init` first.
 
 2. From `progress-tracker.md`, extract: current phase, current goal, what's completed,
    what's in progress, what's next up, and any open questions or recent architecture
@@ -49,8 +49,10 @@ the project. This solves the "AI has no memory between sessions" problem.
    continuing.
 
 4. If a "Next Up" unit exists and has a spec in `context/specs/`, offer to start it
-   using the implement prompt. If it has no spec yet, suggest running `context-spec` to
-   write one first.
+   using the implement prompt. If it has no spec yet, suggest running `forge-spec` to
+   write one first. (Completed units' specs live in `context/specs/archived/`; the active
+   `context/specs/` folder lists only the units still pending — so what's there is the
+   remaining work.)
 
 ## Rules while resuming
 

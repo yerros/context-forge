@@ -109,37 +109,37 @@ git clone https://github.com/yerros/context-forge.git
 From inside any project you want to manage:
 
 ```shell
-/context-init        # set up (or adopt) the context files — detects your stack
-/context-spec        # plan the build and write a spec for the next unit
-/context-build       # implement that unit through the loop, strictly in scope
-/context-build-all   # or: build every remaining unit in one run, stopping on first failure
-/context-verify      # confirm the unit is truly done
-/context-pr          # ship it: branch, conventional commit, pull request
+/forge-init        # set up (or adopt) the context files — detects your stack
+/forge-spec        # plan the build and write a spec for the next unit
+/forge-build       # implement that unit through the loop, strictly in scope
+/forge-build-all   # or: build every remaining unit in one run, stopping on first failure
+/forge-verify      # confirm the unit is truly done
+/forge-pr          # ship it: branch, conventional commit, pull request
 ```
 
-In later sessions, `/context-resume` restores full context (the `SessionStart` hook also
-does this automatically). As the project grows, reach for `/context-feature`,
-`/context-debug`, `/context-decision`, and `/context-audit`.
+In later sessions, `/forge-resume` restores full context (the `SessionStart` hook also
+does this automatically). As the project grows, reach for `/forge-feature`,
+`/forge-debug`, `/forge-decision`, and `/forge-audit`.
 
 > Skills are namespaced by the plugin. If a bare name is ambiguous, use the fully
-> qualified form, e.g. `/context-forge:context-init`.
+> qualified form, e.g. `/context-forge:forge-init`.
 
 ## Commands
 
 | Command | What it does |
 | ------- | ------------ |
-| `context-init` | Reads project state first, then either sets up fresh or **adopts & reconciles** an existing setup (fills gaps only, never overwrites). Detects the stack profile. Greenfield: planning conversation. Brownfield: analyzes the codebase, drafts from real evidence, confirms before writing. |
-| `context-prompt` | Sharpens a rough request into a high-quality, context-aligned prompt or spec — clarifies goal, scope, constraints, and acceptance, then confirms. Never silently changes your intent. |
-| `context-spec` | Spec-driven development: builds the ordered build plan (`context/specs/00-build-plan.md`) and writes a five-section spec file per feature unit. |
-| `context-feature` | Adds a new feature to a working project: updates scope, inserts correctly-ordered units into the build plan, and generates the spec(s) — without breaking existing work. |
-| `context-build` | Runs the disciplined implement → verify → close loop for one spec'd unit, strictly in scope, and keeps the tracker in sync. |
-| `context-build-all` | Runs the build loop across **all** remaining units in order until the plan is complete, verifying each and **stopping at the first failure**. The autonomous, multi-unit version of `context-build`. |
-| `context-verify` | Runs the unit's verification checklist + build/typecheck/lint + an adversarial subagent review before a unit is closed. |
-| `context-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
-| `context-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
-| `context-decision` | Logs an Architecture Decision Record (ADR) to `context/decisions.md` and keeps `architecture.md` in sync. |
-| `context-audit` | Detects drift between the context files and the actual codebase and offers to update the docs. |
-| `context-resume` | Reloads the context files + progress tracker at the start of a session and briefs you on where things stand. |
+| `forge-init` | Reads project state first, then either sets up fresh or **adopts & reconciles** an existing setup (fills gaps only, never overwrites). Detects the stack profile. Greenfield: planning conversation. Brownfield: analyzes the codebase, drafts from real evidence, confirms before writing. |
+| `forge-prompt` | Sharpens a rough request into a high-quality, context-aligned prompt or spec — clarifies goal, scope, constraints, and acceptance, then confirms. Never silently changes your intent. |
+| `forge-spec` | Spec-driven development: builds the ordered build plan (`context/specs/00-build-plan.md`) and writes a five-section spec file per feature unit. |
+| `forge-feature` | Adds a new feature to a working project: updates scope, inserts correctly-ordered units into the build plan, and generates the spec(s) — without breaking existing work. |
+| `forge-build` | Runs the disciplined implement → verify → close loop for one spec'd unit, strictly in scope, and keeps the tracker in sync. |
+| `forge-build-all` | Runs the build loop across **all** remaining units in order until the plan is complete, verifying each and **stopping at the first failure**. The autonomous, multi-unit version of `forge-build`. |
+| `forge-verify` | Runs the unit's verification checklist + build/typecheck/lint + an adversarial subagent review before a unit is closed. |
+| `forge-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
+| `forge-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
+| `forge-decision` | Logs an Architecture Decision Record (ADR) to `context/decisions.md` and keeps `architecture.md` in sync. |
+| `forge-audit` | Detects drift between the context files and the actual codebase and offers to update the docs. |
+| `forge-resume` | Reloads the context files + progress tracker at the start of a session and briefs you on where things stand. |
 
 ## Hooks
 
@@ -158,7 +158,7 @@ methodology.
 | `Stop` | If code changed (per git) without the tracker being updated, writes `context/.last-session.md` with a timestamp and the changed-file list. Never re-wakes the model. |
 
 > **Token cost:** because all hooks are command scripts, they don't consume model tokens.
-> Nuanced/semantic invariant checking lives in `context-verify` (run per unit) rather than
+> Nuanced/semantic invariant checking lives in `forge-verify` (run per unit) rather than
 > on every edit. To disable a hook, remove its block from `hooks/hooks.json`.
 
 **Optional:** create a `context/protected-paths` file (one glob per line) to extend the
@@ -183,7 +183,7 @@ and `context/decisions.md` (ADR log).
 
 ## How it works
 
-`context-init` runs a deterministic, read-only detector first and branches on its verdict,
+`forge-init` runs a deterministic, read-only detector first and branches on its verdict,
 so it never assumes a project is empty:
 
 - **`SETUP`** — no context files → fresh setup (greenfield conversation or brownfield
@@ -201,7 +201,7 @@ The progress tracker keeps every session grounded in the real state of the proje
 
 - [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) with plugin support.
 - `git` (and optionally the [GitHub CLI](https://cli.github.com/) `gh`) for the
-  `context-pr` workflow.
+  `forge-pr` workflow.
 - No language runtime is required by the plugin itself; your project's own build/test
   tooling is used during verification.
 
@@ -213,9 +213,9 @@ context-forge/
 │   ├── plugin.json          # plugin manifest
 │   └── marketplace.json     # marketplace catalog (makes this repo installable)
 ├── skills/                  # the context-* skills
-│   ├── context-init/        # + bundled templates, stack profiles, detect.sh
-│   ├── context-spec/        # + spec template
-│   ├── context-decision/    # + decisions (ADR) template
+│   ├── forge-init/        # + bundled templates, stack profiles, detect.sh
+│   ├── forge-spec/        # + spec template
+│   ├── forge-decision/    # + decisions (ADR) template
 │   └── ...
 ├── hooks/
 │   ├── hooks.json           # SessionStart, PreToolUse, Stop (all command-based)
