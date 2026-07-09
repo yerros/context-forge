@@ -36,11 +36,16 @@ done
 
 # --- unfilled template placeholders ([bracketed] text) per present file ---
 # A high count means the file is still a blank template, not real content.
+# Markdown links [text](url) and task checkboxes [ ]/[x] are NOT placeholders,
+# so strip links first and exclude checkbox tokens from the count.
 placeholder_total=0
 placeholder_detail=""
 for f in $SIX; do
   if [ -f "$CTX/$f.md" ]; then
-    n=$(grep -oE '\[[^]]+\]' "$CTX/$f.md" 2>/dev/null | wc -l | tr -d ' ')
+    n=$(sed -E 's/\[[^][]*\]\([^()]*\)//g' "$CTX/$f.md" 2>/dev/null \
+      | grep -oE '\[[^][]+\]' \
+      | grep -cvE '^\[( |x|X)\]$')
+    n=$(printf '%s' "$n" | tr -d ' ')
     placeholder_total=$((placeholder_total + n))
     placeholder_detail="$placeholder_detail $f:$n"
   fi
@@ -50,8 +55,10 @@ done
 decisions="no"; [ -f "$CTX/decisions.md" ] && decisions="yes"
 specs_dir="no"; [ -d "$CTX/specs" ] && specs_dir="yes"
 build_plan="no"; [ -f "$CTX/specs/00-build-plan.md" ] && build_plan="yes"
+# Per-unit specs only: the build plan itself is not a spec.
 spec_count=0
-[ -d "$CTX/specs" ] && spec_count=$(find "$CTX/specs" -maxdepth 1 -name '*.md' 2>/dev/null | wc -l | tr -d ' ')
+[ -d "$CTX/specs" ] && spec_count=$(find "$CTX/specs" -maxdepth 1 -name '*.md' \
+  -not -name '00-build-plan.md' 2>/dev/null | wc -l | tr -d ' ')
 
 # --- codebase signal (brownfield vs greenfield) ---
 code="no"

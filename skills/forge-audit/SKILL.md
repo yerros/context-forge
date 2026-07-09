@@ -7,7 +7,7 @@ description: >
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
 metadata:
-  version: "0.1.0"
+  version: "0.10.1"
 ---
 
 # forge-audit
@@ -84,9 +84,10 @@ Soft budgets (warn when exceeded):
 - `progress-tracker.md` — **~6 KB / ~1,500 tokens.** This is the most common offender: it
   grows every unit. Over budget ⇒ recommend rotating old Completed entries and Session
   Notes into `context/progress-archive.md` (history, never auto-read).
-- `architecture.md`, `ui-context.md`, `code-standards.md`, `project-overview.md` —
-  **~10 KB / ~2,500 tokens** each. Over budget ⇒ recommend tightening prose, removing
-  examples, or splitting detail into an on-demand reference file.
+- `architecture.md`, `ui-context.md`, `code-standards.md`, `project-overview.md`,
+  `ai-workflow-rules.md` — **~10 KB / ~2,500 tokens** each. Over budget ⇒ recommend
+  tightening prose, removing examples, or splitting detail into an on-demand reference
+  file.
 - Entry point (`CLAUDE.md`/`AGENTS.md`) — keep lean; large embedded tables/reference
   blocks belong in a separate file that's read only when needed.
 
@@ -95,8 +96,9 @@ it isn't. Rotating completed history is a pure token saving with no loss of acti
 
 ## Output
 
-A drift report grouped by file, plus the **context budget** summary above. For each finding: **what the doc says**, **what the
-code shows**, and a **recommended doc edit**. Categorize:
+A drift report grouped by file, plus the **context budget** summary above. For each
+finding: **what the doc says**, **what the code shows**, and a **recommended doc
+edit**. Categorize:
 
 - **Stale** — doc describes something that's changed.
 - **Undocumented** — code has something the docs don't mention.

@@ -7,7 +7,7 @@ description: >
   the context files and continue". It reloads full project context from the six files
   and the progress tracker so work continues without drift.
 metadata:
-  version: "0.1.0"
+  version: "0.10.1"
 ---
 
 # forge-resume

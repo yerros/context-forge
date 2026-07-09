@@ -8,7 +8,7 @@ description: >
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.1.0"
+  version: "0.10.1"
 ---
 
 # forge-spec
@@ -106,5 +106,5 @@ Once a spec exists, the build runs as:
   only this. Do not change anything else."
 - **Close**: "Implementation is complete and verified. Mark unit NN complete in
   context/progress-tracker.md, move it to the Completed section of
-  context/specs/00-build-plan.md, move its spec to context/specs/archived/, and push
-  branch feat/NN-feature-name."
+  context/specs/00-build-plan.md, and move its spec to context/specs/archived/. Then
+  ship it with forge-pr (branch feat/NN-feature-name, conventional commit, PR)."

@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.1.0"
+  version: "0.10.1"
 ---
 
 # forge-build-all
@@ -50,14 +50,9 @@ For each pending unit N:
 4. **Verify** against the spec's "Verify when done" checklist and run the project's real
    build/typecheck/lint. For deeper checking, apply the `forge-verify` logic.
 5. **Decide:**
-   - **Pass** → mark the unit complete in `progress-tracker.md`, set the next unit as
-     "Next Up", add a **one- to two-line** Session Note, **rotate the tracker** if it has
-     grown past its active window (~10 recent Completed, ~8 recent Session Notes, or
-     ~6 KB / ~1,500 tokens) by moving the oldest entries into `context/progress-archive.md`
-     (append newest-first; the archive is never read on resume/build), **move its spec
-     `context/specs/NN-*.md` into `context/specs/archived/`, and move its line in
-     `context/specs/00-build-plan.md` from the active `## Units` list into the
-     `## Completed` section**, then continue to the next unit.
+   - **Pass** → run the close-unit procedure in
+     `${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md` (update/rotate
+     the tracker, archive the spec, tidy the build plan), then continue to the next unit.
    - **Fail / ambiguous / invariant violation** → **STOP the entire run.** Leave the unit
      as "In Progress", record exactly what failed and why in the tracker, and report to
      the user. Do not proceed to later units.

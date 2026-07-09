@@ -3,6 +3,38 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.10.1] — 2026-07-10
+
+### Fixed
+- **README brought back in sync**: version badge 0.8.0 → current, duplicate/broken Hooks
+  table header removed, leftover "context-\* skills" label renamed to `forge-*`, and the
+  0.9.0/0.10.0 features (`context/specs/archived/`, `context/progress-archive.md`,
+  tracker rotation, `forge-audit` budget check) are now documented in Features and
+  "The six files".
+- **`marketplace.json` version drift** (was still 0.9.0 while the plugin was 0.10.0);
+  both manifests now carry the same version.
+- **`templates/AGENTS.md` synced with `templates/CLAUDE.md`** — the lean-window /
+  `progress-archive.md` note now appears in both entry-point templates.
+- **`detect.sh` accuracy**: `spec_files` no longer counts `00-build-plan.md` as a spec,
+  and the placeholder counter no longer matches markdown links `[text](url)` or task
+  checkboxes `[ ]`/`[x]` — fixing false REPAIR verdicts on fully filled files.
+- **Shipping is one door again**: the Close step of `forge-build` and the three-prompt
+  loop in `forge-spec` now point to `forge-pr` instead of instructing a raw branch push
+  (also fixes the "suggest the suggested git step" typo).
+- **`guard.sh`**: project-relative globs in `context/protected-paths` (e.g.
+  `src/generated/*`) now also match when the tool sends an absolute path, and the guard
+  reads `notebook_path` too; the `PreToolUse` matcher now covers `NotebookEdit`.
+- `forge-audit`: `ai-workflow-rules.md` now has a soft budget like the other core files;
+  minor formatting fix in the Output section.
+
+### Changed
+- **Close-unit logic deduplicated.** The full procedure (tracker update + rotation, spec
+  archival, build-plan tidy, context-file sync) now lives once in
+  `skills/forge-build/references/close-unit.md`; `forge-build`, `forge-build-all`, and
+  `forge-pr` reference it instead of each carrying their own copy. The active-window
+  numbers (~10 Completed / ~8 Session Notes / ~6 KB) are defined there canonically.
+- All skill `metadata.version` values bumped to match the plugin version.
+
 ## [0.10.0] — 2026-06-15
 
 ### Added (token efficiency)

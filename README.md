@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.10.1-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -59,6 +59,10 @@ before it writes anything, and a living tracker that restores full context in on
 - **Spec-driven build loop** — plan, build, verify, and ship one scoped unit at a time.
 - **Self-maintaining docs** — hooks keep the progress tracker in sync and guard your
   architectural invariants on every edit.
+- **Token-efficient by design** — the progress tracker keeps only an *active window*
+  (older Completed entries and Session Notes rotate into `context/progress-archive.md`),
+  completed specs are archived into `context/specs/archived/`, and `forge-audit` checks
+  every context file against a soft token budget.
 - **Zero configuration** — no credentials or setup; templates ship inside the plugin.
 
 ## Installation
@@ -145,8 +149,6 @@ does this automatically). As the project grows, reach for `/forge-feature`,
 
 These run automatically and are silent in projects that don't use the methodology.
 
-| Hook | What it does |
-| ---- | ------------ |
 All three hooks are **command-based** — they run small shell scripts, not model calls,
 so they add **no token cost**. Each is silent/no-op in projects that don't use the
 methodology.
@@ -178,8 +180,17 @@ context/
 ```
 
 Plus `CLAUDE.md` (or `AGENTS.md`) at the project root — the entry point the agent reads
-first, every session. Optional additions: `context/specs/` (build plan + per-unit specs)
-and `context/decisions.md` (ADR log).
+first, every session. Optional additions: `context/specs/` (build plan + per-unit specs),
+`context/decisions.md` (ADR log), `context/specs/archived/` (specs of completed units,
+moved there automatically when a unit closes), and `context/progress-archive.md`
+(rotated tracker history — written automatically, never auto-read).
+
+To keep the recurring read cost low, `progress-tracker.md` holds an **active window**
+only: current phase/goal, In Progress, Next Up, Open Questions, the ~10 most recent
+Completed units, and the ~8 most recent Session Notes. When it grows past that window
+(or ~6 KB), the close step of `forge-build` / `forge-build-all` / `forge-pr` rotates the
+oldest entries into `progress-archive.md`. `forge-audit` also measures every context
+file against a soft token budget and recommends trimming when one is over.
 
 ## How it works
 
@@ -212,7 +223,7 @@ context-forge/
 ├── .claude-plugin/
 │   ├── plugin.json          # plugin manifest
 │   └── marketplace.json     # marketplace catalog (makes this repo installable)
-├── skills/                  # the context-* skills
+├── skills/                  # the forge-* skills
 │   ├── forge-init/        # + bundled templates, stack profiles, detect.sh
 │   ├── forge-spec/        # + spec template
 │   ├── forge-decision/    # + decisions (ADR) template

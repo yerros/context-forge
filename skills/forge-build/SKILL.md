@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.1.0"
+  version: "0.10.1"
 ---
 
 # forge-build
@@ -59,28 +59,13 @@ If something built doesn't match the spec, correct it precisely:
 
 ### 5. Close
 
-Only when every verification item passes:
+Only when every verification item passes, run the close-unit procedure in
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md`: update and (if
+needed) rotate the tracker, archive the spec to `context/specs/archived/`, tidy the
+build plan, and sync any changed context files.
 
-- Update `context/progress-tracker.md`: move the unit to "Completed", set the next unit
-  as "Next Up", and add a **one- to two-line** Session Note (what shipped + any decision).
-  Keep notes terse — this file is read on every resume/build, so every line costs tokens.
-- **Rotate the tracker if it has grown.** The tracker holds an *active window* only:
-  current phase/goal, In Progress, Next Up, Open Questions, the ~10 most recent Completed
-  units, and the ~8 most recent Session Notes. When closing pushes it past that window (or
-  past ~6 KB / ~1,500 tokens), move the oldest Completed entries and Session Notes into
-  `context/progress-archive.md` (create it if absent; append newest-first). The archive is
-  history — it is NOT read on resume/build, so rotating it out is a pure token saving with
-  no loss of active context.
-- **Archive the spec.** Move `context/specs/NN-feature-name.md` into
-  `context/specs/archived/` (create the folder if it doesn't exist). The active
-  `context/specs/` folder should now contain only specs for units still pending.
-- **Tidy the build plan.** In `context/specs/00-build-plan.md`, move this unit's line out
-  of the active `## Units` list into the `## Completed` section at the bottom (add the
-  date and, once shipped, the PR/branch). This keeps the active list short and current.
-- If implementation changed the architecture, scope, or standards, update the relevant
-  context file (`architecture.md` / `code-standards.md` / `project-overview.md`).
-- Tell the user the unit is complete and verified, and suggest the suggested git step:
-  `push branch feat/NN-feature-name`.
+Then tell the user the unit is complete and verified, and suggest shipping it with
+`forge-pr` (branch, conventional commit, and PR).
 
 ## Hard rules
 

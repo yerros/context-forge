@@ -7,15 +7,22 @@
 set -u
 input=$(cat)
 
-# Extract the file_path string value (single-line JSON token; safe even if the
-# JSON is multi-line or contains a large "content" field).
+# Extract the file_path (or notebook_path) string value (single-line JSON token;
+# safe even if the JSON is multi-line or contains a large "content" field).
 fp=$(printf '%s' "$input" \
-  | grep -oE '"file_path"[[:space:]]*:[[:space:]]*"[^"]*"' \
+  | grep -oE '"(file_path|notebook_path)"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | head -1 \
-  | sed -E 's/^"file_path"[[:space:]]*:[[:space:]]*"(.*)"$/\1/')
+  | sed -E 's/^"(file_path|notebook_path)"[[:space:]]*:[[:space:]]*"(.*)"$/\2/')
 
 # Not a path-bearing tool (e.g. no file_path) -> allow.
 [ -z "$fp" ] && exit 0
+
+# Tool paths are often absolute; user globs are usually project-relative.
+# Derive the project-relative form so both spellings match.
+rel=$fp
+case "$fp" in
+  "$PWD"/*) rel=${fp#"$PWD"/} ;;
+esac
 
 deny() {
   # Fixed, pre-escaped reason string -> always valid JSON.
@@ -32,16 +39,18 @@ case "$fp" in
 esac
 
 # User-configured protected globs: one glob per line in context/protected-paths
-# (lines starting with # are comments). Matches against the path or its basename.
+# (lines starting with # are comments). Matches against the absolute path, the
+# project-relative path, or the basename — so relative globs like src/generated/*
+# still match when the tool sends an absolute path.
 if [ -f context/protected-paths ]; then
   base=${fp##*/}
   while IFS= read -r pat || [ -n "$pat" ]; do
     [ -z "$pat" ] && continue
     case "$pat" in \#*) continue ;; esac
-    # shellcheck disable=SC2254
-    case "$fp" in $pat) deny "context-forge: this file matches a protected path in context/protected-paths." ;; esac
-    # shellcheck disable=SC2254
-    case "$base" in $pat) deny "context-forge: this file matches a protected path in context/protected-paths." ;; esac
+    for candidate in "$fp" "$rel" "$base"; do
+      # shellcheck disable=SC2254
+      case "$candidate" in $pat) deny "context-forge: this file matches a protected path in context/protected-paths." ;; esac
+    done
   done < context/protected-paths
 fi
 

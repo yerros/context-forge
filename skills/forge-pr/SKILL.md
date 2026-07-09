@@ -6,7 +6,7 @@ description: >
   unit", "commit and push", or "close unit NN". It creates the branch, makes a
   conventional commit, and opens a pull request with a spec-derived summary.
 metadata:
-  version: "0.1.0"
+  version: "0.10.1"
 ---
 
 # forge-pr
@@ -69,16 +69,13 @@ Spec: context/specs/NN-feature-name.md
 ### 4. Record
 
 Note in `progress-tracker.md` that the unit was shipped (branch/PR link), and set the
-next unit as "Next Up". Keep the note to one or two lines, and if the tracker has grown
-past its active window (~10 recent Completed, ~8 recent Session Notes, or ~6 KB), rotate
-the oldest entries into `context/progress-archive.md` (history; never auto-read) so the
-tracker stays lean.
-
-Then make sure the unit is archived (it may already be, if it was closed via
-`forge-build`): its spec should sit in `context/specs/archived/NN-feature-name.md`, and
-its line in `context/specs/00-build-plan.md` should be in the `## Completed` section
-with the PR/branch noted. If either is still in the active list, move it now. Commit
-these doc moves together with — or right after — the unit's PR so git history matches.
+next unit as "Next Up". Then make sure the close-unit procedure in
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md` has fully run for
+this unit (it may already have, if it was closed via `forge-build`): tracker rotated if
+past its active window, spec in `context/specs/archived/`, and its build-plan line in
+the `## Completed` section with the PR/branch noted. If anything is still in the active
+list, move it now. Commit these doc moves together with — or right after — the unit's
+PR so git history matches.
 
 ## Rules
 
