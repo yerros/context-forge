@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.10.1"
+  version: "0.11.0"
 ---
 
 # forge-verify

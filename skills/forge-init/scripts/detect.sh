@@ -52,6 +52,7 @@ for f in $SIX; do
 done
 
 # --- optional pieces ---
+digest="no"; [ -f "$CTX/context-digest.md" ] && digest="yes"
 decisions="no"; [ -f "$CTX/decisions.md" ] && decisions="yes"
 specs_dir="no"; [ -d "$CTX/specs" ] && specs_dir="yes"
 build_plan="no"; [ -f "$CTX/specs/00-build-plan.md" ] && build_plan="yes"
@@ -92,6 +93,7 @@ say "entry_point: $ENTRY"
 say "entry_links_context: $entry_links_context"
 say "unfilled_placeholders_total: $placeholder_total"
 say "placeholders_by_file:$placeholder_detail"
+say "digest: $digest"
 say "decisions_md: $decisions"
 say "specs_dir: $specs_dir"
 say "build_plan: $build_plan"

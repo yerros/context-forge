@@ -3,6 +3,43 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] — 2026-07-10
+
+### Added (token economy — tiered context loading)
+- **`context/context-digest.md`** — a compact (~2.5 KB / ~600 token) brief of the whole
+  context set: project one-liner, stack shape, top invariants, key conventions, current
+  state, and a tier map. Created by `forge-init` (new template bundled), refreshed in its
+  State section at every unit close (new step in the shared close-unit procedure), and
+  checked for staleness by `forge-audit`.
+- **Tiered loading** across the whole plugin. Tier 1 (always): entry point + digest +,
+  when implementing, the tracker. Tier 2 (per task): only the full context file(s) the
+  task touches. Tier 3 (everything): `forge-init` / `forge-audit` / `forge-compact`.
+  Canonical definition in `skills/forge-resume/references/token-economy.md`; the entry
+  point templates (`CLAUDE.md`/`AGENTS.md`), `forge-resume`, `forge-build`, and
+  `forge-build-all` now load by tier instead of reading all six files. Guiding rule:
+  *never guess to save tokens* — if a decision depends on an unread file, read it first.
+- **`forge-compact`** (new, 13th skill) — guided token-maintenance pass: measures every
+  context file against its soft budget, compresses over-budget files with per-file
+  approval (rewrites for density, never drops facts), rotates tracker history, moves
+  rarely-needed detail into on-demand `context/reference/` files, and (re)generates the
+  digest. For pre-digest projects, generating the digest is the single biggest saving.
+- **`SessionStart` hook now injects the digest** (with tiered-loading instructions)
+  instead of the full tracker, falling back to the old tracker injection for projects
+  that predate the digest. Still a zero-token command hook.
+- **Budget guard in the `Stop` hook** — `track.sh` now also lists any context file over
+  its soft budget in `context/.last-session.md`, with the recommended fix. Deterministic
+  `wc -c` check; costs nothing until read.
+- `detect.sh` reports `digest: yes|no` so `forge-init` / `forge-audit` / `forge-resume`
+  can see at a glance whether the project has a digest.
+
+### Changed
+- **Unit rules deduplicated**: what a good unit is + ordering rules now live once in
+  `skills/forge-spec/references/unit-rules.md`; `forge-spec` and `forge-feature`
+  reference it instead of carrying diverging copies.
+- `forge-audit`'s budget section now defers to the canonical budgets in
+  `token-economy.md` and gained a digest-staleness check.
+- Skill `metadata.version` values bumped to 0.11.0.
+
 ## [0.10.1] — 2026-07-10
 
 ### Fixed

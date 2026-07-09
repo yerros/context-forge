@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.10.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.11.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -59,10 +59,12 @@ before it writes anything, and a living tracker that restores full context in on
 - **Spec-driven build loop** — plan, build, verify, and ship one scoped unit at a time.
 - **Self-maintaining docs** — hooks keep the progress tracker in sync and guard your
   architectural invariants on every edit.
-- **Token-efficient by design** — the progress tracker keeps only an *active window*
-  (older Completed entries and Session Notes rotate into `context/progress-archive.md`),
-  completed specs are archived into `context/specs/archived/`, and `forge-audit` checks
-  every context file against a soft token budget.
+- **Token-efficient by design** — a compact `context-digest.md` (~600 tokens) is what
+  every session loads by default; the full files are read **per task, by tier**, not
+  wholesale. The tracker keeps only an *active window* (older history rotates into
+  `context/progress-archive.md`), completed specs are archived into
+  `context/specs/archived/`, `forge-audit` checks every file against a soft token
+  budget, and `forge-compact` brings an over-budget project back under it.
 - **Zero configuration** — no credentials or setup; templates ship inside the plugin.
 
 ## Installation
@@ -121,9 +123,10 @@ From inside any project you want to manage:
 /forge-pr          # ship it: branch, conventional commit, pull request
 ```
 
-In later sessions, `/forge-resume` restores full context (the `SessionStart` hook also
-does this automatically). As the project grows, reach for `/forge-feature`,
-`/forge-debug`, `/forge-decision`, and `/forge-audit`.
+In later sessions, `/forge-resume` restores context tier by tier (the `SessionStart`
+hook already injects the compact digest automatically). As the project grows, reach
+for `/forge-feature`, `/forge-debug`, `/forge-decision`, `/forge-audit`, and — when
+the context files get heavy — `/forge-compact`.
 
 > Skills are namespaced by the plugin. If a bare name is ambiguous, use the fully
 > qualified form, e.g. `/context-forge:forge-init`.
@@ -142,8 +145,9 @@ does this automatically). As the project grows, reach for `/forge-feature`,
 | `forge-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
 | `forge-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
 | `forge-decision` | Logs an Architecture Decision Record (ADR) to `context/decisions.md` and keeps `architecture.md` in sync. |
-| `forge-audit` | Detects drift between the context files and the actual codebase and offers to update the docs. |
-| `forge-resume` | Reloads the context files + progress tracker at the start of a session and briefs you on where things stand. |
+| `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers to update the docs. |
+| `forge-resume` | Restores context tier by tier at the start of a session (digest + tracker first, full files per task) and briefs you on where things stand. |
+| `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses over-budget files with approval, rotates tracker history, and (re)generates `context-digest.md`. |
 
 ## Hooks
 
@@ -155,9 +159,9 @@ methodology.
 
 | Hook | What it does |
 | ---- | ------------ |
-| `SessionStart` | If the project has a `context/` folder, injects the current `progress-tracker.md` and a reminder to read the context files first. |
+| `SessionStart` | Injects the compact `context-digest.md` (~600 tokens) with tiered-loading instructions; falls back to the full `progress-tracker.md` in projects that predate the digest. |
 | `PreToolUse` (Write/Edit) | Deterministic guard: denies edits to generated/lock/vendor files and to any glob listed in `context/protected-paths`. Allows everything else. |
-| `Stop` | If code changed (per git) without the tracker being updated, writes `context/.last-session.md` with a timestamp and the changed-file list. Never re-wakes the model. |
+| `Stop` | If code changed (per git) without the tracker being updated, writes `context/.last-session.md` with a timestamp, the changed-file list, and any context files over their token budget. Never re-wakes the model. |
 
 > **Token cost:** because all hooks are command scripts, they don't consume model tokens.
 > Nuanced/semantic invariant checking lives in `forge-verify` (run per unit) rather than
@@ -180,17 +184,34 @@ context/
 ```
 
 Plus `CLAUDE.md` (or `AGENTS.md`) at the project root — the entry point the agent reads
-first, every session. Optional additions: `context/specs/` (build plan + per-unit specs),
+first, every session — and `context/context-digest.md`, the compact brief that powers
+tiered loading. Optional additions: `context/specs/` (build plan + per-unit specs),
 `context/decisions.md` (ADR log), `context/specs/archived/` (specs of completed units,
 moved there automatically when a unit closes), and `context/progress-archive.md`
 (rotated tracker history — written automatically, never auto-read).
 
-To keep the recurring read cost low, `progress-tracker.md` holds an **active window**
-only: current phase/goal, In Progress, Next Up, Open Questions, the ~10 most recent
-Completed units, and the ~8 most recent Session Notes. When it grows past that window
-(or ~6 KB), the close step of `forge-build` / `forge-build-all` / `forge-pr` rotates the
-oldest entries into `progress-archive.md`. `forge-audit` also measures every context
-file against a soft token budget and recommends trimming when one is over.
+### Token economy (tiered loading)
+
+Reading all six files every session is the methodology's main token cost, so
+context-forge loads by tier instead:
+
+- **Tier 1 — always:** the entry point + `context-digest.md` (~600 tokens: project
+  one-liner, stack shape, top invariants, current state, and a tier map). The
+  `SessionStart` hook injects it automatically. When implementation starts, the live
+  `progress-tracker.md` is read too.
+- **Tier 2 — per task:** only the full file(s) the task touches — `ui-context.md`
+  for UI work, `architecture.md` for boundary/storage/dependency decisions, and so
+  on. The rule is *never guess to save tokens*: reading a file is always cheaper
+  than a wrong implementation.
+- **Tier 3 — everything:** reserved for `forge-init`, `forge-audit`, and
+  `forge-compact`.
+
+The digest is generated by `forge-init`, refreshed at every unit close, and checked
+by `forge-audit`. `progress-tracker.md` holds an **active window** only (~10 recent
+Completed units, ~8 recent Session Notes, ~6 KB); older history rotates into
+`progress-archive.md` at close. The `Stop` hook flags any file over its soft budget
+in `context/.last-session.md`, and `forge-compact` is the guided pass that brings
+everything back under budget.
 
 ## How it works
 

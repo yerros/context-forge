@@ -35,6 +35,11 @@ newest-first, **never auto-read** on resume/build.
 5. **Sync the context files.** If implementation changed the architecture, scope,
    or standards, update the relevant file (`architecture.md` / `code-standards.md`
    / `project-overview.md`) before continuing.
+6. **Refresh the digest.** In `context/context-digest.md` (if the project has one),
+   update the **State** section (phase, last completed, next up) — a three-line
+   edit. If step 5 changed what the digest summarizes (stack, invariants, key
+   conventions), update those digest lines too, keeping it within its ~2.5 KB
+   budget.
 
 ## Shipping
 

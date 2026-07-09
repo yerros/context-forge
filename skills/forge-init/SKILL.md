@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.10.1"
+  version: "0.11.0"
 ---
 
 # forge-init
@@ -172,6 +172,16 @@ the files from their answers.
 4. Leave `progress-tracker.md` mostly empty for greenfield (just Current Phase +
    Next Up). For brownfield, seed "Completed" with what already exists and "Current
    Phase" with the real state.
+5. **Generate the digest.** Copy the template from
+   `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/context/context-digest.md` to
+   `context/context-digest.md` and fill it from the six files you just wrote:
+   project one-liner, stack shape, the top invariants, the few conventions that
+   matter most, and the current state. Keep it within ~2.5 KB / ~600 tokens — this
+   file is injected every session by the `SessionStart` hook and is Tier 1 of the
+   tiered loading system (see
+   `${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md`). In the
+   Adopt & reconcile flow, offer to create the digest if it's missing — it's the
+   single highest-value token saving for an existing project.
 
 ### Per-file quality bars
 

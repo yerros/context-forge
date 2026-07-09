@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.10.1"
+  version: "0.11.0"
 ---
 
 # forge-build-all
@@ -24,8 +24,11 @@ first failure** rather than barreling ahead on a broken foundation.
 
 - The project is set up (run the detector via `forge-init` if unsure) and has a build
   plan at `context/specs/00-build-plan.md`.
-- Read the entry point, `architecture.md` (invariants), `code-standards.md`,
-  `ui-context.md`, and `progress-tracker.md` once at the start for shared context.
+- Read once at the start for shared context: the entry point,
+  `context/context-digest.md` (fall back to `architecture.md` if absent),
+  `code-standards.md`, and `progress-tracker.md`. Because this run spans many units,
+  also read `architecture.md` in full before starting. Read `ui-context.md` when the
+  first UI unit comes up — not before.
 
 If there is no build plan, stop and tell the user to run `forge-spec` first.
 

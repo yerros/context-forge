@@ -1,20 +1,31 @@
 ## Application Building Context
 
-Read the following files in order before implementing
-or making any architectural decision:
+This project uses **tiered context loading** to stay
+token-efficient. Do not read all context files by
+default — read by tier:
 
-1. `context/project-overview.md` — product definition,
-   goals, features, and scope
-2. `context/architecture.md` — system structure,
-   boundaries, storage model, and invariants
-3. `context/ui-context.md` — theme, colors, typography,
-   and component conventions
-4. `context/code-standards.md` — implementation rules
-   and conventions
-5. `context/ai-workflow-rules.md` — development workflow,
-   scoping rules, and delivery approach
-6. `context/progress-tracker.md` — current phase,
-   completed work, open questions, and next steps
+**Tier 1 — always:** `context/context-digest.md` (compact
+brief: project, stack, top invariants, state, tier map).
+When starting implementation work, also read
+`context/progress-tracker.md` for live state.
+
+**Tier 2 — read the file(s) the task touches:**
+
+1. `context/project-overview.md` — scope, features,
+   product questions
+2. `context/architecture.md` — boundaries, storage,
+   dependencies, invariants (read before any
+   architectural decision)
+3. `context/ui-context.md` — UI, styling, components
+4. `context/code-standards.md` — when writing code
+5. `context/ai-workflow-rules.md` — workflow and
+   scoping questions
+6. `context/specs/NN-*.md` — when building that unit
+
+**Never guess to save tokens** — if a decision depends
+on a file you have not read, read it first. The full
+files are the source of truth; the digest only
+summarizes them.
 
 Update `context/progress-tracker.md` after each
 meaningful implementation change. Keep it lean (active
@@ -24,5 +35,6 @@ window only); older history is rotated into
 unless you specifically need past history.
 
 If implementation changes the architecture, scope, or
-standards documented in the context files, update the
-relevant file before continuing.
+standards, update the relevant context file — and the
+digest, if it affects what the digest summarizes —
+before continuing.

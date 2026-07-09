@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f context/progress-tracker.md ]; then printf '%s\\n' '[Six-File Context] This project uses the Six-File Context Methodology. Before implementing or making any architectural decision, read the entry point (CLAUDE.md or AGENTS.md) and the files in context/ in order. Honor the invariants in context/architecture.md and the rules in context/ai-workflow-rules.md. Current project state from context/progress-tracker.md:'; cat context/progress-tracker.md; fi",
+            "command": "if [ -f context/context-digest.md ]; then printf '%s\\n' '[Six-File Context] This project uses the Six-File Context Methodology with tiered context loading. The compact digest below is Tier 1 — always in effect. Read further context files ONLY as the task requires (see the tier map at the bottom of the digest); when starting implementation work, also read context/progress-tracker.md for live state. Never guess: if a decision depends on a file you have not read, read it first. Digest:'; cat context/context-digest.md; elif [ -f context/progress-tracker.md ]; then printf '%s\\n' '[Six-File Context] This project uses the Six-File Context Methodology. Before implementing or making any architectural decision, read the entry point (CLAUDE.md or AGENTS.md) and the files in context/ in order. Honor the invariants in context/architecture.md and the rules in context/ai-workflow-rules.md. Current project state from context/progress-tracker.md:'; cat context/progress-tracker.md; fi",
             "timeout": 10
           }
         ]

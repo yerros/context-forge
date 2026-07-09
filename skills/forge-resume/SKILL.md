@@ -4,16 +4,19 @@ description: >
   This skill should be used at the start of a work session on a project that uses the
   Six-File Context Methodology — phrases like "forge-resume", "resume the project",
   "where did we leave off", "pick up where we stopped", "restore context", or "read
-  the context files and continue". It reloads full project context from the six files
-  and the progress tracker so work continues without drift.
+  the context files and continue". It restores project context tier by tier (digest
+  and tracker first, full files only as the task requires) so work continues without
+  drift and without burning tokens.
 metadata:
-  version: "0.10.1"
+  version: "0.11.0"
 ---
 
 # forge-resume
 
-Restore full project context in one step and continue the build without re-explaining
-the project. This solves the "AI has no memory between sessions" problem.
+Restore project context in one step and continue the build without re-explaining the
+project. This solves the "AI has no memory between sessions" problem — without paying
+for context the session doesn't need. Loading follows the tier system defined in
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md`.
 
 ## What to do
 
@@ -27,21 +30,26 @@ the project. This solves the "AI has no memory between sessions" problem.
    `REPAIR` (incomplete), mention which files are missing and suggest `forge-init`'s
    reconcile flow, then resume with what exists.
 
-1. Read the entry point (`CLAUDE.md` or `AGENTS.md`) at the project root, then read the
-   six files **in order**:
-   1. `context/project-overview.md`
-   2. `context/architecture.md`
-   3. `context/ui-context.md`
-   4. `context/code-standards.md`
-   5. `context/ai-workflow-rules.md`
-   6. `context/progress-tracker.md`
+1. **Tier 1 — always.** Read the entry point (`CLAUDE.md` or `AGENTS.md`), then
+   `context/context-digest.md` (if present), then `context/progress-tracker.md` —
+   stable files first, the volatile tracker last, so the unchanged prefix stays
+   prompt-cache-friendly across sessions.
+
+   If there is **no digest** (project pre-dates it), fall back to reading the six
+   files in full, in order: project-overview, architecture, ui-context,
+   code-standards, ai-workflow-rules, progress-tracker — and suggest generating a
+   digest with `forge-compact` so future resumes are cheaper.
 
    If `context/` doesn't exist, tell the user and suggest running `forge-init` first.
 
-   Read the six files in this order on purpose: the stable files first and the volatile
-   `progress-tracker.md` last, so the unchanged prefix stays prompt-cache-friendly across
-   sessions. Do **not** read `context/progress-archive.md` — it is rotated-out history, not
-   active context; open it only if the user explicitly asks about past work.
+   **Tier 2 — per task.** Do NOT read the remaining context files now. Once the next
+   task is known (step 4), read only the file(s) that task touches, per the tier map
+   in the digest / token-economy.md. Never guess: if a decision depends on a file you
+   haven't read, read it first.
+
+   Do **not** read `context/progress-archive.md` or `context/specs/archived/` — that
+   is rotated-out history, not active context; open it only if the user explicitly
+   asks about past work.
 
 2. From `progress-tracker.md`, extract: current phase, current goal, what's completed,
    what's in progress, what's next up, and any open questions or recent architecture

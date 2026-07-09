@@ -7,7 +7,7 @@ description: >
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
 metadata:
-  version: "0.10.1"
+  version: "0.11.0"
 ---
 
 # forge-audit
@@ -68,31 +68,29 @@ NOT trust the docs — verify against the code.
   active `## Units` list or loose in `context/specs/`. Flag completed units whose spec is
   still active (not archived), and pending units whose spec was archived too early.
 
+### context-digest.md (Tier 1 accuracy)
+
+The digest is injected every session by the `SessionStart` hook, so a stale digest
+misleads every session:
+
+- If the detector reports `digest: no`, flag it and recommend generating one with
+  `forge-compact` — it's the biggest per-session token saving available.
+- If present, check it against the files it summarizes: does the State section match
+  the tracker? Do the top invariants still match `architecture.md`? Is it within its
+  ~2.5 KB budget? Flag any disagreement — the full file wins, and the digest should
+  be regenerated.
+
 ### context budget (token cost)
 
-The six files (plus the entry point) are re-read on every `forge-resume` / `forge-build`,
-so their size is a recurring token cost. Measure it and flag bloat:
-
-```bash
-for f in CLAUDE.md AGENTS.md context/*.md; do
-  [ -f "$f" ] && printf '%-34s %6s bytes  ~%5s tok\n' "$f" "$(wc -c <"$f")" "$(( $(wc -c <"$f") / 4 ))"
-done
-```
-
-Soft budgets (warn when exceeded):
-
-- `progress-tracker.md` — **~6 KB / ~1,500 tokens.** This is the most common offender: it
-  grows every unit. Over budget ⇒ recommend rotating old Completed entries and Session
-  Notes into `context/progress-archive.md` (history, never auto-read).
-- `architecture.md`, `ui-context.md`, `code-standards.md`, `project-overview.md`,
-  `ai-workflow-rules.md` — **~10 KB / ~2,500 tokens** each. Over budget ⇒ recommend
-  tightening prose, removing examples, or splitting detail into an on-demand reference
-  file.
-- Entry point (`CLAUDE.md`/`AGENTS.md`) — keep lean; large embedded tables/reference
-  blocks belong in a separate file that's read only when needed.
-
-Report each file's size, whether it's within budget, and the recommended trim/rotate when
-it isn't. Rotating completed history is a pure token saving with no loss of active context.
+The Tier 1 files are re-read every session and the others per task, so their size is
+a recurring token cost. Measure each file (bytes / ~tokens) and compare against the
+canonical soft budgets in
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md` (which also
+contains the measurement snippet). Report each file's size, whether it's within
+budget, and the recommended fix when it isn't (rotate the tracker, regenerate the
+digest, tighten or split core files) — or a single `forge-compact` run for a guided
+pass. Rotating completed history is a pure token saving with no loss of active
+context.
 
 ## Output
 

@@ -7,7 +7,7 @@ description: >
   updates scope in project-overview.md, inserts correctly-ordered units into the build
   plan, and generates the spec(s) — without breaking existing work.
 metadata:
-  version: "0.10.1"
+  version: "0.11.0"
 ---
 
 # forge-feature
@@ -39,12 +39,11 @@ new storage), update `architecture.md` too — and log the decision via `forge-d
 
 ### 4. Decompose into units and place them in order
 
-Break the feature into units following the methodology's rules (one visible result, one
-system boundary, dependencies first, security before functionality, backend before
-frontend wiring, UI shells before real data). Insert them into
-`context/specs/00-build-plan.md` at the correct position relative to existing units —
-do not just append if the feature depends on or is depended on by existing work.
-Renumber if necessary and note the renumbering.
+Break the feature into units following the shared rules in
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/references/unit-rules.md` (good-unit rules,
+ordering rules, and how to insert into an existing plan without breaking
+dependencies). Read that file before decomposing, then insert the new units into
+`context/specs/00-build-plan.md` at the correct position.
 
 ### 5. Generate the spec(s)
 

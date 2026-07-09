@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.10.1"
+  version: "0.11.0"
 ---
 
 # forge-build
@@ -27,11 +27,17 @@ unit. Confirm the target unit with the user before starting.
 
 ## The loop
 
-### 1. Load
+### 1. Load (tiered — don't read what the unit doesn't touch)
 
-Read, in order: the entry point, `context/architecture.md` (invariants),
-`context/code-standards.md`, `context/ui-context.md`, and the unit's spec file. The
-spec is the source of truth for what to build.
+Read, in order: the entry point, `context/context-digest.md` (project brief + top
+invariants; fall back to `context/architecture.md` if there is no digest), and the
+unit's spec file. The spec is the source of truth for what to build.
+
+Then read only the full context files this unit touches: `context/code-standards.md`
+when writing code (nearly always), `context/ui-context.md` for UI work, and the full
+`context/architecture.md` when the unit touches boundaries, storage, or dependencies.
+Never guess — if the spec references something you haven't read, read that file first.
+(Tier definitions: `${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md`.)
 
 ### 2. Mark in progress
 
