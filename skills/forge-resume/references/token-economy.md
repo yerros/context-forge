@@ -36,6 +36,7 @@ digest should be regenerated.
 
   | Task involves | Read |
   | --- | --- |
+  | building or debugging | `context/lessons.md` first (tiny — known mistakes & rules) |
   | UI, styling, components | `context/ui-context.md` |
   | architecture, boundaries, storage, new dependencies | `context/architecture.md` |
   | writing/reviewing code | `context/code-standards.md` |
@@ -55,6 +56,7 @@ unchanged prefix stays cacheable across sessions.
 | File | Budget |
 | --- | --- |
 | `context/context-digest.md` | ~2.5 KB / ~600 tokens |
+| `context/lessons.md` | ~1.5 KB / ~400 tokens (memory contract: forge-lesson's memory.md) |
 | `context/progress-tracker.md` | ~6 KB / ~1,500 tokens (active window; see close-unit.md) |
 | `architecture.md`, `ui-context.md`, `code-standards.md`, `project-overview.md`, `ai-workflow-rules.md` | ~10 KB / ~2,500 tokens each |
 | Entry point (`CLAUDE.md`/`AGENTS.md`) | keep lean; big tables/reference blocks go in on-demand files |

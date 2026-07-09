@@ -22,18 +22,19 @@ changed=$(git status --porcelain -uall 2>/dev/null \
 # Soft budgets in bytes (canonical values: token-economy.md; tokens ≈ bytes/4).
 # Output lines only for files that are OVER budget.
 budget_report=""
-check_budget() { # $1=file $2=budget_bytes $3=fix hint
+check_budget() { # $1=file $2=budget_bytes $3=budget label $4=fix hint
   [ -f "$1" ] || return 0
   size=$(wc -c <"$1" | tr -d ' ')
   if [ "$size" -gt "$2" ]; then
-    budget_report="${budget_report}- $1 is ${size} bytes (~$((size / 4)) tokens), over its ~$(($2 / 1024)) KB budget — $3
+    budget_report="${budget_report}- $1 is ${size} bytes (~$((size / 4)) tokens), over its ~$3 budget — $4
 "
   fi
 }
-check_budget "context/progress-tracker.md" 6144  "rotate old entries into context/progress-archive.md (or run forge-compact)"
-check_budget "context/context-digest.md"   2560  "regenerate a tighter digest (or run forge-compact)"
+check_budget "context/progress-tracker.md" 6144  "6 KB"   "rotate old entries into context/progress-archive.md (or run forge-compact)"
+check_budget "context/context-digest.md"   2560  "2.5 KB" "regenerate a tighter digest (or run forge-compact)"
+check_budget "context/lessons.md"          1536  "1.5 KB" "merge/promote lessons via forge-lesson (or run forge-compact)"
 for f in architecture ui-context code-standards project-overview ai-workflow-rules; do
-  check_budget "context/$f.md" 10240 "tighten prose or split detail into an on-demand reference file (or run forge-compact)"
+  check_budget "context/$f.md" 10240 "10 KB" "tighten prose or split detail into an on-demand reference file (or run forge-compact)"
 done
 
 {

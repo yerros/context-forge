@@ -20,7 +20,9 @@ When starting implementation work, also read
 4. `context/code-standards.md` — when writing code
 5. `context/ai-workflow-rules.md` — workflow and
    scoping questions
-6. `context/specs/NN-*.md` — when building that unit
+6. `context/lessons.md` — when building or debugging
+   (known mistakes and their rules; keep it in mind)
+7. `context/specs/NN-*.md` — when building that unit
 
 **Never guess to save tokens** — if a decision depends
 on a file you have not read, read it first. The full

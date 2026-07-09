@@ -8,7 +8,7 @@ description: >
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
 ---
 
 # forge-spec

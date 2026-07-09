@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.11.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.12.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -65,6 +65,12 @@ before it writes anything, and a living tracker that restores full context in on
   `context/progress-archive.md`), completed specs are archived into
   `context/specs/archived/`, `forge-audit` checks every file against a soft token
   budget, and `forge-compact` brings an over-budget project back under it.
+- **Persistent memory, the plain-text way** — corrections and hard-won diagnoses are
+  distilled into one-line lessons in `context/lessons.md` (auto-captured by
+  `forge-debug` and the build loop, managed with `forge-lesson`), and cross-project
+  preferences in `~/.context-forge/preferences.md` stop `forge-init` from re-asking
+  the same questions in every project. No vector store, no external services — just
+  budgeted markdown in git.
 - **Zero configuration** — no credentials or setup; templates ship inside the plugin.
 
 ## Installation
@@ -148,6 +154,7 @@ the context files get heavy — `/forge-compact`.
 | `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers to update the docs. |
 | `forge-resume` | Restores context tier by tier at the start of a session (digest + tracker first, full files per task) and briefs you on where things stand. |
 | `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses over-budget files with approval, rotates tracker history, and (re)generates `context-digest.md`. |
+| `forge-lesson` | Saves a correction or diagnosis as a one-line lesson in `context/lessons.md` (or a cross-project preference in `~/.context-forge/preferences.md`, with approval), keeps memory within budget, and promotes recurring lessons into the real context files. |
 
 ## Hooks
 
@@ -212,6 +219,25 @@ Completed units, ~8 recent Session Notes, ~6 KB); older history rotates into
 `progress-archive.md` at close. The `Stop` hook flags any file over its soft budget
 in `context/.last-session.md`, and `forge-compact` is the guided pass that brings
 everything back under budget.
+
+### Persistent memory
+
+Two thin, budgeted memory layers turn one-time corrections into permanent rules —
+the cheapest token saving there is, because a remembered lesson never has to be
+re-debugged:
+
+- **`context/lessons.md`** (per project, ~1.5 KB) — one line per lesson:
+  `- [area] symptom → rule`. Auto-captured when `forge-debug` confirms a root cause
+  worth remembering or when a unit close notes a generalizable correction; read by
+  `forge-build`/`forge-debug` at load time. When full, lessons are merged or
+  **promoted** into `code-standards.md`/`ai-workflow-rules.md` — the lessons file is
+  a staging area for rules, not a landfill.
+- **`~/.context-forge/preferences.md`** (cross-project, ~2 KB) — tooling and
+  convention defaults read only by `forge-init` to pre-fill new projects. Written
+  only with explicit approval; project evidence always wins over a preference.
+
+Manage both with `/forge-lesson` ("remember this", "forget that", "show my
+lessons"). Every memory write is shown to you first.
 
 ## How it works
 

@@ -9,8 +9,8 @@
     {
       "name": "context-forge",
       "source": "./",
-      "description": "Set up and maintain the Six-File Context Methodology in any project: initialize context files, refine prompts, plan and build features, verify, debug, log decisions, audit for drift, and resume — with lightweight, token-free command hooks that auto-load context, record activity, and guard generated/protected files.",
-      "version": "0.11.0",
+      "description": "Set up and maintain the Six-File Context Methodology in any project: initialize context files, refine prompts, plan and build features, verify, debug, log decisions and lessons, audit for drift, compact for token budget, and resume via tiered context loading — with persistent memory and lightweight, token-free command hooks that auto-load the digest, record activity, flag budget overruns, and guard generated/protected files.",
+      "version": "0.12.0",
       "author": {
         "name": "yerros",
         "url": "https://github.com/yerros"

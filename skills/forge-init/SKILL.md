@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
 ---
 
 # forge-init
@@ -43,6 +43,19 @@ hand:
   the methodology). → go to the **Adopt & reconcile** flow. **Do not regenerate.**
 - **`REPAIR`** — `context/` exists but is incomplete or still mostly blank template. →
   go to the **Adopt & reconcile** flow and fill the gaps.
+
+### Global preferences (both SETUP and reconcile)
+
+If `~/.context-forge/preferences.md` exists, read it now — it holds the user's
+cross-project defaults (tooling, conventions, workflow) and pre-fills answers so you
+ask less and guess less. Say when you apply one ("using pnpm per your saved
+preferences") so the user can override. Project evidence always wins over a global
+preference on brownfield. Contract:
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md`.
+
+At the end of a run, if the conversation surfaced clearly cross-project preferences
+that aren't saved yet, offer (never force) to append them to
+`~/.context-forge/preferences.md` — one line each, shown before writing.
 
 ### Mode + Profile (only when verdict is SETUP)
 
@@ -182,6 +195,11 @@ the files from their answers.
    `${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md`). In the
    Adopt & reconcile flow, offer to create the digest if it's missing — it's the
    single highest-value token saving for an existing project.
+6. **Seed the lessons file.** Copy
+   `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/context/lessons.md` to
+   `context/lessons.md` (empty apart from its format header). It's the project's
+   memory for corrections and diagnoses; `forge-build` / `forge-debug` read it at
+   load time and `forge-lesson` manages it.
 
 ### Per-file quality bars
 

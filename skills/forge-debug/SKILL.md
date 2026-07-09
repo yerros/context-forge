@@ -7,7 +7,7 @@ description: >
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
 ---
 
 # forge-debug
@@ -34,9 +34,11 @@ the first job is making it reproducible — not fixing it.
 
 ### 3. Re-read the context
 
-Read `context/architecture.md` (invariants), the relevant spec in `context/specs/`, and
-`context/code-standards.md`. Many "bugs" are the implementation having drifted from the
-documented system. Check whether an invariant was violated — that's often the root cause.
+Read `context/lessons.md` first (if present) — the failure may already be a known
+lesson with a known rule. Then read `context/architecture.md` (invariants), the
+relevant spec in `context/specs/`, and `context/code-standards.md`. Many "bugs" are
+the implementation having drifted from the documented system. Check whether an
+invariant was violated — that's often the root cause.
 
 ### 4. Isolate
 
@@ -61,6 +63,12 @@ re-run the reproduction and the unit's verification checklist to confirm.
 If the bug came from a wrong assumption or a missing rule, add or clarify the relevant
 rule in `code-standards.md` or `architecture.md`, and note it in `progress-tracker.md`
 so it doesn't recur. If it changed an architectural decision, log it via `forge-decision`.
+
+If the root cause is likely to recur (or cost real effort to find) but isn't a
+convention that belongs in a context file yet, distill it to **one lesson line** and
+append it to `context/lessons.md` per the memory contract in
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md` — show the user the
+line being added. Skip trivial one-off bugs.
 
 ## When the agent keeps getting it wrong
 

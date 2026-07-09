@@ -40,6 +40,12 @@ newest-first, **never auto-read** on resume/build.
    edit. If step 5 changed what the digest summarizes (stack, invariants, key
    conventions), update those digest lines too, keeping it within its ~2.5 KB
    budget.
+7. **Capture lessons.** If the user corrected the agent's approach during this unit
+   in a way that generalizes beyond it (a rejected pattern, a misunderstood
+   convention, a diagnosis that cost real effort), distill it to one line and append
+   it to `context/lessons.md` per
+   `${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md` — show the user
+   the line. Most units produce no lesson; don't force one.
 
 ## Shipping
 

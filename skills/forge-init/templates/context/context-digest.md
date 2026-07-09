@@ -48,4 +48,5 @@ Read only what the task touches; the full files are the source of truth:
 - Scope & product questions → `context/project-overview.md`
 - Workflow rules → `context/ai-workflow-rules.md`
 - Live state, open questions → `context/progress-tracker.md`
-- Building a unit → its spec in `context/specs/`
+- Building or debugging → `context/lessons.md` (known mistakes & rules), then the
+  unit's spec in `context/specs/`

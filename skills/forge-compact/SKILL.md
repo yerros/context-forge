@@ -9,7 +9,7 @@ description: >
   dropping facts), rotates tracker history, and (re)generates the compact
   context-digest.md used for tiered loading.
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
 ---
 
 # forge-compact
@@ -53,6 +53,10 @@ approves:
   summary for each file before writing.
 - **Entry point** (`CLAUDE.md`/`AGENTS.md`) — keep only the tiered-loading contract
   and pointers; move anything bulky into `context/`.
+- **`lessons.md`** — dedupe/generalize overlapping lessons, **promote** lessons that
+  have become real conventions into `code-standards.md` / `ai-workflow-rules.md` /
+  `architecture.md`, and drop lines about code that no longer exists (rules:
+  `${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md`).
 - **Specs and archives** — leave alone. `specs/archived/` and
   `progress-archive.md` are never auto-read, so they cost nothing.
 

@@ -7,7 +7,7 @@ description: >
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
 ---
 
 # forge-audit
@@ -79,6 +79,15 @@ misleads every session:
   the tracker? Do the top invariants still match `architecture.md`? Is it within its
   ~2.5 KB budget? Flag any disagreement — the full file wins, and the digest should
   be regenerated.
+
+### lessons.md (memory hygiene)
+
+If `context/lessons.md` exists: flag lessons that contradict the current context
+files (one of them is wrong — usually the lesson is stale), lessons about code that
+no longer exists, and lessons that have clearly become conventions and should be
+promoted into `code-standards.md` / `ai-workflow-rules.md` (per
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md`). Check it's within
+its ~1.5 KB budget.
 
 ### context budget (token cost)
 

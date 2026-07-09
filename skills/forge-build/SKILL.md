@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
 ---
 
 # forge-build
@@ -30,8 +30,9 @@ unit. Confirm the target unit with the user before starting.
 ### 1. Load (tiered — don't read what the unit doesn't touch)
 
 Read, in order: the entry point, `context/context-digest.md` (project brief + top
-invariants; fall back to `context/architecture.md` if there is no digest), and the
-unit's spec file. The spec is the source of truth for what to build.
+invariants; fall back to `context/architecture.md` if there is no digest),
+`context/lessons.md` (if present — small, and it prevents repeating known mistakes),
+and the unit's spec file. The spec is the source of truth for what to build.
 
 Then read only the full context files this unit touches: `context/code-standards.md`
 when writing code (nearly always), `context/ui-context.md` for UI work, and the full

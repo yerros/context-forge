@@ -3,6 +3,36 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] — 2026-07-10
+
+### Added (persistent memory)
+- **`context/lessons.md`** — per-project memory: one-line lessons
+  (`- [area] symptom → rule`) capturing corrections and hard-won diagnoses so they are
+  never re-paid in tokens. Auto-captured by `forge-debug` (step 7, when a confirmed root
+  cause is likely to recur) and by the close-unit procedure (when the user corrected the
+  approach in a generalizable way); read at load time by `forge-build`, `forge-build-all`,
+  and `forge-debug` (which now checks lessons *before* diagnosing). Budget ~1.5 KB /
+  ~400 tokens; when full, lessons are merged or **promoted** into
+  `code-standards.md`/`ai-workflow-rules.md` — the file is a staging area for rules.
+  Template bundled; created by `forge-init`; reported by `detect.sh` (`lessons: yes|no`);
+  budget-checked by the `Stop` hook, `forge-audit` (with a contradiction/staleness
+  check), and `forge-compact` (dedupe/promote/drop treatment).
+- **`~/.context-forge/preferences.md`** — cross-project memory: the user's tooling,
+  convention, and workflow defaults. Read **only** by `forge-init` to pre-fill greenfield
+  answers and brownfield drafts (project evidence always wins); written only with
+  explicit per-line approval. Never stores secrets or project-specific facts.
+- **`forge-lesson`** (new, 14th skill) — "remember this" / "forget that" / "show my
+  lessons": distills input to a one-line lesson, routes it (project vs global), dedupes,
+  enforces budgets, and promotes recurring lessons into the real context files.
+- **Memory contract** defined canonically in
+  `skills/forge-lesson/references/memory.md` (formats, budgets, read/write rules,
+  conflict order: code > context files > lessons > global preferences).
+
+### Changed
+- Tier map (digest template, `CLAUDE.md`/`AGENTS.md` templates, token-economy.md) now
+  includes `lessons.md` as a small Tier-2 read for building/debugging.
+- Skill `metadata.version` values bumped to 0.12.0.
+
 ## [0.11.0] — 2026-07-10
 
 ### Added (token economy — tiered context loading)
