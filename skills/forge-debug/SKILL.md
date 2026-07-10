@@ -7,13 +7,17 @@ description: >
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
-  version: "0.12.0"
+  version: "0.13.0"
 ---
 
 # forge-debug
 
 When the same problem resists two or more fix attempts, stop guessing. More attempts
 without a model of the failure just compounds damage. Switch to this disciplined loop.
+
+(A fresh bug report that isn't stuck yet enters through `forge-fix`, which triages
+and hands off here when the cause is non-obvious. After this loop resolves it,
+closing — tracker, lesson, `fix/` branch — follows `forge-fix` step 6.)
 
 ## Stop condition
 

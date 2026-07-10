@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.12.0"
+  version: "0.13.0"
 ---
 
 # forge-init

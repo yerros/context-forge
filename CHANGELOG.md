@@ -3,6 +3,25 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] — 2026-07-10
+
+### Added
+- **`forge-fix`** (new, 15th skill) — the intake for bug reports in shipped work,
+  closing a trigger gap: "there's a bug in X" previously matched no skill (forge-debug
+  targets being *stuck*; forge-build's correct step targets the *current* unit), so
+  fixes happened outside the methodology with no tracker update, no lesson, and no
+  scope discipline. The flow: intake (check `lessons.md` first — the bug may be a known
+  rule) → reproduce → **triage** (obvious cause & small blast radius ⇒ fix in scope;
+  non-obvious / invariant in question / two failed attempts ⇒ hand off to `forge-debug`
+  — one diagnosis engine, not two) → verify (including the touched unit's archived
+  checklist) → close with the shared close-unit discipline, a lesson when the root
+  cause generalizes, and a `fix/NN` branch via `forge-pr`. Explicit boundaries route
+  behavior-change requests to `forge-feature` and design-heavy fixes to `forge-spec`.
+- `forge-debug` now documents the handoff contract with `forge-fix` in both directions.
+
+### Changed
+- Skill `metadata.version` values bumped to 0.13.0.
+
 ## [0.12.0] — 2026-07-10
 
 ### Added (persistent memory)

@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.12.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.13.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -131,8 +131,9 @@ From inside any project you want to manage:
 
 In later sessions, `/forge-resume` restores context tier by tier (the `SessionStart`
 hook already injects the compact digest automatically). As the project grows, reach
-for `/forge-feature`, `/forge-debug`, `/forge-decision`, `/forge-audit`, and — when
-the context files get heavy — `/forge-compact`.
+for `/forge-feature`, `/forge-fix` (bug reports), `/forge-debug` (when stuck),
+`/forge-decision`, `/forge-audit`, and — when the context files get heavy —
+`/forge-compact`.
 
 > Skills are namespaced by the plugin. If a bare name is ambiguous, use the fully
 > qualified form, e.g. `/context-forge:forge-init`.
@@ -148,6 +149,7 @@ the context files get heavy — `/forge-compact`.
 | `forge-build` | Runs the disciplined implement → verify → close loop for one spec'd unit, strictly in scope, and keeps the tracker in sync. |
 | `forge-build-all` | Runs the build loop across **all** remaining units in order until the plan is complete, verifying each and **stopping at the first failure**. The autonomous, multi-unit version of `forge-build`. |
 | `forge-verify` | Runs the unit's verification checklist + build/typecheck/lint + an adversarial subagent review before a unit is closed. |
+| `forge-fix` | Intake for bug reports in shipped work: reproduce, triage (fix directly when the cause is obvious; hand off to `forge-debug` when it isn't), verify, and close with tracker + lesson + `fix/` branch. |
 | `forge-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
 | `forge-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
 | `forge-decision` | Logs an Architecture Decision Record (ADR) to `context/decisions.md` and keeps `architecture.md` in sync. |

@@ -9,7 +9,7 @@ description: >
   with approval), keeps both within budget, and promotes recurring lessons into the
   real context files.
 metadata:
-  version: "0.12.0"
+  version: "0.13.0"
 ---
 
 # forge-lesson
