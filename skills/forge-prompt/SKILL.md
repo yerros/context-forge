@@ -8,7 +8,7 @@ description: >
   request in the project's context files, and outputs a sharp prompt or spec the user
   confirms — it never silently changes what the user meant.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-prompt
@@ -16,6 +16,11 @@ metadata:
 Turn a rough request into a precise, buildable instruction. The goal is to improve the
 *quality of the thinking* behind the prompt — not to wordsmith. Output a sharpened prompt
 the user approves, never a silent reinterpretation.
+
+## Argument
+
+Text after the command is the rough request to sharpen (e.g. `/forge-prompt make the
+dashboard faster`). No argument → ask for the request to optimize.
 
 ## Principle
 

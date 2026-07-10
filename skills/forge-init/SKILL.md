@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-init
@@ -23,6 +23,13 @@ The blank templates are bundled at `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/temp
 The guiding principle of this methodology: **the user is the architect, the AI is
 the implementation engine.** These files capture the architectural thinking so the
 agent stays consistent across sessions and never guesses.
+
+## Argument
+
+Text after the command seeds the setup (e.g. `/forge-init a Next.js SaaS for
+invoicing` gives greenfield answers a head start; `/forge-init adopt` skips straight
+to reconcile). It never overrides the detector's verdict — run Step 0 regardless.
+No argument → just run Step 0 and proceed.
 
 ## Step 0: Read the state — ALWAYS run this first
 

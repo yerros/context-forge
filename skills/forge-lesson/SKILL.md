@@ -9,7 +9,7 @@ description: >
   with approval), keeps both within budget, and promotes recurring lessons into the
   real context files.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-lesson
@@ -18,6 +18,12 @@ Turn a correction, diagnosis, or preference into persistent memory — so it's n
 re-paid in tokens. The memory contract (formats, budgets, read/write rules) is
 defined canonically in
 `${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md` — read it first.
+
+## Argument
+
+Text after the command is the lesson or instruction (e.g. `/forge-lesson never use
+barrel files here`, `/forge-lesson forget the Vite one`, `/forge-lesson show`) —
+distill/act on it directly. No argument → ask what to remember (or manage).
 
 ## Steps
 

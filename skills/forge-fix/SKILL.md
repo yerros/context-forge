@@ -10,7 +10,7 @@ description: >
   forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
   or for correcting the unit currently being built (that is forge-build's loop).
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-fix
@@ -19,6 +19,13 @@ The intake for bug reports in shipped work. A bug fix is a small unit of work an
 gets the same discipline as one — scoped, verified, recorded — just without the
 ceremony of a full spec. Without this, fixes happen outside the methodology and the
 tracker, lessons, and scope rules all leak.
+
+## Argument
+
+Text after the command is the bug report (e.g. `/forge-fix login button does nothing
+on page A`) — use it as the intake description and don't re-ask what the bug is; ask
+only for missing specifics (exact error, where, since when). No argument → ask for
+the symptom.
 
 ## 1. Intake
 

@@ -6,7 +6,7 @@ description: >
   unit", "commit and push", or "close unit NN". It creates the branch, makes a
   conventional commit, and opens a pull request with a spec-derived summary.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-pr
@@ -20,8 +20,12 @@ run this once the unit is implemented AND verified.
 - `progress-tracker.md` shows the unit as complete or ready to close.
 - The repo is a git repository with a clean-enough working tree for this unit's changes.
 
-Confirm the unit number/name and the target base branch (default `main`) with the user
-before pushing.
+## Argument
+
+Text after the command selects the unit and optionally the base branch (e.g.
+`/forge-pr unit 04` or `/forge-pr 04 onto develop`). No argument → take the unit
+marked complete/ready-to-close in the tracker. Either way, confirm the unit and the
+base branch (default `main`) with the user before pushing.
 
 ## Steps
 

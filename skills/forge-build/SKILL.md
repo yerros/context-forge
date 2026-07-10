@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-build
@@ -22,8 +22,12 @@ exactly that work and nothing more.
 - The target unit has a spec at `context/specs/NN-feature-name.md`. If it doesn't,
   stop and tell the user to run `forge-spec` first.
 
-If no unit is specified, read `context/progress-tracker.md` and pick the "Next Up"
-unit. Confirm the target unit with the user before starting.
+## Argument
+
+Text after the command selects the unit (e.g. `/forge-build unit 04` or
+`/forge-build the auth pages`) — match it against the build plan. No argument →
+read `context/progress-tracker.md` and pick the "Next Up" unit. Either way, confirm
+the target unit with the user before starting.
 
 ## The loop
 

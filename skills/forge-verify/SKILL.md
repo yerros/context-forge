@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-verify
@@ -16,10 +16,16 @@ Confirm a unit is truly done before it's marked complete. "Done" means the spec'
 checklist passes, the project builds clean, and an adversarial review finds no
 in-scope problems.
 
+## Argument
+
+Text after the command selects the unit to verify (e.g. `/forge-verify unit 04`). No
+argument → verify the unit currently "In Progress" (or just built) per the tracker;
+confirm if ambiguous.
+
 ## Inputs
 
 The unit's spec at `context/specs/NN-feature-name.md` (its "Verify when done" section)
-and `context/architecture.md` (invariants). Confirm which unit if ambiguous.
+and `context/architecture.md` (invariants).
 
 ## What to run
 

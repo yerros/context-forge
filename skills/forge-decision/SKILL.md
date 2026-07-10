@@ -6,13 +6,19 @@ description: >
   ADR", "we decided to...", "document why we chose X", or "add a decision record". It
   appends a structured ADR entry to context/decisions.md.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-decision
 
 Record architecture decisions as lightweight ADRs (Architecture Decision Records) so the
 "why" behind the system is never lost. Decisions live in `context/decisions.md`.
+
+## Argument
+
+Text after the command is the decision (e.g. `/forge-decision use Redis for the
+cache instead of in-memory`) — draft the ADR from it directly, asking only for
+missing context/consequences. No argument → ask what was decided and why.
 
 ## When to log
 

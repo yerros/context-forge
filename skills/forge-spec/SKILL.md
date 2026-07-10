@@ -8,7 +8,7 @@ description: >
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-spec
@@ -18,6 +18,13 @@ Turn features into spec-driven, buildable units. Two jobs: produce the **build p
 
 Read `context/project-overview.md` and `context/architecture.md` first for context.
 Specs live in `context/specs/`. Create that folder if it doesn't exist.
+
+## Argument
+
+Text after the command names the target (e.g. `/forge-spec the notifications
+feature` → Job B for that unit; `/forge-spec build plan` → Job A). No argument → if
+no build plan exists, do Job A; otherwise offer to spec the next unspec'd unit in
+the plan.
 
 ### Specs folder layout
 

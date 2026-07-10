@@ -3,6 +3,19 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.13.1] — 2026-07-10
+
+### Added
+- **Explicit argument handling in all 15 skills.** Every SKILL.md now has an
+  `## Argument` block defining what text after the command means and the fallback when
+  it's absent — e.g. `/forge-fix login button dead on page A` is the intake description
+  (no re-asking), `/forge-build unit 04` selects the unit (else Next Up from the
+  tracker), `/forge-decision use Redis for cache` drafts the ADR directly,
+  `/forge-lesson never use barrel files` distills the lesson, `/forge-resume unit 05`
+  focuses the session, `/forge-audit architecture` narrows the audit,
+  `/forge-compact the tracker` targets one file. Previously only `forge-build` and
+  `forge-build-all` documented this; the rest relied on the model guessing.
+
 ## [0.13.0] — 2026-07-10
 
 ### Added

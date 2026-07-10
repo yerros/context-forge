@@ -8,7 +8,7 @@ description: >
   and tracker first, full files only as the task requires) so work continues without
   drift and without burning tokens.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-resume
@@ -17,6 +17,12 @@ Restore project context in one step and continue the build without re-explaining
 project. This solves the "AI has no memory between sessions" problem — without paying
 for context the session doesn't need. Loading follows the tier system defined in
 `${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md`.
+
+## Argument
+
+Text after the command sets the session's focus (e.g. `/forge-resume unit 05` or
+`/forge-resume the payment bug`) — resume as below, then steer step 4 to that focus
+and load its Tier 2 file(s). No argument → standard resume to whatever is Next Up.
 
 ## What to do
 

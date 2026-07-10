@@ -9,7 +9,7 @@ description: >
   dropping facts), rotates tracker history, and (re)generates the compact
   context-digest.md used for tiered loading.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-compact
@@ -20,6 +20,12 @@ maintenance pass that keeps that price low. Budgets, tiers, and the digest contr
 are defined canonically in
 `${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md` — read it
 first.
+
+## Argument
+
+Text after the command targets specific files (e.g. `/forge-compact the tracker` or
+`/forge-compact generate the digest`) — measure everything (step 1) but treat only
+the target in steps 2–3. No argument → full pass.
 
 ## 1. Measure
 

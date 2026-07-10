@@ -7,7 +7,7 @@ description: >
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-audit
@@ -15,6 +15,12 @@ metadata:
 Detect and fix drift between the six context files and the real codebase. Over a long
 build the code moves on; stale context files quietly make the agent guess wrong. This
 skill keeps them honest.
+
+## Argument
+
+Text after the command narrows the audit (e.g. `/forge-audit architecture` or
+`/forge-audit just the budgets`) — run only the matching sections below. No argument
+→ full audit.
 
 ## First: read the state
 

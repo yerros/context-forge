@@ -7,7 +7,7 @@ description: >
   updates scope in project-overview.md, inserts correctly-ordered units into the build
   plan, and generates the spec(s) — without breaking existing work.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-feature
@@ -15,6 +15,12 @@ metadata:
 Add a feature to a project that already has its context files, the safe way. The risk
 when adding to a working build is breaking what exists; this skill keeps the new work
 scoped, ordered, and documented before any code is written.
+
+## Argument
+
+Text after the command is the feature description (e.g. `/forge-feature export to
+CSV from the reports page`) — use it as the starting point for step 2 and only ask
+what it doesn't answer. No argument → ask what the feature is.
 
 ## Steps
 

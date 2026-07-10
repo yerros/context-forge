@@ -7,7 +7,7 @@ description: >
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-debug
@@ -18,6 +18,12 @@ without a model of the failure just compounds damage. Switch to this disciplined
 (A fresh bug report that isn't stuck yet enters through `forge-fix`, which triages
 and hands off here when the cause is non-obvious. After this loop resolves it,
 closing — tracker, lesson, `fix/` branch — follows `forge-fix` step 6.)
+
+## Argument
+
+Text after the command describes the stuck problem (e.g. `/forge-debug the websocket
+reconnect keeps failing`) — treat it as the starting symptom for step 1. No argument
+→ take the failure from the current conversation, or ask for it precisely.
 
 ## Stop condition
 

@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
 ---
 
 # forge-build-all
@@ -32,12 +32,12 @@ first failure** rather than barreling ahead on a broken foundation.
 
 If there is no build plan, stop and tell the user to run `forge-spec` first.
 
-## Scope of the run
+## Argument / scope of the run
 
-By default, build every unit that is not yet complete, in build-plan order. Honor an
-optional user-specified scope when given, e.g. "build units 3 through 7" or "build the
-next 3 units" or "build until unit 10". Confirm the resolved scope (which units, in what
-order) with the user before starting the run.
+By default, build every unit that is not yet complete, in build-plan order. Text after
+the command narrows the scope, e.g. `/forge-build-all units 3 through 7`, `the next 3
+units`, or `until unit 10`. Confirm the resolved scope (which units, in what order)
+with the user before starting the run.
 
 ## The loop (repeat per unit, in order)
 
