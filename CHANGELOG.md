@@ -3,6 +3,28 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.14.0] — 2026-07-10
+
+### Added (status line skill indicator)
+- **`hooks/scripts/skill-status.sh`** — zero-token recorder maintaining a per-session
+  state file (`~/.claude/forge-status/<session_id>`, format
+  `active|idle <skill> <epoch>`). Wired via two new hook registrations:
+  `UserPromptExpansion` (catches `/forge-*` slash commands via `command_name`) and
+  `PreToolUse` matcher `Skill` (catches model-invoked skills; parses the undocumented
+  tool_input defensively across several key names). The existing `Stop` hook now also
+  downgrades `active` → `idle` for **sticky semantics**: `⚒ forge-fix` while the turn
+  runs, `(forge-fix)` dimmed for 30 minutes across confirmation pauses, then gone.
+  Silent by design (hook stdout can be injected as context), always exits 0, prunes
+  state files older than a day, and validates session ids before using them as paths.
+- **`statusline/statusline.sh`** — ready-made reference status line consuming that
+  state file: skill indicator + model + git branch + cost + context %. Documented
+  one-time setup in the README (copy + `statusLine` setting with
+  `refreshInterval: 1000`, or merge via `/statusline`). The state-file format is the
+  stable contract, so any custom status line can integrate it.
+
+### Changed
+- Skill `metadata.version` values bumped to 0.14.0.
+
 ## [0.13.1] — 2026-07-10
 
 ### Added

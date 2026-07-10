@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.13.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.14.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -180,6 +180,30 @@ methodology.
 `PreToolUse` guard — for example `src/generated/*` or `*.snap`. Consider adding
 `context/.last-session.md` to your project's `.gitignore`.
 
+### Status line: show the skill in use
+
+Two additional zero-token hooks (`UserPromptExpansion` + `PreToolUse` on the `Skill`
+tool) record which `forge-*` skill each session is using into
+`~/.claude/forge-status/<session_id>` (format: `active|idle <skill> <epoch>`). Any
+custom status line can read that file to show a near-realtime indicator:
+`⚒ forge-fix` while Claude is working, `(forge-fix)` dimmed for 30 minutes after the
+turn ends (skills are dialogic — the dim state covers confirmation pauses), then
+gone.
+
+A ready-made status line ships at `statusline/statusline.sh` (skill indicator +
+model + git branch + cost + context %). One-time setup:
+
+```bash
+cp <plugin-root>/statusline/statusline.sh ~/.claude/forge-statusline.sh
+```
+
+```json
+"statusLine": { "type": "command", "command": "bash ~/.claude/forge-statusline.sh", "refreshInterval": 1000 }
+```
+
+Or run `/statusline` and ask for "a forge skill indicator reading
+`~/.claude/forge-status/<session_id>`" to merge it into your existing status line.
+
 ## The six files
 
 ```
@@ -278,8 +302,10 @@ context-forge/
 │   ├── forge-decision/    # + decisions (ADR) template
 │   └── ...
 ├── hooks/
-│   ├── hooks.json           # SessionStart, PreToolUse, Stop (all command-based)
-│   └── scripts/             # guard.sh (PreToolUse), track.sh (Stop)
+│   ├── hooks.json           # SessionStart, PreToolUse, UserPromptExpansion, Stop
+│   └── scripts/             # guard.sh, track.sh, skill-status.sh (all command-based)
+├── statusline/
+│   └── statusline.sh        # reference status line with the forge skill indicator
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
