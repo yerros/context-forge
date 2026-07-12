@@ -7,7 +7,7 @@ description: >
   updates scope in project-overview.md, inserts correctly-ordered units into the build
   plan, and generates the spec(s) — without breaking existing work.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-feature
@@ -45,16 +45,18 @@ new storage), update `architecture.md` too — and log the decision via `forge-d
 
 ### 4. Decompose into units and place them in order
 
-Break the feature into units following the shared rules in
-`${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/references/unit-rules.md` (good-unit rules,
-ordering rules, and how to insert into an existing plan without breaking
-dependencies). Read that file before decomposing, then insert the new units into
-`context/specs/00-build-plan.md` at the correct position.
+Delegate to the `forge-architect` agent (opus-pinned): give it the clarified
+feature description and scope changes; it decomposes into units per
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/references/unit-rules.md`, inserts them
+into `context/specs/00-build-plan.md` at the correct position relative to existing
+units (renumbering if needed, noting it), and reports back. If the agent is
+unavailable, do the same in-session from the same reference.
 
 ### 5. Generate the spec(s)
 
-Write a spec file per new unit using the six-section pattern (delegate to the same
-template as `forge-spec`: `${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/templates/spec-template.md`).
+The same `forge-architect` run writes a six-section spec per new unit from
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/templates/spec-template.md`. Relay its
+summary and any open questions to the user.
 
 ### 6. Update the tracker
 

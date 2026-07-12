@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.15.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.16.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -25,6 +25,7 @@ session and feature.
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Commands](#commands)
+- [Agents](#agents)
 - [Hooks](#hooks)
 - [The six files](#the-six-files)
 - [How it works](#how-it-works)
@@ -71,6 +72,10 @@ before it writes anything, and a living tracker that restores full context in on
   preferences in `~/.context-forge/preferences.md` stop `forge-init` from re-asking
   the same questions in every project. No vector store, no external services — just
   budgeted markdown in git.
+- **Right model for each job** — four bundled agents pin the model to the work:
+  specs are written by an opus-pinned architect (highest leverage, lowest
+  frequency), reviews by a sonnet reviewer, bulk codebase reading and bookkeeping
+  by haiku agents — cutting cost while keeping the main session's context lean.
 - **Zero configuration** — no credentials or setup; templates ship inside the plugin.
 
 ## Installation
@@ -157,6 +162,28 @@ for `/forge-feature`, `/forge-fix` (bug reports), `/forge-debug` (when stuck),
 | `forge-resume` | Restores context tier by tier at the start of a session (digest + tracker first, full files per task) and briefs you on where things stand. |
 | `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses over-budget files with approval, rotates tracker history, and (re)generates `context-digest.md`. |
 | `forge-lesson` | Saves a correction or diagnosis as a one-line lesson in `context/lessons.md` (or a cross-project preference in `~/.context-forge/preferences.md`, with approval), keeps memory within budget, and promotes recurring lessons into the real context files. |
+
+## Agents
+
+Four bundled subagents route each kind of work to the right model — maximum
+intelligence at the highest-leverage, lowest-frequency point (specs), cheap models
+for bulk reading and bookkeeping. A second benefit: an agent's reading never enters
+the main session's context, only its conclusions do.
+
+| Agent | Model | Role | Used by |
+| ----- | ----- | ---- | ------- |
+| `forge-architect` | **opus** | Decomposes features into units and writes the six-section specs; deep ADR analysis. Runs rarely; its output steers every downstream token. | `forge-spec`, `forge-feature`, `forge-decision` |
+| `forge-reviewer` | **sonnet** | Adversarial, read-only review of a unit's diff vs its spec: scope creep, invariant violations, missing tests, silent breakage. Verdict: `RECOMMEND PASS/FAIL`. | `forge-verify`, `forge-pr`, `forge-fix` |
+| `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence, never dumps. | `forge-init`, `forge-audit`, `forge-debug` |
+| `forge-archivist` | **haiku** | Mechanical close-unit bookkeeping (tracker rotation, spec archival, build-plan tidy, digest State refresh) and budget measurement. No judgment calls. | close-unit procedure, `forge-compact` |
+
+Design choices worth knowing: `forge-build` deliberately has **no** agent — the
+methodology's bet is intelligence up front (the spec) and literal execution in the
+main session; and `forge-debug` keeps diagnosis in-session (it needs the full
+conversation) while delegating only evidence gathering. Every delegation has an
+in-session fallback, so the plugin works even where a pinned model isn't available
+on your plan — edit the `model:` line in `agents/*.md` (e.g. to `inherit`) to
+change the routing.
 
 ## Hooks
 
@@ -301,6 +328,8 @@ context-forge/
 │   ├── forge-spec/        # + spec template
 │   ├── forge-decision/    # + decisions (ADR) template
 │   └── ...
+├── agents/                  # model-pinned subagents: architect (opus),
+│   └── ...                  #   reviewer (sonnet), scout + archivist (haiku)
 ├── hooks/
 │   ├── hooks.json           # SessionStart, PreToolUse, UserPromptExpansion, Stop
 │   └── scripts/             # guard.sh, track.sh, skill-status.sh (all command-based)

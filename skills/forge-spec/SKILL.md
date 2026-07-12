@@ -8,7 +8,7 @@ description: >
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-spec
@@ -18,6 +18,15 @@ Turn features into spec-driven, buildable units. Two jobs: produce the **build p
 
 Read `context/project-overview.md` and `context/architecture.md` first for context.
 Specs live in `context/specs/`. Create that folder if it doesn't exist.
+
+**Delegate the thinking to `forge-architect`** (the plugin's opus-pinned agent):
+once the target and any user clarifications are settled, spawn `forge-architect`
+with the job (build plan, or spec for unit NN) and the relevant user answers. It
+reads the context files, applies unit-rules.md and the spec template, writes the
+spec file(s), and returns a summary plus any open questions — relay those to the
+user. Spec quality is the highest-leverage point of the whole methodology, which is
+why this one step gets the strongest model. If the agent (or the opus model) is
+unavailable, do the same work in-session following the same references.
 
 ## Argument
 

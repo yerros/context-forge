@@ -6,7 +6,7 @@ description: >
   unit", "commit and push", or "close unit NN". It creates the branch, makes a
   conventional commit, and opens a pull request with a spec-derived summary.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-pr
@@ -16,7 +16,9 @@ run this once the unit is implemented AND verified.
 
 ## Preconditions
 
-- The unit's verification passed (run `forge-verify` first if unsure).
+- The unit's verification passed (run `forge-verify` first if unsure). For a
+  last-mile sanity check on risky changes, the `forge-reviewer` agent can review
+  the final diff before pushing.
 - `progress-tracker.md` shows the unit as complete or ready to close.
 - The repo is a git repository with a clean-enough working tree for this unit's changes.
 

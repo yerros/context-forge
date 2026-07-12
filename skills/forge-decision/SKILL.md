@@ -6,7 +6,7 @@ description: >
   ADR", "we decided to...", "document why we chose X", or "add a decision record". It
   appends a structured ADR entry to context/decisions.md.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-decision
@@ -19,6 +19,11 @@ Record architecture decisions as lightweight ADRs (Architecture Decision Records
 Text after the command is the decision (e.g. `/forge-decision use Redis for the
 cache instead of in-memory`) — draft the ADR from it directly, asking only for
 missing context/consequences. No argument → ask what was decided and why.
+
+For a decision with broad blast radius (storage model, boundary change, framework
+swap), delegate the analysis to the `forge-architect` agent (opus-pinned) first —
+it returns an ADR-shaped analysis (context, options with trade-offs,
+recommendation, consequences) to draft from. Small decisions don't need it.
 
 ## When to log
 

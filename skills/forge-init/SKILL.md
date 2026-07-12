@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-init
@@ -124,7 +124,12 @@ confirms the draft.**
 
 ### 1. Analyze the codebase from evidence (do not guess)
 
-Gather real signals before writing anything:
+Delegate the sweep to the `forge-scout` agent (haiku-pinned, read-only): mission
+"stack & structure". It reads the manifests, maps folders, samples source files,
+finds the theme/tokens and the real build/test commands — and returns compact,
+evidence-backed findings per context-file bucket with `[NEEDS INPUT: ...]` markers
+for what the code can't reveal, keeping all that reading out of this session's
+context. If the agent is unavailable, gather the same signals yourself:
 
 - **Stack & dependencies**: read `package.json` / `requirements.txt` / `go.mod` /
   `Cargo.toml` / lockfiles. Identify framework, language, UI lib, auth, database,

@@ -3,6 +3,37 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.16.0] — 2026-07-12
+
+### Added (model-pinned agents)
+- **Four bundled subagents** in `agents/`, routing each kind of work to the right
+  model — maximum intelligence at the highest-leverage/lowest-frequency point, cheap
+  models for bulk work, and the agent's reading stays out of the main session's
+  context:
+  - **`forge-architect` (opus)** — decomposition + six-section spec writing + deep
+    ADR analysis; follows unit-rules.md and the spec template; writes spec files
+    directly and returns a summary + open questions; never invents answers to
+    design-changing ambiguities. Used by `forge-spec`, `forge-feature`,
+    `forge-decision`.
+  - **`forge-reviewer` (sonnet)** — adversarial, read-only diff-vs-spec review with
+    a prioritized hunt list (spec mismatch, invariant violations, missing/hollow
+    tests, silent breakage, edge cases, convention drift) and a
+    `RECOMMEND PASS/FAIL` verdict. Used by `forge-verify` (replaces the
+    general-purpose subagent), `forge-pr`, `forge-fix`.
+  - **`forge-scout` (haiku)** — read-many-conclude-little sweeps with three mission
+    types: stack & structure (forge-init brownfield), drift evidence (forge-audit),
+    failure isolation (forge-debug). Compact findings with file:line evidence.
+  - **`forge-archivist` (haiku)** — mechanical close-unit bookkeeping per
+    close-unit.md and forge-compact's measurement pass; no judgment calls, never
+    deletes content.
+- Delegation points documented in the skills, each with an **in-session fallback**
+  so the plugin still works where a pinned model isn't available (edit `model:` in
+  `agents/*.md`, e.g. to `inherit`). Deliberate non-delegations: `forge-build`
+  executes in the main session (intelligence is paid up front in the spec);
+  `forge-debug` keeps diagnosis in-session and delegates only evidence gathering.
+- README: new **Agents** section (model table + rationale), features bullet,
+  repo-structure entry.
+
 ## [0.15.0] — 2026-07-12
 
 ### Changed (build loop hardened — tests first-class, explicit iterate/escalate)

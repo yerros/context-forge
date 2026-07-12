@@ -7,7 +7,7 @@ description: >
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-debug
@@ -52,10 +52,15 @@ invariant was violated — that's often the root cause.
 
 ### 4. Isolate
 
-Narrow the failure to one layer/boundary. Bisect: disable or stub parts until the
-failure disappears, then reintroduce until it returns. Confirm the actual culprit before
-proposing a fix. Distinguish root cause from symptom — do not layer a workaround over a
-symptom (that's a code-standards violation).
+Narrow the failure to one layer/boundary. For the legwork, the `forge-scout` agent
+(haiku-pinned, mission "failure isolation") can trace the code path, find recent
+related changes, and run the reproduction — returning the narrowest suspect
+component with evidence, cheaply. Bisect: disable or stub parts until the failure
+disappears, then reintroduce until it returns. Confirm the actual culprit before
+proposing a fix. Distinguish root cause from symptom — do not layer a workaround
+over a symptom (that's a code-standards violation). **The diagnosis and hypothesis
+forming stay in this session** — they need the full conversation context; only
+evidence gathering is delegated.
 
 ### 5. Form hypotheses, then present options
 

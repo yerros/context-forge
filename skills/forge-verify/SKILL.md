@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-verify
@@ -59,13 +59,14 @@ Report exact failures with file/line where available.
 Confirm the implementation honors every invariant in `architecture.md` and didn't
 modify protected files from `ai-workflow-rules.md`.
 
-### 5. Adversarial review (subagent)
+### 5. Adversarial review (forge-reviewer agent)
 
-Spawn a subagent (Task tool, general-purpose) to review the unit's diff against the
-spec with a critical eye. Instruct it to look for: scope creep beyond the spec, silent
-invariant violations, missing error/edge handling, inconsistent patterns versus
-`code-standards.md`, and anything that "works but is wrong". Have it return findings by
-severity (Critical / Warning / Info) with file and line.
+Spawn the plugin's `forge-reviewer` agent (sonnet-pinned, read-only) with the unit's
+spec path and the diff base. It hunts spec mismatches, invariant violations,
+missing/hollowed tests, silent breakage of other units, edge cases, and convention
+drift — returning findings by severity (Critical / Warning / Info) with file:line
+and a `RECOMMEND PASS/FAIL` verdict. If the agent is unavailable, spawn a
+general-purpose subagent with the same instructions.
 
 ## Output
 

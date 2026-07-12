@@ -16,6 +16,13 @@ The single source of truth for closing a completed, verified unit. Used by
 Anything older rotates into `context/progress-archive.md` — history, appended
 newest-first, **never auto-read** on resume/build.
 
+The whole procedure below is mechanical — it can be delegated to the
+`forge-archivist` agent (haiku-pinned) with the unit number/name, the session note,
+and the next-up unit; it follows this file exactly and reports the file operations
+performed. Steps 5 and 7 involve judgment (what changed, what generalizes) — decide
+those in-session and pass the conclusions to the archivist, or run the steps
+yourself if the agent is unavailable.
+
 ## Steps
 
 1. **Update the tracker.** In `context/progress-tracker.md`: move the unit to

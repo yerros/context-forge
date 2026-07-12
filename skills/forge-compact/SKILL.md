@@ -9,7 +9,7 @@ description: >
   dropping facts), rotates tracker history, and (re)generates the compact
   context-digest.md used for tiered loading.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-compact
@@ -39,7 +39,9 @@ done
 
 Report a table to the user: file, size, budget, verdict (OK / over). Include the
 estimated **per-session saving** the compact pass would deliver (sum of the overages,
-plus the digest saving below if the project has no digest yet).
+plus the digest saving below if the project has no digest yet). The measurement can
+be delegated to the `forge-archivist` agent; the compression judgment in step 2
+cannot.
 
 ## 2. Propose, then compress (approval required per file)
 

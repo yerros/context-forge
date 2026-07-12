@@ -7,7 +7,7 @@ description: >
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-audit
@@ -37,6 +37,12 @@ to run `forge-init` first. Otherwise proceed.
 
 Read the six files in `context/`, then compare each against evidence in the repo. Do
 NOT trust the docs — verify against the code.
+
+For the evidence gathering, delegate to the `forge-scout` agent (haiku-pinned,
+read-only): give it the concrete claims extracted from each context file (mission
+"drift evidence") and let it report confirmed/drifted/gone with file:line evidence —
+the sweep stays out of this session's context. Judging the findings and recommending
+doc edits stays here. If the agent is unavailable, verify in-session.
 
 ### architecture.md
 

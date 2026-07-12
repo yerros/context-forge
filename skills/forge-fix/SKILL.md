@@ -10,7 +10,7 @@ description: >
   forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
   or for correcting the unit currently being built (that is forge-build's loop).
 metadata:
-  version: "0.15.0"
+  version: "0.16.0"
 ---
 
 # forge-fix
@@ -60,7 +60,9 @@ tracker as an open question or to `forge-feature`. Protected files stay protecte
 
 Re-run the reproduction (it must now pass), the project's real build/typecheck/lint,
 and — if the fix touched a completed unit's behavior — that unit's "Verify when
-done" checklist from its spec in `context/specs/archived/`.
+done" checklist from its spec in `context/specs/archived/`. If the fix touched an
+invariant-adjacent area or multiple call sites, have the `forge-reviewer` agent
+review the diff before closing.
 
 ## 6. Close with discipline
 
