@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.16.1"
+  version: "0.16.2"
 ---
 
 # forge-build
@@ -75,6 +75,11 @@ Run, in order: the unit's tests, the **full test suite** (regression gate — ea
 units must stay green), the project's real build/typecheck/lint, and every item in
 the spec's "Verify when done" section. For a deeper pass, run the `forge-verify`
 skill.
+
+**Keep the output cheap:** run tests/linters with quiet or failures-only reporters
+(e.g. `--reporter=dot`, `--quiet`, `2>&1 | tail`) — a green suite needs one summary
+line in context, not a thousand passing-test lines. Read full output only for the
+failures.
 
 Then loop:
 

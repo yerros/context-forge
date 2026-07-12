@@ -74,6 +74,26 @@ files: tighten prose or split detail into an on-demand `context/reference/` file
 or run `forge-compact` for a guided pass. The `Stop` hook (`track.sh`) also flags
 over-budget files in `context/.last-session.md` — zero tokens until read.
 
+## Subagent & background cost
+
+Context tokens aren't the only cost — usage quota counts every model call,
+including subagents and background workers:
+
+- **Tiered review**: a full `forge-reviewer` run is a whole subagent session. It's
+  automatic only for `[complexity: high]` / invariant-touching units; standard
+  units are reviewed in-session against the same hunt list (see forge-verify).
+- **Quiet verification output**: run tests/linters with quiet or failures-only
+  reporters. A green suite should cost one summary line, not thousands of passing
+  lines re-read on every verify-loop iteration.
+- **claude-mem interop**: if the claude-mem plugin is active, its `PostToolUse`
+  hook sends every tool output to a background AI compression worker — on a heavy
+  build day that's hundreds of extra model calls against the same quota, invisible
+  in the session context. The two plugins coexist fine (context-forge is curated
+  memory, claude-mem is episodic recall; on conflict the context files win), but
+  for long `forge-build`/`forge-build-all` runs consider disabling claude-mem and
+  re-enabling it for exploratory sessions — this plugin's tracker, lessons, and
+  archives already record the build trail deterministically at zero token cost.
+
 ## Rules
 
 - Never guess to save tokens — reading a Tier 2 file is always cheaper than a

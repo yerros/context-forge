@@ -3,6 +3,24 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.16.2] — 2026-07-12
+
+### Changed (quota cost tuning)
+- **Tiered adversarial review.** `forge-verify` now spawns the `forge-reviewer`
+  subagent automatically only for `[complexity: high]` units, invariant/protected-area
+  changes, code other units depend on, or on request; standard units are reviewed
+  in-session against the same hunt list and severity format — same rigor, no extra
+  subagent session per small unit. `forge-build-all` follows the same tiering.
+- **Quiet verification output.** `forge-build` / `forge-build-all` now run tests and
+  linters with quiet/failures-only reporters — a green suite costs one summary line
+  instead of thousands of passing-test lines re-read every verify-loop iteration.
+- **Subagent & background cost section in token-economy.md**, including a
+  **claude-mem interop note**: claude-mem's `PostToolUse` background compression
+  calls a model on every tool output — invisible in context but counted against the
+  same usage quota; recommendation is to disable it during long build runs (this
+  plugin's tracker/lessons/archives already record the build trail
+  deterministically) and re-enable it for exploratory sessions.
+
 ## [0.16.1] — 2026-07-12
 
 ### Added

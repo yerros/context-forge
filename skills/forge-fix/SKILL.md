@@ -10,7 +10,7 @@ description: >
   forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
   or for correcting the unit currently being built (that is forge-build's loop).
 metadata:
-  version: "0.16.1"
+  version: "0.16.2"
 ---
 
 # forge-fix

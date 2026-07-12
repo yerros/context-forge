@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.16.1"
+  version: "0.16.2"
 ---
 
 # forge-build-all
@@ -58,10 +58,13 @@ For each pending unit N:
    dependencies the spec lists. Do not touch protected files. Do not expand scope or pull
    work from other units; note any discovered out-of-scope work as an open question.
 4. **Verify** — the unit's tests, the **full suite (regression gate)**, the project's
-   real build/typecheck/lint, and the spec's "Verify when done" checklist. On failure,
+   real build/typecheck/lint, and the spec's "Verify when done" checklist — with
+   quiet/failures-only reporters (green needs one line, not a thousand). On failure,
    correct in scope and re-run from the top; **the same check failing after two fix
    attempts is a stop condition** (below). For deeper checking, apply the
-   `forge-verify` logic.
+   `forge-verify` logic — including its tiered review: spawn `forge-reviewer` only
+   for `[complexity: high]`/invariant-touching units, review standard units
+   in-session.
 5. **Decide:**
    - **Pass** → run the close-unit procedure in
      `${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md` (update/rotate

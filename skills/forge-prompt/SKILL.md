@@ -8,7 +8,7 @@ description: >
   request in the project's context files, and outputs a sharp prompt or spec the user
   confirms — it never silently changes what the user meant.
 metadata:
-  version: "0.16.1"
+  version: "0.16.2"
 ---
 
 # forge-prompt

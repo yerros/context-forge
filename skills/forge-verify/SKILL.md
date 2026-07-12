@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.16.1"
+  version: "0.16.2"
 ---
 
 # forge-verify
@@ -59,14 +59,24 @@ Report exact failures with file/line where available.
 Confirm the implementation honors every invariant in `architecture.md` and didn't
 modify protected files from `ai-workflow-rules.md`.
 
-### 5. Adversarial review (forge-reviewer agent)
+### 5. Adversarial review — tiered by risk
 
-Spawn the plugin's `forge-reviewer` agent (sonnet-pinned, read-only) with the unit's
-spec path and the diff base. It hunts spec mismatches, invariant violations,
-missing/hollowed tests, silent breakage of other units, edge cases, and convention
-drift — returning findings by severity (Critical / Warning / Info) with file:line
-and a `RECOMMEND PASS/FAIL` verdict. If the agent is unavailable, spawn a
-general-purpose subagent with the same instructions.
+A full `forge-reviewer` run costs a whole subagent session, so match the review to
+the stakes:
+
+- **Spawn `forge-reviewer`** (sonnet-pinned, read-only) when the unit is marked
+  `[complexity: high]` in the build plan, touches an invariant-adjacent area or
+  protected files, changes code other units depend on, or the user asks for a deep
+  review. Give it the unit's spec path and the diff base; it returns findings by
+  severity (Critical / Warning / Info) with file:line and a `RECOMMEND PASS/FAIL`
+  verdict.
+- **Otherwise (standard units): review in-session** — walk the diff yourself
+  against the reviewer's hunt list (spec mismatch, invariant violations,
+  missing/hollow tests, silent breakage, edge cases, convention drift) and report
+  the same severity format. No subagent, no extra session cost.
+
+If the agent is unavailable for a high-risk unit, spawn a general-purpose subagent
+with the same instructions.
 
 ## Output
 

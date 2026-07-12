@@ -7,7 +7,7 @@ description: >
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
-  version: "0.16.1"
+  version: "0.16.2"
 ---
 
 # forge-debug
