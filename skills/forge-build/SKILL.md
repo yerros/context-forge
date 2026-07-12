@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.16.0"
+  version: "0.16.1"
 ---
 
 # forge-build
@@ -28,6 +28,12 @@ Text after the command selects the unit (e.g. `/forge-build unit 04` or
 `/forge-build the auth pages`) — match it against the build plan. No argument →
 read `context/progress-tracker.md` and pick the "Next Up" unit. Either way, confirm
 the target unit with the user before starting.
+
+**Model recommendation:** if the unit's build-plan line carries
+`[complexity: high]`, say so at confirmation and recommend switching to a stronger
+model for this unit (`/model opus`) before implementing — a failed verify loop plus
+a debug session costs more than the model-price difference. The user decides;
+proceed either way.
 
 ## The loop
 

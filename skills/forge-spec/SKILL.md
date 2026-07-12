@@ -8,7 +8,7 @@ description: >
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.16.0"
+  version: "0.16.1"
 ---
 
 # forge-spec
@@ -55,7 +55,9 @@ the four rules for a good unit, the five ordering rules, and how to validate the
 order. Read that file before decomposing.
 
 Write the result to `context/specs/00-build-plan.md` as a numbered list in build order.
-For each unit: number, name, what it builds, and dependencies that must exist first.
+For each unit: number, name, what it builds, dependencies that must exist first, and —
+where unit-rules.md's criteria apply — a `[complexity: high]` marker with a short
+reason (it drives the model recommendation in `forge-build`/`forge-build-all`).
 
 Give the build plan two sections so it stays readable as work progresses:
 

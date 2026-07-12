@@ -30,6 +30,21 @@ API calls yet" is a unit. "Build the dashboard" is a phase, not a unit.
 - **Install dependencies just in time** — only when a package first unlocks real
   behavior.
 
+## Complexity marker (per unit, in the build plan)
+
+Assess each unit when planning and mark it in its build-plan line:
+
+- **`[complexity: high]`** — any of: logic crossing multiple boundaries at once,
+  concurrency / state machines / subtle data migrations, a large multi-file
+  refactor, or a spec that cannot be made fully unambiguous (exploratory work).
+  Add a short reason in parentheses.
+- Everything else — no marker (standard is the default; don't label it).
+
+The marker drives a model recommendation at build time: high-complexity units are
+where a stronger implementation model pays for itself (a failed verify loop + a
+debug session costs more than the model-price difference). It is a recommendation,
+never a gate — the user always chooses.
+
 ## Validate the order
 
 For each unit, confirm everything it depends on exists in an earlier unit. Merge

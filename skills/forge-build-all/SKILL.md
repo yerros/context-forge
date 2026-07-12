@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.16.0"
+  version: "0.16.1"
 ---
 
 # forge-build-all
@@ -38,6 +38,12 @@ By default, build every unit that is not yet complete, in build-plan order. Text
 the command narrows the scope, e.g. `/forge-build-all units 3 through 7`, `the next 3
 units`, or `until unit 10`. Confirm the resolved scope (which units, in what order)
 with the user before starting the run.
+
+**Model recommendation:** when confirming the scope, list any units marked
+`[complexity: high]` in the build plan. Because this run has no human checkpoint
+between units, recommend either running the whole scope on a stronger model
+(`/model opus`) or excluding the high-complexity units for a supervised
+`forge-build` pass. The user decides; proceed either way.
 
 ## The loop (repeat per unit, in order)
 

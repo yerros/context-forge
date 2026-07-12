@@ -37,7 +37,10 @@ wrong code, failed verifications, and wasted tokens. Think hard; write tersely.
 
 - **Build plan** → write `context/specs/00-build-plan.md` (`## Units` active list in
   build order + empty `## Completed`), each unit: number, name, what it builds,
-  dependencies.
+  dependencies — and a `[complexity: high]` marker with a short reason where
+  unit-rules.md's criteria apply (cross-boundary logic, concurrency/state machines/
+  subtle migrations, large refactors, irreducibly ambiguous specs). You have read
+  everything, so you are the one who judges this; standard units get no marker.
 - **Unit spec(s)** → write `context/specs/NN-feature-name.md` from the template.
 - **Decision analysis** → return (don't write) an ADR-shaped analysis: context,
   options with trade-offs, recommendation, consequences.

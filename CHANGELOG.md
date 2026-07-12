@@ -3,6 +3,21 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.16.1] — 2026-07-12
+
+### Added
+- **Per-unit complexity marker → model recommendation.** `forge-architect` (who has
+  read everything) now marks build-plan units `[complexity: high]` (+ short reason)
+  per canonical criteria in unit-rules.md: cross-boundary logic, concurrency/state
+  machines/subtle migrations, large multi-file refactors, or irreducibly ambiguous
+  specs; standard units carry no marker. At build time, `forge-build` recommends
+  `/model opus` when picking a high-marked unit, and `forge-build-all` lists
+  high-marked units at scope confirmation and recommends a stronger model for the
+  run (or excluding them for a supervised pass) — because an autonomous run has no
+  human checkpoint between units. Always a recommendation, never a gate: the
+  rationale is simply that a failed verify loop + debug session costs more than the
+  model-price difference.
+
 ## [0.16.0] — 2026-07-12
 
 ### Added (model-pinned agents)
