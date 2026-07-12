@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.14.0"
+  version: "0.15.0"
 ---
 
 # forge-verify
@@ -34,23 +34,32 @@ and `context/architecture.md` (invariants).
 Go through every item in the spec's "Verify when done" section and check it explicitly.
 Mark each pass/fail with evidence.
 
-### 2. Automated checks
+### 2. The unit's tests
+
+Check the spec's **Tests** section: every listed test must exist and pass. If the spec
+defined tests but they were never written, that is a **FAIL** — implementation isn't
+complete without them. (A spec that explicitly says "none — [reason]" passes this
+check; an older spec with no Tests section gets a Warning recommending tests be
+added.)
+
+### 3. Automated checks (incl. regression gate)
 
 Run the project's real commands (detect from `package.json` scripts / Makefile / etc.):
 
 - type check (e.g. `tsc --noEmit` or `npm run typecheck`)
 - lint (e.g. `npm run lint`)
 - build (e.g. `npm run build`)
-- tests if they exist (e.g. `npm test`)
+- the **full test suite** (e.g. `npm test`) — not just this unit's tests; earlier
+  units' tests staying green is the regression gate for closing this one.
 
 Report exact failures with file/line where available.
 
-### 3. Invariant check
+### 4. Invariant check
 
 Confirm the implementation honors every invariant in `architecture.md` and didn't
 modify protected files from `ai-workflow-rules.md`.
 
-### 4. Adversarial review (subagent)
+### 5. Adversarial review (subagent)
 
 Spawn a subagent (Task tool, general-purpose) to review the unit's diff against the
 spec with a critical eye. Instruct it to look for: scope creep beyond the spec, silent

@@ -7,7 +7,7 @@ description: >
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
 metadata:
-  version: "0.14.0"
+  version: "0.15.0"
 ---
 
 # forge-audit

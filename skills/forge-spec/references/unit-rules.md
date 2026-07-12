@@ -15,7 +15,8 @@ API calls yet" is a unit. "Build the dashboard" is a phase, not a unit.
 
 - Produces one visible, verifiable result.
 - Stays within one system boundary (don't mix UI + DB + background work in one unit).
-- Has a checklist of conditions that must be true before it's complete.
+- Has a checklist of conditions that must be true before it's complete — including
+  the automated tests it ships with (or an explicit "none — [reason]").
 - Doesn't require decisions that belong to another unit.
 
 ## Ordering rules (apply all)

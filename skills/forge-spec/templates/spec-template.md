@@ -23,10 +23,21 @@ Description.
 
 - package-name (reason)
 
+## Tests
+
+<!-- The automated tests THIS unit must ship with (written during implementation,
+     not after). Name what is tested and at what level; "none — [reason]" is
+     allowed for pure-visual/config units, but say so explicitly. -->
+
+- [test level: unit/integration/e2e] [behavior it must prove]
+- ...
+
 ## Verify when done
 
 - [ ] Condition one
 - [ ] Condition two
+- [ ] This unit's tests (above) written and green
+- [ ] Full test suite green (no regressions in earlier units)
 - [ ] No TypeScript errors
 - [ ] No console errors
 - [ ] Responsive at mobile and desktop

@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.14.0"
+  version: "0.15.0"
 ---
 
 # forge-build-all
@@ -46,12 +46,16 @@ For each pending unit N:
 1. **Check the spec.** Require `context/specs/NN-*.md`. If it is missing, STOP the run and
    tell the user to generate it with `forge-spec` (do not invent a spec).
 2. **Mark in progress** in `context/progress-tracker.md`.
-3. **Implement exactly the spec** — only what its Implementation section describes. Use
-   the tokens/patterns in `ui-context.md` and `code-standards.md`. Install only the
+3. **Implement exactly the spec** — only what its Implementation section describes,
+   **including the spec's Tests section** (written during implementation, not after).
+   Use the tokens/patterns in `ui-context.md` and `code-standards.md`. Install only the
    dependencies the spec lists. Do not touch protected files. Do not expand scope or pull
    work from other units; note any discovered out-of-scope work as an open question.
-4. **Verify** against the spec's "Verify when done" checklist and run the project's real
-   build/typecheck/lint. For deeper checking, apply the `forge-verify` logic.
+4. **Verify** — the unit's tests, the **full suite (regression gate)**, the project's
+   real build/typecheck/lint, and the spec's "Verify when done" checklist. On failure,
+   correct in scope and re-run from the top; **the same check failing after two fix
+   attempts is a stop condition** (below). For deeper checking, apply the
+   `forge-verify` logic.
 5. **Decide:**
    - **Pass** → run the close-unit procedure in
      `${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md` (update/rotate
@@ -63,6 +67,8 @@ For each pending unit N:
 ## Stop conditions (any of these ends the run)
 
 - A unit's verification fails or its build/typecheck/lint does not pass.
+- The same check fails after two fix attempts on a unit (needs `forge-debug`, and a
+  human should see the diagnosis before the run continues).
 - A required spec file is missing.
 - The spec is ambiguous or would require a decision that belongs in another unit.
 - An `architecture.md` invariant would be violated.

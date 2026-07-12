@@ -7,7 +7,7 @@ description: >
   updates scope in project-overview.md, inserts correctly-ordered units into the build
   plan, and generates the spec(s) — without breaking existing work.
 metadata:
-  version: "0.14.0"
+  version: "0.15.0"
 ---
 
 # forge-feature
@@ -53,7 +53,7 @@ dependencies). Read that file before decomposing, then insert the new units into
 
 ### 5. Generate the spec(s)
 
-Write a spec file per new unit using the five-section pattern (delegate to the same
+Write a spec file per new unit using the six-section pattern (delegate to the same
 template as `forge-spec`: `${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/templates/spec-template.md`).
 
 ### 6. Update the tracker

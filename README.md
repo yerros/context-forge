@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.14.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.15.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -144,7 +144,7 @@ for `/forge-feature`, `/forge-fix` (bug reports), `/forge-debug` (when stuck),
 | ------- | ------------ |
 | `forge-init` | Reads project state first, then either sets up fresh or **adopts & reconciles** an existing setup (fills gaps only, never overwrites). Detects the stack profile. Greenfield: planning conversation. Brownfield: analyzes the codebase, drafts from real evidence, confirms before writing. |
 | `forge-prompt` | Sharpens a rough request into a high-quality, context-aligned prompt or spec — clarifies goal, scope, constraints, and acceptance, then confirms. Never silently changes your intent. |
-| `forge-spec` | Spec-driven development: builds the ordered build plan (`context/specs/00-build-plan.md`) and writes a five-section spec file per feature unit. |
+| `forge-spec` | Spec-driven development: builds the ordered build plan (`context/specs/00-build-plan.md`) and writes a six-section spec file per feature unit (goal, design, implementation, dependencies, tests, verification). |
 | `forge-feature` | Adds a new feature to a working project: updates scope, inserts correctly-ordered units into the build plan, and generates the spec(s) — without breaking existing work. |
 | `forge-build` | Runs the disciplined implement → verify → close loop for one spec'd unit, strictly in scope, and keeps the tracker in sync. |
 | `forge-build-all` | Runs the build loop across **all** remaining units in order until the plan is complete, verifying each and **stopping at the first failure**. The autonomous, multi-unit version of `forge-build`. |

@@ -8,7 +8,7 @@ description: >
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.14.0"
+  version: "0.15.0"
 ---
 
 # forge-spec
@@ -68,7 +68,7 @@ file `context/specs/NN-feature-name.md` matching the build plan numbering.
 If anything about the unit is unclear, ask the user before writing the spec — a vague
 spec produces vague code.
 
-A spec has five sections:
+A spec has six sections:
 
 1. **Goal** — one or two sentences, concrete. Bad: "Create the auth pages." Good:
    "Create sign-in and sign-up pages using Clerk components with a two-panel layout on
@@ -79,8 +79,13 @@ A spec has five sections:
    enough detail that "done" is unambiguous.
 4. **Dependencies** — packages this unit needs that aren't installed yet, listed
    explicitly with the reason.
-5. **Verify when done** — specific conditions that must be true (plus the standard
-   checks: no type errors, no console errors, responsive, build passes).
+5. **Tests** — the automated tests this unit ships with (level + behavior each must
+   prove), written *during* implementation, not after. Match the project's real test
+   stack from `code-standards.md`. "None — [reason]" is allowed for pure-visual or
+   config-only units, but must be stated, never implied.
+6. **Verify when done** — specific conditions that must be true, plus the standard
+   checks: this unit's tests green, **full suite green (regression gate)**, no type
+   errors, no console errors, responsive, build passes.
 
 One feature may need one spec or several — let complexity decide, not a fixed rule.
 

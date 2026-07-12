@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.14.0"
+  version: "0.15.0"
 ---
 
 # forge-build
@@ -52,6 +52,10 @@ Goal" to the unit's goal.
 ### 3. Implement — exactly the spec, nothing more
 
 - Build only what the spec's Implementation section describes.
+- **Write the unit's tests as you build** — the spec's Tests section is part of the
+  implementation, not an afterthought. If the spec says "none — [reason]", skip;
+  if the spec has no Tests section at all (older spec), propose the obvious tests
+  and confirm with the user.
 - Use the tokens and patterns in `ui-context.md` and `code-standards.md` — make no
   visual or structural guesses.
 - Install only the dependencies the spec lists, and only when first needed.
@@ -59,14 +63,23 @@ Goal" to the unit's goal.
   refactors, or "improvements" outside this unit's scope. If you discover work that
   belongs to another unit, note it as an open question in the tracker instead of doing it.
 
-### 4. Verify against the checklist
+### 4. Verify — an explicit loop with a hard escape
 
-Check every item in the spec's "Verify when done" section. Run the project's real
-build/typecheck/lint command. If any check fails, fix only what's needed to pass —
-stay in scope. For a deeper pass, run the `forge-verify` skill.
+Run, in order: the unit's tests, the **full test suite** (regression gate — earlier
+units must stay green), the project's real build/typecheck/lint, and every item in
+the spec's "Verify when done" section. For a deeper pass, run the `forge-verify`
+skill.
 
-If something built doesn't match the spec, correct it precisely:
-> "The [element] does not match the spec. Expected: [X]. Current: [Y]. Fix only this."
+Then loop:
+
+- **All green** → go to Close.
+- **Something fails** → correct it precisely, staying in scope:
+  > "The [element] does not match the spec. Expected: [X]. Current: [Y]. Fix only this."
+
+  …then **re-run the verification from the top** (a fix can break something else).
+- **The same check fails after two fix attempts** → STOP. Do not try a third blind
+  fix — switch to `forge-debug` (stop-and-diagnose). Resume this loop only after the
+  root cause is fixed.
 
 ### 5. Close
 

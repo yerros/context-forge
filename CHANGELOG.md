@@ -3,6 +3,28 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.15.0] — 2026-07-12
+
+### Changed (build loop hardened — tests first-class, explicit iterate/escalate)
+- **Specs now have six sections**: a **Tests** section (level + behavior each test
+  must prove, matching the project's real test stack) sits between Dependencies and
+  "Verify when done". Tests are written *during* implementation, not after;
+  "none — [reason]" is allowed for pure-visual/config units but must be stated.
+  Template updated; unit-rules.md's good-unit checklist now includes the unit's tests.
+- **`forge-build` step 4 is now an explicit loop with a hard escape**: run the unit's
+  tests → **full suite (regression gate)** → build/typecheck/lint → spec checklist;
+  on failure, correct in scope and **re-run from the top** (a fix can break something
+  else); **the same check failing after two fix attempts → mandatory switch to
+  `forge-debug`** — no third blind fix. Step 3 requires writing the spec'd tests as
+  part of implementation (older specs without a Tests section: propose tests and
+  confirm).
+- **`forge-build-all`**: same test-inclusive implement/verify per unit, and "same
+  check fails after two fix attempts" is now an explicit run-stop condition.
+- **`forge-verify`**: new check — every test the spec's Tests section lists must
+  exist and pass (spec'd-but-unwritten tests = FAIL; older spec without the section =
+  Warning); the automated-checks step now runs the **full suite** as the regression
+  gate, not just "tests if they exist".
+
 ## [0.14.0] — 2026-07-10
 
 ### Added (status line skill indicator)
