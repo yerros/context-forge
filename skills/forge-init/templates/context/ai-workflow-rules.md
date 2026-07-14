@@ -16,6 +16,23 @@ these specs — do not infer or invent behavior from scratch.]
 - Do not combine unrelated system boundaries in a
   single implementation step
 
+## Code Discipline
+
+<!-- Adapted from Karpathy-inspired guidelines
+     (github.com/multica-ai/andrej-karpathy-skills) -->
+
+- **Simplicity first**: the minimum code that solves the
+  problem — no abstractions for single-use code, no
+  unrequested configurability, no error handling for
+  impossible scenarios. If 200 lines could be 50, rewrite.
+- **Surgical changes**: every changed line must trace to
+  the task; do not "improve" adjacent code, comments, or
+  formatting. Clean up imports/variables your change
+  orphaned; leave pre-existing dead code (mention it).
+- **Surface, don't assume**: if a requirement allows two
+  readings, present both and ask; push back when a
+  simpler approach exists.
+
 ## When to Split Work
 
 Split an implementation step if it combines:

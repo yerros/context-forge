@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.19.0"
+  version: "0.19.1"
 ---
 
 # forge-build
@@ -72,6 +72,19 @@ Goal" to the unit's goal.
 - Do NOT touch protected files listed in `ai-workflow-rules.md`. Do NOT add features,
   refactors, or "improvements" outside this unit's scope. If you discover work that
   belongs to another unit, note it as an open question in the tracker instead of doing it.
+- **Simplicity first** (in-scope ≠ license to overbuild): the minimum code that
+  satisfies the spec — no abstractions for single-use code, no configurability or
+  "flexibility" the spec didn't ask for, no error handling for impossible
+  scenarios. The test: would a senior engineer call it overcomplicated? If 200
+  lines could be 50, rewrite before verifying.
+- **Surface interpretations, don't pick silently.** If the spec leaves two readings
+  on a point that changes the implementation, present both and ask — and push back
+  when a clearly simpler approach exists. Residual ambiguity is spec debt: route it
+  back, don't paper over it.
+- **Orphan rule.** Remove imports/variables/functions that *your* change made
+  unused; leave pre-existing dead code alone (mention it, don't delete it). Don't
+  "improve" adjacent code, comments, or formatting — every changed line must trace
+  to the spec.
 
 ### 4. Verify — an explicit loop with a hard escape
 

@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.19.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.19.1-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -380,5 +380,10 @@ Product: The AI-Driven Developer's Playbook"* by
 [JavaScript Mastery](https://youtube.com/@javascriptmastery). This plugin is an
 independent implementation of that methodology and is not affiliated with or endorsed by
 JavaScript Mastery.
+
+The code-discipline rules in the build loop and reviewer (simplicity first, surgical
+changes, surface-don't-assume) adapt the
+[Karpathy-inspired guidelines](https://github.com/multica-ai/andrej-karpathy-skills)
+(MIT), derived from Andrej Karpathy's observations on LLM coding pitfalls.
 
 Built and maintained by [yerros](https://github.com/yerros).

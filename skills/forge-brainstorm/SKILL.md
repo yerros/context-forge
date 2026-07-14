@@ -10,7 +10,7 @@ description: >
   context/ideas.md parking lot) so good ideas never evaporate. Planning only — it
   never writes code.
 metadata:
-  version: "0.19.0"
+  version: "0.19.1"
 ---
 
 # forge-brainstorm

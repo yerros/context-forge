@@ -3,6 +3,31 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.19.1] — 2026-07-13
+
+### Changed (Karpathy-guidelines adoption)
+Adopted the gaps from the Karpathy-inspired guidelines
+(github.com/multica-ai/andrej-karpathy-skills, MIT; credited in the README) —
+injected where they're used (skills/agents/templates), NOT into always-loaded
+context, per the token economy:
+
+- **Simplicity first** — the real gap: all prior discipline governed *scope*, none
+  governed simplicity *within* scope (a spec'd feature could ship 1000 bloated
+  lines and pass review). Now in `forge-build`'s implement rules (minimum code, no
+  single-use abstractions, no unrequested configurability, no impossible-scenario
+  error handling, the senior-engineer test) and `forge-reviewer`'s hunt list
+  (finding #7: overengineering).
+- **Orphan rule** — clean up imports/variables/functions *your* change orphaned;
+  leave pre-existing dead code (mention, don't delete); no orthogonal "improvements"
+  to adjacent code — reviewer hunt #8 checks both directions.
+- **Surface interpretations** — if the spec allows two readings, present both, never
+  pick silently; push back when a simpler approach exists. In `forge-build`;
+  ambiguity is an explicit stop condition in `forge-build-all`.
+- Template `ai-workflow-rules.md` gained a **Code Discipline** section so new
+  projects are born with these rules (Tier 2 — read when relevant, zero always-on
+  cost). Goal-Driven Execution was already covered (specs + verify loop) and needed
+  no adoption.
+
 ## [0.19.0] — 2026-07-13
 
 ### Added (sibling-consistency system)

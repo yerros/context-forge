@@ -36,6 +36,13 @@ files the caller names). Check `context/lessons.md` — a violated lesson is a f
 5. **Edge & error handling** — empty states, failure paths, boundary values the
    spec's checklist implies.
 6. **Convention drift** — patterns inconsistent with code-standards.md / lessons.md.
+7. **Overengineering** — in-scope but overbuilt: abstractions wrapping single-use
+   code, configurability nobody asked for, error handling for impossible states,
+   200 lines where 50 would do. Simplicity is a review criterion, not taste.
+8. **Orthogonal edits & orphans** — changed lines that don't trace to the spec
+   ("improved" adjacent code/comments/formatting, pre-existing dead code deleted
+   unasked), and the inverse: imports/variables/functions the change orphaned but
+   didn't clean up.
 
 ## Output
 

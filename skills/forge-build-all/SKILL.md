@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.19.0"
+  version: "0.19.1"
 ---
 
 # forge-build-all
@@ -57,6 +57,10 @@ For each pending unit N:
    Use the tokens/patterns in `ui-context.md` and `code-standards.md`. Install only the
    dependencies the spec lists. Do not touch protected files. Do not expand scope or pull
    work from other units; note any discovered out-of-scope work as an open question.
+   Apply `forge-build`'s implement rules: simplicity first (minimum code, no
+   speculative abstractions), the orphan rule (clean up only what your change
+   orphaned), and never pick between spec interpretations silently — ambiguity is a
+   stop condition here, not a coin flip.
 4. **Verify** — the unit's tests, the **full suite (regression gate)**, the project's
    real build/typecheck/lint, and the spec's "Verify when done" checklist — with
    quiet/failures-only reporters (green needs one line, not a thousand). On failure,
