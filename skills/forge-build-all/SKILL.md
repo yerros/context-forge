@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.20.0"
+  version: "0.20.1"
 ---
 
 # forge-build-all
@@ -62,8 +62,11 @@ For each pending unit N:
    orphaned), and never pick between spec interpretations silently — ambiguity is a
    stop condition here, not a coin flip.
 4. **Verify** — the unit's tests, the **full suite (regression gate)**, the project's
-   real build/typecheck/lint, and the spec's "Verify when done" checklist — with
-   quiet/failures-only reporters (green needs one line, not a thousand). On failure,
+   real build/typecheck/lint, the spec's "Verify when done" checklist, and the
+   **standards compliance gate** (walk the diff rule-by-rule against
+   `code-standards.md` + `lessons.md`, from the files, not memory — a rule violation
+   fails the unit) — with quiet/failures-only reporters (green needs one line, not a
+   thousand). On failure,
    correct in scope and re-run from the top; **the same check failing after two fix
    attempts is a stop condition** (below). For deeper checking, apply the
    `forge-verify` logic — including its tiered review: spawn `forge-reviewer` only

@@ -3,6 +3,29 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.20.1] — 2026-07-14
+
+### Changed (standards compliance gate)
+Fixes real-world rule drift (e.g. "no `any`" written in code-standards.md, `any`
+still appearing in builds). Root cause: rules were treated as *context* — read once,
+then trusted to memory, which is exactly what drifts mid-session. Rules are now
+treated as **contracts checked explicitly against the diff**:
+
+- **`forge-build`**: implement step declares every `code-standards.md` rule and
+  every lesson a hard constraint that *will be checked*; the verify loop gains a
+  **standards compliance gate** — re-read `code-standards.md` + `lessons.md`, walk
+  the diff **rule by rule** (from the files, never from memory), each rule pass or
+  violating file:line; violations fail the unit like any red test. Same gate in
+  `forge-build-all` (per unit) and `forge-fix` (per fix).
+- **`forge-verify`**: new step 4 — the same rule-by-rule gate, explicitly **never
+  tiered away**; explicit-rule violations are Critical ("the code works" is not a
+  defense). Repeat offender rules get a lesson line so the build loop is pre-warned;
+  mechanically-checkable rules get a recommendation to move into the linter.
+  (Steps renumbered 4–7.)
+- **`forge-audit`**: code-standards section now flags prose rules that could be
+  mechanized into linter/compiler config — tooling enforces at zero token cost and
+  never drifts.
+
 ## [0.20.0] — 2026-07-13
 
 ### Changed (branding)

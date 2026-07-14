@@ -7,7 +7,7 @@ description: >
   compares each of the six files against real evidence in the repo and reports drift,
   then offers to update the docs.
 metadata:
-  version: "0.20.0"
+  version: "0.20.1"
 ---
 
 # forge-audit
@@ -57,6 +57,10 @@ doc edits stays here. If the agent is unavailable, verify in-session.
 - Open several representative source files. Check whether the documented conventions
   (TypeScript strictness, component patterns, API structure, naming) still match what's
   written in the code. Flag rules the code no longer follows.
+- **Flag prose rules that could be mechanized**: any rule a linter/formatter/compiler
+  flag could enforce deterministically (banned constructs, naming, import rules)
+  should live in the project's tooling config, not only in prose — tooling enforces
+  at zero token cost and never drifts. Recommend the specific config change.
 
 ### ui-context.md
 

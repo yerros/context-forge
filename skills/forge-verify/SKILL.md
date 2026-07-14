@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.20.0"
+  version: "0.20.1"
 ---
 
 # forge-verify
@@ -54,12 +54,23 @@ Run the project's real commands (detect from `package.json` scripts / Makefile /
 
 Report exact failures with file/line where available.
 
-### 4. Invariant check
+### 4. Standards compliance gate (rule by rule, every unit)
+
+This step is never tiered away. Re-read `code-standards.md` and `lessons.md`, then
+walk the unit's diff against them **one rule at a time** — for each rule: `pass`, or
+the violating file:line. Check from the files, not from memory; memory is exactly
+what drifts mid-session. Any violation of an explicit rule is **Critical** — written
+rules are contracts, not suggestions, and "the code works" is not a defense. If the
+same rule gets violated across units, record a one-line lesson so the build loop is
+pre-warned — and if the rule is mechanically checkable, recommend adding it to the
+project's linter so tooling enforces it for free.
+
+### 5. Invariant check
 
 Confirm the implementation honors every invariant in `architecture.md` and didn't
 modify protected files from `ai-workflow-rules.md`.
 
-### 4b. Sibling consistency check
+### 6. Sibling consistency check
 
 If the unit's spec names a pattern/exemplar (or `context/patterns.md` has an entry
 it resembles), verify the implementation matches the exemplar on the must-match
@@ -68,7 +79,7 @@ Divergence from the exemplar is a **Warning** (Critical if the spec explicitly
 required the pattern). For a deep pairwise comparison, spawn the `forge-aligner`
 agent with the unit + exemplar paths.
 
-### 5. Adversarial review — tiered by risk
+### 7. Adversarial review — tiered by risk
 
 A full `forge-reviewer` run costs a whole subagent session, so match the review to
 the stakes:

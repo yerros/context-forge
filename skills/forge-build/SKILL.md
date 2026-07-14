@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.20.0"
+  version: "0.20.1"
 ---
 
 # forge-build
@@ -67,7 +67,10 @@ Goal" to the unit's goal.
   if the spec has no Tests section at all (older spec), propose the obvious tests
   and confirm with the user.
 - Use the tokens and patterns in `ui-context.md` and `code-standards.md` — make no
-  visual or structural guesses.
+  visual or structural guesses. **Every rule in `code-standards.md` and every
+  lesson in `lessons.md` is a hard constraint, not a style suggestion — each will
+  be explicitly checked against your diff at verify.** Before writing each file,
+  recall which rules apply to it.
 - Install only the dependencies the spec lists, and only when first needed.
 - Do NOT touch protected files listed in `ai-workflow-rules.md`. Do NOT add features,
   refactors, or "improvements" outside this unit's scope. If you discover work that
@@ -89,9 +92,12 @@ Goal" to the unit's goal.
 ### 4. Verify — an explicit loop with a hard escape
 
 Run, in order: the unit's tests, the **full test suite** (regression gate — earlier
-units must stay green), the project's real build/typecheck/lint, and every item in
-the spec's "Verify when done" section. For a deeper pass, run the `forge-verify`
-skill.
+units must stay green), the project's real build/typecheck/lint, the spec's "Verify
+when done" checklist, and the **standards compliance gate**: re-read
+`code-standards.md` and `lessons.md`, then walk YOUR diff against them **rule by
+rule** — for each rule, state pass or name the violating file:line. Do not check
+from memory of the rules; check from the files. A rule violation is a failure like
+any other: fix it and re-run. For a deeper pass, run the `forge-verify` skill.
 
 **Keep the output cheap:** run tests/linters with quiet or failures-only reporters
 (e.g. `--reporter=dot`, `--quiet`, `2>&1 | tail`) — a green suite needs one summary
