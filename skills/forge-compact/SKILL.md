@@ -9,7 +9,7 @@ description: >
   dropping facts), rotates tracker history, and (re)generates the compact
   context-digest.md used for tiered loading.
 metadata:
-  version: "0.20.1"
+  version: "0.21.0"
 ---
 
 # forge-compact

@@ -3,6 +3,24 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.21.0] — 2026-07-14
+
+### Added
+- **`forge-health`** (new, 19th skill) — whole-codebase QA/QC. Rationale: every unit
+  passes `forge-verify` individually, but nobody owned aggregate quality. Five
+  dimensions: test-suite health (coverage gaps, hollow/skipped tests), error
+  handling on critical paths, basic security hygiene (committed secrets,
+  injection-prone spots, dependency audit — hygiene, not a pentest), performance
+  smells (flag for measurement, never guess numbers), and dead-code inventory
+  (mention, don't delete). Cheap by design: `forge-scout` sweeps with evidence,
+  deterministic tools (coverage, `npm audit`) run as commands, `forge-reviewer`
+  judges only the riskiest hotspots. Findings route through the existing pipeline
+  (`forge-fix` / spec'd refactor units / lessons / linter recommendations) — never
+  a mass edit. Deliberately NOT a new agent: per-unit QA is already
+  `forge-verify` + `forge-reviewer`, and a second reviewer would duplicate, not
+  deepen. Explicitly cross-referenced against `forge-audit` (docs vs code) and
+  `forge-align` (consistency) to avoid overlap.
+
 ## [0.20.1] — 2026-07-14
 
 ### Changed (standards compliance gate)

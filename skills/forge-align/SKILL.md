@@ -9,7 +9,7 @@ description: >
   divergences against the exemplar, registers missing patterns in patterns.md, and
   turns approved alignments into refactor units built with the normal discipline.
 metadata:
-  version: "0.20.1"
+  version: "0.21.0"
 ---
 
 # forge-align

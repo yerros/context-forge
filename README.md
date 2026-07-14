@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.20.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.21.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -63,9 +63,10 @@ The workflow runs in four phases:
    unit tests → full suite (regression gate) → build/typecheck/lint → spec checklist.
    Same failure twice → mandatory stop-and-diagnose (`/forge-debug`), never a third
    blind fix. Ship per unit with `/forge-pr`.
-4. **Maintenance** (`/forge-audit`, `/forge-align`, `/forge-compact`) — keep docs
-   honest against the code, keep sibling features in one dialect, keep the recurring
-   token cost under budget.
+4. **Maintenance** (`/forge-audit`, `/forge-align`, `/forge-health`,
+   `/forge-compact`) — keep docs honest against the code, keep sibling features in
+   one dialect, keep aggregate quality (tests, error handling, security hygiene)
+   healthy, keep the recurring token cost under budget.
 
 Code discipline is enforced at every point code can be born: minimum code that
 satisfies the spec (no speculative abstractions, no unrequested configurability),
@@ -134,6 +135,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-fix` | Intake for bug reports in shipped work: reproduce, triage (fix directly when obvious; hand off to `forge-debug` when not), verify, close with tracker + lesson + `fix/` branch. |
 | `forge-debug` | Stop-and-diagnose when stuck or after repeated failures: reproduce, isolate, re-read invariants, present root-cause options — no guess-fixing. |
 | `forge-align` | Finds and fixes consistency drift between similar features: maps feature families, registers canonical patterns with exemplars, and turns approved alignments into refactor units. |
+| `forge-health` | Whole-codebase QA pass across five dimensions — test-suite health, error handling on critical paths, basic security hygiene, performance smells, dead code — with evidence-backed findings routed into the normal fix/refactor pipeline. |
 | `forge-pr` | Ships a verified unit: branch (`feat/NN`, `fix/NN`), conventional commit, PR with a spec-derived summary. |
 | `forge-decision` | Logs an Architecture Decision Record to `decisions.md` and keeps `architecture.md` in sync. |
 | `forge-lesson` | "Remember this / forget that": distills corrections into one-line lessons (per project) or preferences (cross-project), within budget, promoting recurring ones into real standards. |
@@ -246,7 +248,7 @@ reviewer is tiered — a full subagent review only where the stakes justify it.
 ```
 context-forge/
 ├── .claude-plugin/          # plugin + marketplace manifests
-├── skills/                  # the 18 forge-* skills (+ bundled templates,
+├── skills/                  # the 19 forge-* skills (+ bundled templates,
 │   └── .../                 #   references, detect/migrate scripts)
 ├── agents/                  # 5 model-pinned subagents
 ├── hooks/                   # hooks.json + zero-token shell scripts

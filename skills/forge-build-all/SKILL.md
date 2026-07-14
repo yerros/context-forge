@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.20.1"
+  version: "0.21.0"
 ---
 
 # forge-build-all
