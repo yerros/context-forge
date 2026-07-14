@@ -1,14 +1,14 @@
 ---
 name: forge-build-all
 description: >
-  This skill should be used to build every remaining unit in a Six-File Context
+  This skill should be used to build every remaining unit in a Context Forge
   Methodology project in one continuous run — phrases like "forge-build-all", "build
   all units", "run the whole build", "build everything", "loop until the build plan is
   done", "finish all the specs", or "autonomous build". It runs the implement → verify →
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-build-all

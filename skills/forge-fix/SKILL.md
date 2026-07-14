@@ -2,7 +2,7 @@
 name: forge-fix
 description: >
   This skill should be used when a bug is reported in already-built work in a
-  Six-File Context Methodology project — phrases like "forge-fix", "there's a bug
+  Context Forge methodology project — phrases like "forge-fix", "there's a bug
   in X", "fix this bug", "X is broken", "this stopped working", or "users report
   an error in Y". It intakes and reproduces the bug, triages it (fix directly when
   the cause is obvious; hand off to forge-debug when it isn't), and closes with the
@@ -10,7 +10,7 @@ description: >
   forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
   or for correcting the unit currently being built (that is forge-build's loop).
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-fix

@@ -1,7 +1,7 @@
 ---
 name: forge-archivist
 description: >
-  Mechanical bookkeeping agent for the Six-File Context Methodology. Use for the
+  Mechanical bookkeeping agent for the Context Forge methodology. Use for the
   administrative half of closing a unit — tracker update and rotation, spec
   archival, build-plan tidying, digest State refresh — and for forge-compact's
   measurement pass. Invoked from the close-unit procedure (forge-build,

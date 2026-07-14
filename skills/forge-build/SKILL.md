@@ -2,12 +2,12 @@
 name: forge-build
 description: >
   This skill should be used to implement one build unit in a project that uses the
-  Six-File Context Methodology — phrases like "forge-build", "build unit NN", "run
+  Context Forge methodology — phrases like "forge-build", "build unit NN", "run
   the build loop", "implement the next unit", or "build the next spec". It runs the
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-build

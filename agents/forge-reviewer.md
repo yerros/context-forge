@@ -1,7 +1,7 @@
 ---
 name: forge-reviewer
 description: >
-  Adversarial code reviewer for the Six-File Context Methodology. Use to review a
+  Adversarial code reviewer for the Context Forge methodology. Use to review a
   unit's diff against its spec before the unit closes or ships — looks for scope
   creep, invariant violations, missing tests, edge cases, and "works but wrong".
   Invoked by forge-verify (always), and optionally by forge-pr and forge-fix for

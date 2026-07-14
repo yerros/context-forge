@@ -2,12 +2,12 @@
 name: forge-verify
 description: >
   This skill should be used to verify a build unit before closing it in a project that
-  uses the Six-File Context Methodology — phrases like "forge-verify", "verify this
+  uses the Context Forge methodology — phrases like "forge-verify", "verify this
   unit", "check the unit is done", "run the verification checklist", or "review before
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-verify

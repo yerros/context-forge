@@ -3,6 +3,19 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.20.0] — 2026-07-13
+
+### Changed (branding)
+- **The methodology now stands on its own name.** All references to the former
+  methodology branding across the 18 skills, 5 agents, hooks (`[Context Forge]`
+  SessionStart tag), `detect.sh` report header (`=== CONTEXT FORGE: STATE REPORT
+  ===`), manifests, and CONTRIBUTING replaced with "Context Forge methodology" /
+  "Context Forge project". README rewritten earlier with the same identity and no
+  external references; historical CHANGELOG entries left untouched. The `context/`
+  data layout and all commands are unchanged — this is naming only, no behavior
+  change (minor bump because the SessionStart injection text and detector header
+  are observable outputs).
+
 ## [0.19.1] — 2026-07-13
 
 ### Changed (Karpathy-guidelines adoption)

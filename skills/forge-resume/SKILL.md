@@ -2,13 +2,13 @@
 name: forge-resume
 description: >
   This skill should be used at the start of a work session on a project that uses the
-  Six-File Context Methodology — phrases like "forge-resume", "resume the project",
+  Context Forge methodology — phrases like "forge-resume", "resume the project",
   "where did we leave off", "pick up where we stopped", "restore context", or "read
   the context files and continue". It restores project context tier by tier (digest
   and tracker first, full files only as the task requires) so work continues without
   drift and without burning tokens.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-resume

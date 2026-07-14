@@ -1,7 +1,7 @@
 ---
 name: forge-lesson
 description: >
-  This skill should be used to save or manage persistent memory in a Six-File Context
+  This skill should be used to save or manage persistent memory in a Context Forge
   Methodology project — phrases like "forge-lesson", "remember this", "log a lesson",
   "don't make that mistake again", "note this for next time", "save this as a
   preference", or "forget that lesson". It appends a distilled one-line lesson to
@@ -9,7 +9,7 @@ description: >
   with approval), keeps both within budget, and promotes recurring lessons into the
   real context files.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-lesson

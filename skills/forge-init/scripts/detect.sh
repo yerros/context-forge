@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# detect.sh — deterministic report of a project's Six-File Context state.
+# detect.sh — deterministic report of a project's Context Forge state.
 # Run from the project root. Output is a stable, line-based report the skill
 # parses to decide between SETUP (fresh), ADOPT (already present), or REPAIR
 # (present but incomplete). Read-only: this script never writes anything.
@@ -95,7 +95,7 @@ if [ "$present" -gt 0 ]; then
   fi
 fi
 
-say "=== SIX-FILE CONTEXT: STATE REPORT ==="
+say "=== CONTEXT FORGE: STATE REPORT ==="
 say "verdict: $verdict"
 say "context_dir_path: $CTX"
 say "context_dir: $ctx_dir"

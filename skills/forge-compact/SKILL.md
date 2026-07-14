@@ -1,7 +1,7 @@
 ---
 name: forge-compact
 description: >
-  This skill should be used to shrink the recurring token cost of a Six-File Context
+  This skill should be used to shrink the recurring token cost of a Context Forge
   Methodology project — phrases like "forge-compact", "compact the context", "the
   context files are too big", "reduce token usage", "trim the context files",
   "generate the digest", or "make resume cheaper". It measures every context file
@@ -9,7 +9,7 @@ description: >
   dropping facts), rotates tracker history, and (re)generates the compact
   context-digest.md used for tiered loading.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-compact

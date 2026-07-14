@@ -1,7 +1,7 @@
 ---
 name: forge-aligner
 description: >
-  Code-consistency checker for the Six-File Context Methodology. Use when similar
+  Code-consistency checker for the Context Forge methodology. Use when similar
   features (CRUD siblings, parallel screens, api routes) may have drifted into
   different dialects — compares sibling implementations pairwise and reports
   divergences in naming, structure, error handling, and validation, naming the

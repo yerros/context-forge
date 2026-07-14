@@ -2,12 +2,12 @@
 name: forge-feature
 description: >
   This skill should be used to add a new feature to an existing project that uses the
-  Six-File Context Methodology — phrases like "forge-feature", "add a feature",
+  Context Forge methodology — phrases like "forge-feature", "add a feature",
   "I want to add X to the app", "plan a new feature", or "extend the build plan". It
   updates scope in project-overview.md, inserts correctly-ordered units into the build
   plan, and generates the spec(s) — without breaking existing work.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-feature

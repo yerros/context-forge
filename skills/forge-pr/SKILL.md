@@ -1,12 +1,12 @@
 ---
 name: forge-pr
 description: >
-  This skill should be used to close out a completed unit with git in a Six-File Context
+  This skill should be used to close out a completed unit with git in a Context Forge
   Methodology project — phrases like "forge-pr", "open a PR for this unit", "ship this
   unit", "commit and push", or "close unit NN". It creates the branch, makes a
   conventional commit, and opens a pull request with a spec-derived summary.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-pr

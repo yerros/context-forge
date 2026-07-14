@@ -1,7 +1,7 @@
 ---
 name: forge-init
 description: >
-  This skill should be used when the user wants to set up the Six-File Context
+  This skill should be used when the user wants to set up the Context Forge
   Methodology in a project — phrases like "init context", "set up context files",
   "scaffold the six files", "forge-init", "create CLAUDE.md and context docs",
   "analyze this project and fill the context templates", or "bootstrap AI context
@@ -11,12 +11,12 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-init
 
-Set up the Six-File Context System in the user's project: the `context/` folder
+Set up the Context Forge context system in the user's project: the `context/` folder
 with six markdown files plus an agent entry point (`CLAUDE.md` or `AGENTS.md`).
 The blank templates are bundled at `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/`.
 

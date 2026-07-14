@@ -1,12 +1,12 @@
 ---
 name: forge-decision
 description: >
-  This skill should be used to log an architecture decision in a Six-File Context
+  This skill should be used to log an architecture decision in a Context Forge
   Methodology project — phrases like "forge-decision", "log this decision", "record an
   ADR", "we decided to...", "document why we chose X", or "add a decision record". It
   appends a structured ADR entry to context/decisions.md.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-decision

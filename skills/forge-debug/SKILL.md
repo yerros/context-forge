@@ -2,12 +2,12 @@
 name: forge-debug
 description: >
   This skill should be used when implementation is stuck or the agent keeps getting
-  something wrong in a Six-File Context Methodology project — phrases like
+  something wrong in a Context Forge project — phrases like
   "forge-debug", "this keeps failing", "the agent can't fix this", "we're going in
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-debug

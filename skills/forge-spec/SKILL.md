@@ -2,13 +2,13 @@
 name: forge-spec
 description: >
   This skill should be used for spec-driven development on a project that uses the
-  Six-File Context Methodology — phrases like "forge-spec", "create a build plan",
+  Context Forge methodology — phrases like "forge-spec", "create a build plan",
   "break this into units", "write a spec for this feature", "generate a spec file",
   or "plan the build". It decomposes a project into ordered, verifiable build units
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-spec

@@ -1,7 +1,7 @@
 ---
 name: forge-scout
 description: >
-  Fast, cheap codebase scout for the Six-File Context Methodology. Use for
+  Fast, cheap codebase scout for the Context Forge methodology. Use for
   read-many-conclude-little work: mapping structure and boundaries, detecting the
   stack, gathering evidence for context files, collecting drift evidence per file,
   or isolating where a failure lives. Invoked by forge-init (brownfield analysis),

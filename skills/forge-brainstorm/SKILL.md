@@ -1,7 +1,7 @@
 ---
 name: forge-brainstorm
 description: >
-  This skill should be used for grounded ideation in a Six-File Context Methodology
+  This skill should be used for grounded ideation in a Context Forge methodology
   project — phrases like "forge-brainstorm", "brainstorm ideas for X", "what should
   we build next", "I have a vague idea", "explore options for", "which approach is
   better", or "help me think this through". It diverges into options, stress-tests
@@ -10,7 +10,7 @@ description: >
   context/ideas.md parking lot) so good ideas never evaporate. Planning only — it
   never writes code.
 metadata:
-  version: "0.19.1"
+  version: "0.20.0"
 ---
 
 # forge-brainstorm
