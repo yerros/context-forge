@@ -3,6 +3,26 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.17.0] — 2026-07-13
+
+### Added
+- **`forge-brainstorm`** (new, 16th skill) — the fuzzy front-end the flow was
+  missing: every existing skill assumes you already know what you want
+  (`forge-prompt` sharpens a request, `forge-feature` assumes a feature,
+  `forge-decision` records a decision); vague-idea conversations happened in free
+  chat, ungrounded and evaporating with the session. The flow: **diverge** (3–6
+  genuinely different options, always including "don't build it") → **stress-test**
+  each against project-overview scope/out-of-scope, architecture invariants,
+  recorded lessons, and rough effort in units → **converge** (1–2 survivors with
+  honest trade-offs) → **route** so ideas never evaporate: `forge-feature` (build),
+  `forge-decision` (ADR), the new **`context/ideas.md` parking lot** (one line per
+  idea with wake condition, ~1.5 KB budget, never auto-read, template bundled), or
+  an explicit dead end. Planning only — never touches code; in-session by design
+  (dialogue, not a subagent job); Tier-1 + project-overview load.
+- `ideas.md` integrated into the discipline: budget row in token-economy.md, `Stop`
+  hook budget check, and a forge-compact treatment (drop dead ideas, promote ripe
+  ones).
+
 ## [0.16.2] — 2026-07-12
 
 ### Changed (quota cost tuning)

@@ -57,6 +57,7 @@ unchanged prefix stays cacheable across sessions.
 | --- | --- |
 | `context/context-digest.md` | ~2.5 KB / ~600 tokens |
 | `context/lessons.md` | ~1.5 KB / ~400 tokens (memory contract: forge-lesson's memory.md) |
+| `context/ideas.md` | ~1.5 KB / ~400 tokens (parking lot — never auto-read; forge-brainstorm) |
 | `context/progress-tracker.md` | ~6 KB / ~1,500 tokens (active window; see close-unit.md) |
 | `architecture.md`, `ui-context.md`, `code-standards.md`, `project-overview.md`, `ai-workflow-rules.md` | ~10 KB / ~2,500 tokens each |
 | Entry point (`CLAUDE.md`/`AGENTS.md`) | keep lean; big tables/reference blocks go in on-demand files |

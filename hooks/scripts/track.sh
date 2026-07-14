@@ -33,6 +33,7 @@ check_budget() { # $1=file $2=budget_bytes $3=budget label $4=fix hint
 check_budget "context/progress-tracker.md" 6144  "6 KB"   "rotate old entries into context/progress-archive.md (or run forge-compact)"
 check_budget "context/context-digest.md"   2560  "2.5 KB" "regenerate a tighter digest (or run forge-compact)"
 check_budget "context/lessons.md"          1536  "1.5 KB" "merge/promote lessons via forge-lesson (or run forge-compact)"
+check_budget "context/ideas.md"            1536  "1.5 KB" "drop dead ideas / promote ripe ones via forge-brainstorm or forge-compact"
 for f in architecture ui-context code-standards project-overview ai-workflow-rules; do
   check_budget "context/$f.md" 10240 "10 KB" "tighten prose or split detail into an on-demand reference file (or run forge-compact)"
 done
