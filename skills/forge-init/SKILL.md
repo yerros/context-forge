@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.18.0"
+  version: "0.18.1"
 ---
 
 # forge-init
@@ -81,8 +81,13 @@ the project's memory is guaranteed to be committed. When writing the entry point
 replace every `context/` path in the template with `.forge/` and state the context
 directory explicitly at the top.
 
-Existing projects can migrate anytime with `git mv context .forge` — the resolution
-picks it up automatically.
+Existing projects migrate with one command — it moves the directory with git
+history, rewrites entry-point paths, and guards `.gitignore`, refusing to touch a
+framework's `context/` folder (`--dry-run` to preview):
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/migrate-to-forge.sh"
+```
 
 ### Mode + Profile (only when verdict is SETUP)
 

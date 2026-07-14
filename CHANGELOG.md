@@ -3,6 +3,21 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.18.1] — 2026-07-13
+
+### Added
+- **`migrate-to-forge.sh`** — one-command migration of `context/` → `.forge/`
+  (bundled in forge-init's scripts; `--dry-run` supported). Safety-first and
+  idempotent: refuses to move a `context/` folder that doesn't hold the
+  methodology's files (i.e. your framework's context folder) and refuses when
+  `.forge/` already has them; uses `git mv` so history is preserved; rewrites
+  `context/` → `.forge/` paths in `CLAUDE.md`/`AGENTS.md`; and guards `.gitignore`
+  using a **hypothetical-new-file probe** (tracked files pass `git check-ignore`
+  even under matching ignore patterns — the real risk is future files like
+  `progress-archive.md` silently not being committed), appending `!.forge/` when
+  needed and warning if a later rule still overrides it. Never auto-commits.
+  Referenced from forge-init's Placement step and the README.
+
 ## [0.18.0] — 2026-07-13
 
 ### Added (configurable context directory)
