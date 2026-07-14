@@ -3,6 +3,28 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.18.0] — 2026-07-13
+
+### Added (configurable context directory)
+- **`.forge/` as an alternative context directory.** Motivations: avoid clashes
+  with frameworks that use a `context/` folder, and a tidier repo root. One
+  deterministic resolution rule everywhere — `.forge/` wins when it exists,
+  otherwise the classic `context/` default: implemented in `detect.sh` (new
+  `context_dir_path` report line), the `SessionStart` hook (injects the resolved
+  dir and says so explicitly), `track.sh`, and `guard.sh` (protected-paths in
+  either location). `.forge/` was chosen over `.claude/context/` deliberately:
+  tool-agnostic (works for AGENTS.md/Codex users too) and absent from common
+  `.gitignore` templates.
+- `forge-init` **Placement step**: asks once on fresh setups, auto-recommends
+  `.forge/` when a root `context/` already holds code, rewrites entry-point paths
+  accordingly, and **guards `.gitignore`** (adds `!.forge/` if a pattern would
+  ignore it) — the context files are the project's memory and must stay committed.
+- Migration for existing projects: `git mv context .forge` — picked up
+  automatically.
+- Canonical rule documented in token-economy.md ("every `context/...` path means
+  the resolved dir"); entry-point templates carry the substitution note; README
+  updated.
+
 ## [0.17.0] — 2026-07-13
 
 ### Added

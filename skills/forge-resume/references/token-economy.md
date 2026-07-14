@@ -5,6 +5,16 @@ Used by `forge-resume` (tiered loading), `forge-build` / `forge-build-all` (load
 step), `forge-compact` (budgets), `forge-audit` (budget check), and the close-unit
 procedure (digest refresh). If budgets or tiers change, change them HERE only.
 
+## Context directory
+
+Two supported locations, resolved by one deterministic rule (`detect.sh` reports it
+as `context_dir_path`): **`.forge/` wins when it exists** (hidden, tidy, no clash
+with framework `context/` folders); otherwise **`context/`** (default, visible).
+Every `context/...` path in the skills, agents, and references means "the resolved
+context dir" — substitute `.forge/` throughout when the project uses it. The entry
+point and the `SessionStart` hook state the resolved dir explicitly, so no session
+has to guess.
+
 ## Principle
 
 Context files exist so the agent never guesses — but re-reading everything every

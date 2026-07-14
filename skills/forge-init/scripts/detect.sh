@@ -6,7 +6,18 @@
 
 set -u
 
-CTX="context"
+# --- context dir resolution (deterministic, single rule) ---
+# .forge/ wins when it already holds the methodology's files, or exists as an
+# explicit opt-in (even empty). Otherwise the classic default: context/.
+if [ -f ".forge/progress-tracker.md" ] || [ -f ".forge/project-overview.md" ]; then
+  CTX=".forge"
+elif [ -f "context/progress-tracker.md" ] || [ -f "context/project-overview.md" ]; then
+  CTX="context"
+elif [ -d ".forge" ]; then
+  CTX=".forge"
+else
+  CTX="context"
+fi
 SIX="project-overview architecture ui-context code-standards ai-workflow-rules progress-tracker"
 
 say() { printf '%s\n' "$1"; }
@@ -17,7 +28,7 @@ ENTRY="none"
 [ -f "CLAUDE.md" ] && ENTRY="CLAUDE.md"   # CLAUDE.md wins if both exist
 
 entry_links_context="no"
-if [ "$ENTRY" != "none" ] && grep -q "context/" "$ENTRY" 2>/dev/null; then
+if [ "$ENTRY" != "none" ] && grep -qE "(context|\.forge)/" "$ENTRY" 2>/dev/null; then
   entry_links_context="yes"
 fi
 
@@ -86,6 +97,7 @@ fi
 
 say "=== SIX-FILE CONTEXT: STATE REPORT ==="
 say "verdict: $verdict"
+say "context_dir_path: $CTX"
 say "context_dir: $ctx_dir"
 say "six_files_present: $present/6"
 say "present_files:$declare_present"

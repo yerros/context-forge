@@ -7,15 +7,19 @@
 
 set -u
 
-[ -f context/progress-tracker.md ] || exit 0
+# Context dir resolution (same rule as detect.sh).
+CTX=context
+[ -f .forge/progress-tracker.md ] && CTX=.forge
+
+[ -f "$CTX/progress-tracker.md" ] || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 
 # Uncommitted changes, excluding the tracker and our own activity file.
 changed=$(git status --porcelain -uall 2>/dev/null \
   | cut -c4- \
-  | grep -vE '(^|/)context/progress-tracker\.md$' \
-  | grep -vE '(^|/)context/\.last-session\.md$')
+  | grep -vE "(^|/)$CTX/progress-tracker\.md$" \
+  | grep -vE "(^|/)$CTX/\.last-session\.md$")
 
 [ -z "$changed" ] && exit 0
 
@@ -30,12 +34,12 @@ check_budget() { # $1=file $2=budget_bytes $3=budget label $4=fix hint
 "
   fi
 }
-check_budget "context/progress-tracker.md" 6144  "6 KB"   "rotate old entries into context/progress-archive.md (or run forge-compact)"
-check_budget "context/context-digest.md"   2560  "2.5 KB" "regenerate a tighter digest (or run forge-compact)"
-check_budget "context/lessons.md"          1536  "1.5 KB" "merge/promote lessons via forge-lesson (or run forge-compact)"
-check_budget "context/ideas.md"            1536  "1.5 KB" "drop dead ideas / promote ripe ones via forge-brainstorm or forge-compact"
+check_budget "$CTX/progress-tracker.md" 6144  "6 KB"   "rotate old entries into $CTX/progress-archive.md (or run forge-compact)"
+check_budget "$CTX/context-digest.md"   2560  "2.5 KB" "regenerate a tighter digest (or run forge-compact)"
+check_budget "$CTX/lessons.md"          1536  "1.5 KB" "merge/promote lessons via forge-lesson (or run forge-compact)"
+check_budget "$CTX/ideas.md"            1536  "1.5 KB" "drop dead ideas / promote ripe ones via forge-brainstorm or forge-compact"
 for f in architecture ui-context code-standards project-overview ai-workflow-rules; do
-  check_budget "context/$f.md" 10240 "10 KB" "tighten prose or split detail into an on-demand reference file (or run forge-compact)"
+  check_budget "$CTX/$f.md" 10240 "10 KB" "tighten prose or split detail into an on-demand reference file (or run forge-compact)"
 done
 
 {
@@ -43,11 +47,11 @@ done
   printf 'Updated: %s\n\n' "$(date '+%Y-%m-%d %H:%M')"
   printf 'Changed files (uncommitted):\n\n'
   printf '%s\n' "$changed" | sed 's/^/- /'
-  printf '\nReminder: record this work in context/progress-tracker.md if it is not already captured.\n'
+  printf '\nReminder: record this work in %s/progress-tracker.md if it is not already captured.\n' "$CTX"
   if [ -n "$budget_report" ]; then
     printf '\nContext files over their token budget:\n\n'
     printf '%s' "$budget_report"
   fi
-} > context/.last-session.md
+} > "$CTX/.last-session.md"
 
 exit 0

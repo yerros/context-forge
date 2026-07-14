@@ -1,5 +1,9 @@
 ## Application Building Context
 
+Context directory: `context/`
+<!-- If this project keeps its context in .forge/,
+     every context/ path below means .forge/ -->
+
 This project uses **tiered context loading** to stay
 token-efficient. Do not read all context files by
 default — read by tier:

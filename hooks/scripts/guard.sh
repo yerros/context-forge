@@ -38,11 +38,13 @@ case "$fp" in
     deny "context-forge: lock files are generated and should not be hand-edited; change the manifest and re-resolve instead." ;;
 esac
 
-# User-configured protected globs: one glob per line in context/protected-paths
+# User-configured protected globs: one glob per line in <context-dir>/protected-paths
 # (lines starting with # are comments). Matches against the absolute path, the
 # project-relative path, or the basename — so relative globs like src/generated/*
 # still match when the tool sends an absolute path.
-if [ -f context/protected-paths ]; then
+pp="context/protected-paths"
+[ -f ".forge/protected-paths" ] && pp=".forge/protected-paths"
+if [ -f "$pp" ]; then
   base=${fp##*/}
   while IFS= read -r pat || [ -n "$pat" ]; do
     [ -z "$pat" ] && continue
@@ -51,7 +53,7 @@ if [ -f context/protected-paths ]; then
       # shellcheck disable=SC2254
       case "$candidate" in $pat) deny "context-forge: this file matches a protected path in context/protected-paths." ;; esac
     done
-  done < context/protected-paths
+  done < "$pp"
 fi
 
 exit 0

@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.17.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.18.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -235,8 +235,16 @@ Or run `/statusline` and ask for "a forge skill indicator reading
 
 ## The six files
 
+The context directory is **`context/`** by default, or **`.forge/`** if you prefer a
+hidden, tidy root (or your framework already uses a `context/` folder). One
+deterministic rule everywhere: `.forge/` wins when it exists. Choose at
+`forge-init` time, or migrate an existing project with `git mv context .forge` —
+detection picks it up automatically. If `.forge/` is chosen, `forge-init` guards
+your `.gitignore` (adding `!.forge/` when needed): the context files are the
+project's memory and **must** stay committed.
+
 ```
-context/
+context/            # or .forge/ — same layout either way
 ├── project-overview.md   # what & why — goals, flows, features, scope
 ├── architecture.md       # stack, boundaries, storage, auth, invariants
 ├── ui-context.md         # colors, typography, components, layout

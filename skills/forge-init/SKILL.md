@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.17.0"
+  version: "0.18.0"
 ---
 
 # forge-init
@@ -63,6 +63,26 @@ preference on brownfield. Contract:
 At the end of a run, if the conversation surfaced clearly cross-project preferences
 that aren't saved yet, offer (never force) to append them to
 `~/.context-forge/preferences.md` — one line each, shown before writing.
+
+### Placement (only when verdict is SETUP)
+
+The detector's `context_dir_path` is where the files will live. Two supported
+locations, resolved deterministically (`.forge/` wins when present):
+
+- **`context/`** (default) — visible at the root; best for teams and human
+  readability.
+- **`.forge/`** — hidden, tidy root, avoids clashes with framework `context/`
+  folders. **Recommend this automatically** if a root `context/` directory already
+  exists holding code (non-methodology files). Otherwise ask the user once.
+
+If `.forge/` is chosen: create the directory (that's the opt-in marker), and
+**check `.gitignore`** — if any pattern would ignore `.forge/`, add `!.forge/` so
+the project's memory is guaranteed to be committed. When writing the entry point,
+replace every `context/` path in the template with `.forge/` and state the context
+directory explicitly at the top.
+
+Existing projects can migrate anytime with `git mv context .forge` — the resolution
+picks it up automatically.
 
 ### Mode + Profile (only when verdict is SETUP)
 
