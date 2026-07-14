@@ -3,6 +3,16 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.18.2] — 2026-07-13
+
+### Added
+- **`forge-migrate`** (new, 17th skill) — `/forge-migrate` wraps the migration
+  script so nobody has to locate it: dry-run preview → explicit confirmation → run
+  (git mv + entry-point rewrite + `.gitignore` guard) → detector verification →
+  offered commit. Deliberately a command, not an auto-migration: moving the
+  project's memory must never happen as a side effect. The script's refusals
+  (framework `context/` folder, populated `.forge/`) are relayed, never bypassed.
+
 ## [0.18.1] — 2026-07-13
 
 ### Added

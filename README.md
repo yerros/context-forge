@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.18.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.18.2-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -160,6 +160,7 @@ for `/forge-brainstorm` (grounded ideation before anything is decided),
 | `forge-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
 | `forge-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
 | `forge-decision` | Logs an Architecture Decision Record (ADR) to `context/decisions.md` and keeps `architecture.md` in sync. |
+| `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, then git-history-preserving move + entry-point path rewrite + `.gitignore` guard. |
 | `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers to update the docs. |
 | `forge-resume` | Restores context tier by tier at the start of a session (digest + tracker first, full files per task) and briefs you on where things stand. |
 | `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses over-budget files with approval, rotates tracker history, and (re)generates `context-digest.md`. |
@@ -238,13 +239,11 @@ Or run `/statusline` and ask for "a forge skill indicator reading
 The context directory is **`context/`** by default, or **`.forge/`** if you prefer a
 hidden, tidy root (or your framework already uses a `context/` folder). One
 deterministic rule everywhere: `.forge/` wins when it exists. Choose at
-`forge-init` time, or migrate an existing project with the bundled script (ask
-Claude to "migrate my context dir to .forge", or run
-`skills/forge-init/scripts/migrate-to-forge.sh` from the project root — `--dry-run`
-to preview). It moves the directory with git history, rewrites entry-point paths,
-guards your `.gitignore` (adding `!.forge/` when needed — the context files are the
-project's memory and **must** stay committed), and refuses to touch a framework's
-`context/` folder.
+`forge-init` time, or migrate an existing project with **`/forge-migrate`** — it
+previews first, then moves the directory with git history, rewrites entry-point
+paths, guards your `.gitignore` (adding `!.forge/` when needed — the context files
+are the project's memory and **must** stay committed), and refuses to touch a
+framework's `context/` folder.
 
 ```
 context/            # or .forge/ — same layout either way
