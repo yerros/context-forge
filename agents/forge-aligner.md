@@ -42,6 +42,19 @@ Check the dimensions that make siblings feel same-handed:
 5. **Data access** — same fetch/query pattern, same cache/invalidation approach.
 6. **State & wiring** — same state library usage, same loading/empty/error states.
 7. **Tests** — siblings tested the same way at the same level.
+8. **Function & implementation style** — how the code itself is written: function
+   declaration style, parameter conventions (object vs positional), return/early-
+   exit style, async patterns (await vs chains), helper-extraction granularity,
+   and **optimization patterns** (same memoization/caching/query-batching approach
+   for the same kind of hot path — an optimization applied to one sibling but not
+   its twins is a divergence).
+
+**Division of labor:** skip anything a configured linter/formatter already
+enforces (whitespace, quotes, import order — check for `.eslintrc`/`biome.json`/
+`.prettierrc` first); those are guaranteed by tooling at zero token cost. Your job
+is the semantic layer tools can't see. If NO formatter/linter is configured, flag
+that once as its own finding — deterministic tooling is the cheapest consistency
+there is.
 
 For each divergence: which members differ, **which version is dominant** (majority)
 or better (per patterns.md / code-standards.md), and the concrete change that would

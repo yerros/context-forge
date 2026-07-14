@@ -8,7 +8,8 @@
      - exemplar: <path>           (the canonical implementation to mimic)
      - must match: 3–5 bullets    (what every sibling must do identically:
                                    naming scheme, file layout, error handling,
-                                   validation placement, data-fetch approach)
+                                   validation placement, data-fetch approach,
+                                   function/param style, optimization pattern)
 
      Registered at close-unit when a unit establishes a repeatable pattern.
      Budget: ~2 KB. Checked by forge-align; read by forge-architect (specs) and
