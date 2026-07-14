@@ -1,95 +1,82 @@
 # Context Forge
 
-> A Claude Code plugin that sets up and maintains the **Six-File Context Methodology** in any project — so your AI agent stays consistent across sessions and never guesses.
+> A Claude Code plugin that gives your AI agent a persistent, disciplined workflow —
+> spec-driven builds, real verification, and project memory that survives every session.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
 [![Version](https://img.shields.io/badge/version-0.19.1-blue.svg)](./CHANGELOG.md)
 
-Context Forge turns a proven workflow into something you install once and run in every
-project — no more copying template files by hand. It scaffolds the context files, plans
-and builds features spec-by-spec, verifies and debugs, logs decisions, and keeps your
-documentation in sync with your code automatically.
-
-The core idea of the methodology: **you are the architect, the AI is the implementation
-engine.** A small set of context files captures your thinking up front, so the agent
-executes a defined system instead of guessing — and stays consistent across every
-session and feature.
+**You are the architect; the AI is the implementation engine.** Context Forge captures
+your architectural thinking in a small set of context files, then makes every session —
+today's and next month's — execute against that system instead of guessing. The result
+is code that stays consistent across features, sessions, and machines.
 
 ---
 
 ## Table of contents
 
 - [Why](#why)
-- [Features](#features)
+- [How it works](#how-it-works)
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Commands](#commands)
 - [Agents](#agents)
 - [Hooks](#hooks)
-- [The six files](#the-six-files)
-- [How it works](#how-it-works)
+- [The context directory](#the-context-directory)
+- [Token economy](#token-economy)
 - [Requirements](#requirements)
 - [Repository structure](#repository-structure)
 - [Contributing](#contributing)
 - [License](#license)
-- [Credits](#credits)
 
 ## Why
 
-Two failure modes plague AI-assisted projects:
+Three failure modes plague AI-assisted projects:
 
-1. **Vibe-coding collapse** — the agent builds fast for an hour, then starts contradicting
-   its own earlier decisions and the codebase begins fighting you.
+1. **Vibe-coding collapse** — the agent builds fast for an hour, then starts
+   contradicting its own earlier decisions and the codebase begins fighting you.
 2. **Feature drift** — you return weeks later and the agent has forgotten every
    architectural decision, "fixing" things that were never broken.
+3. **Dialect sprawl** — five similar features, five different implementations,
+   because each was written from scratch with no memory of its siblings.
 
-Both have the same root cause: the agent has no documented system to work within, and no
-memory between sessions. Context Forge fixes that by giving the agent a foundation to read
-before it writes anything, and a living tracker that restores full context in one step.
+All three share one root cause: the agent has no documented system to work within and
+no memory between sessions. Context Forge fixes that — a foundation the agent reads
+before it writes anything, a build loop that verifies before it ships, and memory
+that turns every correction into a permanent rule.
 
-## Features
+## How it works
 
-- **One-command setup** for new *or* existing projects — install once, use everywhere.
-- **Brownfield-aware** — analyzes an existing codebase and drafts the context files from
-  real evidence, then confirms with you before writing.
-- **Adopt & reconcile** — if a project already has context files (manual or from a prior
-  run), it recognizes them and fills only the gaps, never overwriting your content.
-- **Stack-aware** — detects web / backend-API / mobile / CLI-library / data-ML projects
-  and adapts the files accordingly.
-- **Spec-driven build loop** — plan, build, verify, and ship one scoped unit at a time.
-- **Self-maintaining docs** — hooks keep the progress tracker in sync and guard your
-  architectural invariants on every edit.
-- **Token-efficient by design** — a compact `context-digest.md` (~600 tokens) is what
-  every session loads by default; the full files are read **per task, by tier**, not
-  wholesale. The tracker keeps only an *active window* (older history rotates into
-  `context/progress-archive.md`), completed specs are archived into
-  `context/specs/archived/`, `forge-audit` checks every file against a soft token
-  budget, and `forge-compact` brings an over-budget project back under it.
-- **Sibling-consistency system** — kills the "five CRUD features, five dialects"
-  failure: the first implementation of a repeatable shape is registered in
-  `patterns.md` as the **exemplar**, specs for sibling features must reference it,
-  `forge-build` mimics it, `forge-verify` flags divergence from it, and
-  `/forge-align` (with the `forge-aligner` agent) audits existing code for drift
-  and turns approved alignments into disciplined refactor units.
-- **Persistent memory, the plain-text way** — corrections and hard-won diagnoses are
-  distilled into one-line lessons in `context/lessons.md` (auto-captured by
-  `forge-debug` and the build loop, managed with `forge-lesson`), and cross-project
-  preferences in `~/.context-forge/preferences.md` stop `forge-init` from re-asking
-  the same questions in every project. No vector store, no external services — just
-  budgeted markdown in git.
-- **Right model for each job** — four bundled agents pin the model to the work:
-  specs are written by an opus-pinned architect (highest leverage, lowest
-  frequency), reviews by a sonnet reviewer, bulk codebase reading and bookkeeping
-  by haiku agents — cutting cost while keeping the main session's context lean.
-- **Zero configuration** — no credentials or setup; templates ship inside the plugin.
+The workflow runs in four phases:
+
+1. **Foundation** (`/forge-init`) — scaffold or adopt the project's context files:
+   overview, architecture (with hard invariants), UI tokens, code standards, workflow
+   rules, and a living progress tracker. Brownfield projects are analyzed from real
+   evidence; nothing is written without your confirmation.
+2. **Planning** (`/forge-spec`, `/forge-brainstorm`, `/forge-feature`) — an
+   opus-pinned architect agent decomposes work into small, ordered, verifiable units
+   and writes a six-section spec per unit (goal, design, implementation,
+   dependencies, tests, verification) with complexity markers for risky ones.
+3. **Build loop** (`/forge-build`, `/forge-build-all`) — implement one unit exactly
+   to its spec, tests written during implementation, then an explicit verify loop:
+   unit tests → full suite (regression gate) → build/typecheck/lint → spec checklist.
+   Same failure twice → mandatory stop-and-diagnose (`/forge-debug`), never a third
+   blind fix. Ship per unit with `/forge-pr`.
+4. **Maintenance** (`/forge-audit`, `/forge-align`, `/forge-compact`) — keep docs
+   honest against the code, keep sibling features in one dialect, keep the recurring
+   token cost under budget.
+
+Code discipline is enforced at every point code can be born: minimum code that
+satisfies the spec (no speculative abstractions, no unrequested configurability),
+surgical changes only (every changed line traces to the spec; orphaned imports
+cleaned, pre-existing dead code untouched), and ambiguity surfaced instead of
+silently resolved.
 
 ## Installation
 
-Context Forge is distributed as a Claude Code plugin via this repository, which doubles as
-a plugin marketplace.
-
-### From the marketplace (recommended)
+Context Forge is distributed via this repository, which doubles as a plugin
+marketplace.
 
 Inside Claude Code:
 
@@ -98,54 +85,36 @@ Inside Claude Code:
 /plugin install context-forge@yerros
 ```
 
-Or from your terminal (non-interactive):
+Or from your terminal:
 
 ```bash
 claude plugin marketplace add yerros/context-forge
 claude plugin install context-forge@yerros
 ```
 
-Then restart Claude Code if prompted. Verify with `/plugin` to see Context Forge listed
-and enabled.
-
-### Local / from source
-
-Clone the repo and add it as a local marketplace:
-
-```bash
-git clone https://github.com/yerros/context-forge.git
-```
-
-```shell
-/plugin marketplace add ./context-forge
-/plugin install context-forge@yerros
-```
-
-### Updating
-
-```shell
-/plugin marketplace update yerros
-```
+Restart Claude Code after installing (hooks and agents register at startup). Verify
+with `/plugin`. For local development, clone the repo and
+`/plugin marketplace add ./context-forge`. Update later with
+`/plugin marketplace update yerros`.
 
 ## Quick start
 
-From inside any project you want to manage:
+From inside any project:
 
 ```shell
 /forge-init        # set up (or adopt) the context files — detects your stack
-/forge-spec        # plan the build and write a spec for the next unit
-/forge-build       # implement that unit through the loop, strictly in scope
-/forge-build-all   # or: build every remaining unit in one run, stopping on first failure
-/forge-verify      # confirm the unit is truly done
+/forge-spec        # plan the build; the architect writes specs per unit
+/forge-build       # implement one unit through the verify loop, strictly in scope
+/forge-verify      # confirm the unit is truly done (tests, regression, review)
 /forge-pr          # ship it: branch, conventional commit, pull request
 ```
 
-In later sessions, `/forge-resume` restores context tier by tier (the `SessionStart`
-hook already injects the compact digest automatically). As the project grows, reach
-for `/forge-brainstorm` (grounded ideation before anything is decided),
-`/forge-feature`, `/forge-fix` (bug reports), `/forge-debug` (when stuck),
-`/forge-decision`, `/forge-audit`, and — when the context files get heavy —
-`/forge-compact`.
+In later sessions `/forge-resume` restores context tier by tier — the `SessionStart`
+hook already injects a compact digest automatically. As the project grows:
+`/forge-brainstorm` for grounded ideation, `/forge-feature` for new features,
+`/forge-fix` for bug reports, `/forge-debug` when stuck, `/forge-align` when similar
+features drift apart, `/forge-decision` for ADRs, `/forge-lesson` to remember
+corrections, `/forge-audit` and `/forge-compact` for upkeep.
 
 > Skills are namespaced by the plugin. If a bare name is ambiguous, use the fully
 > qualified form, e.g. `/context-forge:forge-init`.
@@ -154,208 +123,134 @@ for `/forge-brainstorm` (grounded ideation before anything is decided),
 
 | Command | What it does |
 | ------- | ------------ |
-| `forge-init` | Reads project state first, then either sets up fresh or **adopts & reconciles** an existing setup (fills gaps only, never overwrites). Detects the stack profile. Greenfield: planning conversation. Brownfield: analyzes the codebase, drafts from real evidence, confirms before writing. |
-| `forge-prompt` | Sharpens a rough request into a high-quality, context-aligned prompt or spec — clarifies goal, scope, constraints, and acceptance, then confirms. Never silently changes your intent. |
-| `forge-brainstorm` | Grounded ideation: diverges into options, stress-tests each against the project's scope, invariants, and lessons, converges on a recommendation, and routes the outcome (`forge-feature` / `forge-decision` / the `context/ideas.md` parking lot). Planning only. |
-| `forge-spec` | Spec-driven development: builds the ordered build plan (`context/specs/00-build-plan.md`) and writes a six-section spec file per feature unit (goal, design, implementation, dependencies, tests, verification). |
-| `forge-feature` | Adds a new feature to a working project: updates scope, inserts correctly-ordered units into the build plan, and generates the spec(s) — without breaking existing work. |
-| `forge-build` | Runs the disciplined implement → verify → close loop for one spec'd unit, strictly in scope, and keeps the tracker in sync. |
-| `forge-build-all` | Runs the build loop across **all** remaining units in order until the plan is complete, verifying each and **stopping at the first failure**. The autonomous, multi-unit version of `forge-build`. |
-| `forge-verify` | Runs the unit's verification checklist + build/typecheck/lint + an adversarial subagent review before a unit is closed. |
-| `forge-fix` | Intake for bug reports in shipped work: reproduce, triage (fix directly when the cause is obvious; hand off to `forge-debug` when it isn't), verify, and close with tracker + lesson + `fix/` branch. |
-| `forge-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
-| `forge-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
-| `forge-decision` | Logs an Architecture Decision Record (ADR) to `context/decisions.md` and keeps `architecture.md` in sync. |
-| `forge-align` | Finds and fixes code-consistency drift between similar features (the "five CRUDs, five dialects" problem): maps feature families via `forge-aligner`, registers canonical patterns with exemplars in `patterns.md`, and turns approved alignments into refactor units. |
-| `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, then git-history-preserving move + entry-point path rewrite + `.gitignore` guard. |
-| `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers to update the docs. |
-| `forge-resume` | Restores context tier by tier at the start of a session (digest + tracker first, full files per task) and briefs you on where things stand. |
-| `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses over-budget files with approval, rotates tracker history, and (re)generates `context-digest.md`. |
-| `forge-lesson` | Saves a correction or diagnosis as a one-line lesson in `context/lessons.md` (or a cross-project preference in `~/.context-forge/preferences.md`, with approval), keeps memory within budget, and promotes recurring lessons into the real context files. |
+| `forge-init` | Reads project state first, then sets up fresh or **adopts & reconciles** an existing setup (fills gaps only, never overwrites). Stack-aware; brownfield analysis from real evidence, confirmed before writing. |
+| `forge-brainstorm` | Grounded ideation: diverges into options, stress-tests each against scope, invariants, and lessons, converges, and routes the outcome — build it, log it as a decision, or park it in `ideas.md`. Planning only. |
+| `forge-prompt` | Sharpens a rough request into a precise, context-aligned prompt or spec — goal, scope, constraints, acceptance — without changing your intent. |
+| `forge-spec` | Builds the ordered build plan and writes a six-section spec per unit (goal, design, implementation, dependencies, tests, verification), delegated to the opus architect. |
+| `forge-feature` | Adds a feature to a working project: updates scope, inserts correctly-ordered units into the build plan, generates specs — without breaking existing work. |
+| `forge-build` | The disciplined implement → verify → close loop for one spec'd unit: tests written during implementation, full-suite regression gate, 2-failure escalation to `forge-debug`. |
+| `forge-build-all` | The autonomous multi-unit version: builds every remaining unit in order, verifying each, **stopping at the first failure**. |
+| `forge-verify` | The pre-close gate: spec checklist + the unit's tests + full suite + build/typecheck/lint + tiered adversarial review, with a hard PASS/FAIL verdict. |
+| `forge-fix` | Intake for bug reports in shipped work: reproduce, triage (fix directly when obvious; hand off to `forge-debug` when not), verify, close with tracker + lesson + `fix/` branch. |
+| `forge-debug` | Stop-and-diagnose when stuck or after repeated failures: reproduce, isolate, re-read invariants, present root-cause options — no guess-fixing. |
+| `forge-align` | Finds and fixes consistency drift between similar features: maps feature families, registers canonical patterns with exemplars, and turns approved alignments into refactor units. |
+| `forge-pr` | Ships a verified unit: branch (`feat/NN`, `fix/NN`), conventional commit, PR with a spec-derived summary. |
+| `forge-decision` | Logs an Architecture Decision Record to `decisions.md` and keeps `architecture.md` in sync. |
+| `forge-lesson` | "Remember this / forget that": distills corrections into one-line lessons (per project) or preferences (cross-project), within budget, promoting recurring ones into real standards. |
+| `forge-resume` | Restores context tier by tier at session start (digest + tracker first, full files per task) and briefs you on where things stand. |
+| `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers doc updates. |
+| `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses with approval, rotates history, (re)generates the digest. |
+| `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, git-history-preserving move, entry-point rewrite, `.gitignore` guard. |
 
 ## Agents
 
-Four bundled subagents route each kind of work to the right model — maximum
-intelligence at the highest-leverage, lowest-frequency point (specs), cheap models
-for bulk reading and bookkeeping. A second benefit: an agent's reading never enters
-the main session's context, only its conclusions do.
+Five bundled subagents route each kind of work to the right model — maximum
+intelligence at the highest-leverage, lowest-frequency point, cheap models for bulk
+work. An agent's reading never enters the main session's context; only its
+conclusions do.
 
-| Agent | Model | Role | Used by |
-| ----- | ----- | ---- | ------- |
-| `forge-architect` | **opus** | Decomposes features into units and writes the six-section specs; deep ADR analysis. Runs rarely; its output steers every downstream token. | `forge-spec`, `forge-feature`, `forge-decision` |
-| `forge-reviewer` | **sonnet** | Adversarial, read-only review of a unit's diff vs its spec: scope creep, invariant violations, missing tests, silent breakage. Verdict: `RECOMMEND PASS/FAIL`. | `forge-verify`, `forge-pr`, `forge-fix` |
-| `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence, never dumps. | `forge-init`, `forge-audit`, `forge-debug` |
-| `forge-archivist` | **haiku** | Mechanical close-unit bookkeeping (tracker rotation, spec archival, build-plan tidy, digest State refresh) and budget measurement. No judgment calls. | close-unit procedure, `forge-compact` |
-| `forge-aligner` | **sonnet** | Consistency checker: compares sibling implementations pairwise (naming, layout, error handling, validation, data access) against the registered exemplar or dominant pattern; reports divergences and proposes pattern entries. Read-only. | `forge-align`, `forge-verify` (sibling check) |
+| Agent | Model | Role |
+| ----- | ----- | ---- |
+| `forge-architect` | **opus** | Decomposes features into units and writes the specs; deep ADR analysis. Runs rarely; its output steers every downstream token. |
+| `forge-reviewer` | **sonnet** | Adversarial, read-only diff-vs-spec review: scope creep, invariant violations, missing tests, silent breakage, overengineering, orthogonal edits. Verdict: `RECOMMEND PASS/FAIL`. |
+| `forge-aligner` | **sonnet** | Consistency checker: compares sibling features across eight dimensions (naming, layout, error handling, validation, data access, state, tests, implementation style) against the registered exemplar. |
+| `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence. |
+| `forge-archivist` | **haiku** | Mechanical bookkeeping: tracker rotation, spec archival, build-plan tidying, digest refresh, budget measurement. No judgment calls. |
 
-Design choices worth knowing: `forge-build` deliberately has **no** agent — the
-methodology's bet is intelligence up front (the spec) and literal execution in the
-main session; and `forge-debug` keeps diagnosis in-session (it needs the full
-conversation) while delegating only evidence gathering. Every delegation has an
-in-session fallback, so the plugin works even where a pinned model isn't available
-on your plan — edit the `model:` line in `agents/*.md` (e.g. to `inherit`) to
-change the routing.
+`forge-build` deliberately has no pinned agent — intelligence is paid up front in the
+spec, execution runs in your session's model (with an opus recommendation for units
+marked `[complexity: high]`). Every delegation has an in-session fallback; edit the
+`model:` line in `agents/*.md` (e.g. to `inherit`) to change the routing.
 
 ## Hooks
 
-These run automatically and are silent in projects that don't use the methodology.
-
-All three hooks are **command-based** — they run small shell scripts, not model calls,
-so they add **no token cost**. Each is silent/no-op in projects that don't use the
-methodology.
+Four zero-token command hooks — shell scripts, no model calls, silent in projects
+that don't use the plugin:
 
 | Hook | What it does |
 | ---- | ------------ |
-| `SessionStart` | Injects the compact `context-digest.md` (~600 tokens) with tiered-loading instructions; falls back to the full `progress-tracker.md` in projects that predate the digest. |
-| `PreToolUse` (Write/Edit) | Deterministic guard: denies edits to generated/lock/vendor files and to any glob listed in `context/protected-paths`. Allows everything else. |
-| `Stop` | If code changed (per git) without the tracker being updated, writes `context/.last-session.md` with a timestamp, the changed-file list, and any context files over their token budget. Never re-wakes the model. |
+| `SessionStart` | Injects the compact context digest (~600 tokens) with tiered-loading instructions; falls back to the full tracker in projects that predate the digest. |
+| `PreToolUse` | Deterministic guard: denies edits to generated/lock/vendor files and any glob in `protected-paths`. Also records which skill is in use (for the status line). |
+| `UserPromptExpansion` | Records `/forge-*` slash-command usage for the status line indicator. |
+| `Stop` | If code changed without the tracker being updated, writes `.last-session.md` with the changed files and any context files over their token budget. Marks the skill indicator idle. |
 
-> **Token cost:** because all hooks are command scripts, they don't consume model tokens.
-> Nuanced/semantic invariant checking lives in `forge-verify` (run per unit) rather than
-> on every edit. To disable a hook, remove its block from `hooks/hooks.json`.
+**Status line (optional):** a ready-made status line ships at
+`statusline/statusline.sh` — skill indicator (`⚒ forge-fix` while running,
+`(forge-fix)` dimmed after), model, git branch, cost, context %. Copy it to
+`~/.claude/forge-statusline.sh` and point your `statusLine` setting at it
+(`refreshInterval: 1000`), or run `/statusline` and ask to merge the indicator into
+your existing status line. State file contract:
+`~/.claude/forge-status/<session_id>` → `active|idle <skill> <epoch>`.
 
-**Optional:** create a `context/protected-paths` file (one glob per line) to extend the
-`PreToolUse` guard — for example `src/generated/*` or `*.snap`. Consider adding
-`context/.last-session.md` to your project's `.gitignore`.
+## The context directory
 
-### Status line: show the skill in use
-
-Two additional zero-token hooks (`UserPromptExpansion` + `PreToolUse` on the `Skill`
-tool) record which `forge-*` skill each session is using into
-`~/.claude/forge-status/<session_id>` (format: `active|idle <skill> <epoch>`). Any
-custom status line can read that file to show a near-realtime indicator:
-`⚒ forge-fix` while Claude is working, `(forge-fix)` dimmed for 30 minutes after the
-turn ends (skills are dialogic — the dim state covers confirmation pauses), then
-gone.
-
-A ready-made status line ships at `statusline/statusline.sh` (skill indicator +
-model + git branch + cost + context %). One-time setup:
-
-```bash
-cp <plugin-root>/statusline/statusline.sh ~/.claude/forge-statusline.sh
-```
-
-```json
-"statusLine": { "type": "command", "command": "bash ~/.claude/forge-statusline.sh", "refreshInterval": 1000 }
-```
-
-Or run `/statusline` and ask for "a forge skill indicator reading
-`~/.claude/forge-status/<session_id>`" to merge it into your existing status line.
-
-## The six files
-
-The context directory is **`context/`** by default, or **`.forge/`** if you prefer a
-hidden, tidy root (or your framework already uses a `context/` folder). One
-deterministic rule everywhere: `.forge/` wins when it exists. Choose at
-`forge-init` time, or migrate an existing project with **`/forge-migrate`** — it
-previews first, then moves the directory with git history, rewrites entry-point
-paths, guards your `.gitignore` (adding `!.forge/` when needed — the context files
-are the project's memory and **must** stay committed), and refuses to touch a
-framework's `context/` folder.
+Lives at **`context/`** (default, visible) or **`.forge/`** (hidden, tidy root, no
+clash with framework `context/` folders) — one deterministic rule everywhere:
+`.forge/` wins when it exists. Choose at init, or move later with `/forge-migrate`.
 
 ```
-context/            # or .forge/ — same layout either way
+context/                  # or .forge/ — same layout either way
+├── context-digest.md     # ~600-token brief injected every session (Tier 1)
 ├── project-overview.md   # what & why — goals, flows, features, scope
 ├── architecture.md       # stack, boundaries, storage, auth, invariants
 ├── ui-context.md         # colors, typography, components, layout
 ├── code-standards.md     # language / framework conventions
-├── ai-workflow-rules.md  # how the agent should behave while building
-└── progress-tracker.md   # living state — updated after every change
+├── ai-workflow-rules.md  # agent behavior + code discipline rules
+├── progress-tracker.md   # living state — active window only
+├── patterns.md           # exemplar registry: "how we do X here"
+├── lessons.md            # one-line lessons from corrections & diagnoses
+├── ideas.md              # parked ideas from brainstorms (never auto-read)
+├── decisions.md          # ADR log
+├── specs/                # build plan + specs for pending units
+│   └── archived/         # specs of completed units (never auto-read)
+└── progress-archive.md   # rotated tracker history (never auto-read)
 ```
 
-Plus `CLAUDE.md` (or `AGENTS.md`) at the project root — the entry point the agent reads
-first, every session — and `context/context-digest.md`, the compact brief that powers
-tiered loading. Optional additions: `context/specs/` (build plan + per-unit specs),
-`context/decisions.md` (ADR log), `context/ideas.md` (brainstorm parking lot — never
-auto-read), `context/specs/archived/` (specs of completed units, moved there
-automatically when a unit closes), and `context/progress-archive.md` (rotated tracker
-history — written automatically, never auto-read).
+Plus `CLAUDE.md` (or `AGENTS.md`) at the project root — the lean entry point every
+session reads first. Everything is plain, budgeted markdown in git: reviewable in
+PRs, portable across machines and agents, no external services.
 
-### Token economy (tiered loading)
+Two memory layers make corrections permanent: `lessons.md` per project
+(auto-captured by the build loop and `forge-debug`, managed with `/forge-lesson`)
+and `~/.context-forge/preferences.md` across projects (read only by `forge-init`,
+written only with approval).
 
-Reading all six files every session is the methodology's main token cost, so
-context-forge loads by tier instead:
+## Token economy
 
-- **Tier 1 — always:** the entry point + `context-digest.md` (~600 tokens: project
-  one-liner, stack shape, top invariants, current state, and a tier map). The
-  `SessionStart` hook injects it automatically. When implementation starts, the live
-  `progress-tracker.md` is read too.
-- **Tier 2 — per task:** only the full file(s) the task touches — `ui-context.md`
-  for UI work, `architecture.md` for boundary/storage/dependency decisions, and so
-  on. The rule is *never guess to save tokens*: reading a file is always cheaper
-  than a wrong implementation.
-- **Tier 3 — everything:** reserved for `forge-init`, `forge-audit`, and
-  `forge-compact`.
+Reading everything every session is the main cost of context-driven workflows, so
+Context Forge loads by tier:
 
-The digest is generated by `forge-init`, refreshed at every unit close, and checked
-by `forge-audit`. `progress-tracker.md` holds an **active window** only (~10 recent
-Completed units, ~8 recent Session Notes, ~6 KB); older history rotates into
-`progress-archive.md` at close. The `Stop` hook flags any file over its soft budget
-in `context/.last-session.md`, and `forge-compact` is the guided pass that brings
-everything back under budget.
+- **Tier 1 — always:** the entry point + the digest (~600 tokens). When
+  implementation starts, the live tracker too.
+- **Tier 2 — per task:** only the file(s) the task touches — `ui-context.md` for UI
+  work, `architecture.md` for boundary decisions, the exemplar for sibling
+  features. The rule: *never guess to save tokens* — reading a file is always
+  cheaper than a wrong implementation.
+- **Tier 3 — everything:** reserved for init, audit, and compact.
 
-### Persistent memory
-
-Two thin, budgeted memory layers turn one-time corrections into permanent rules —
-the cheapest token saving there is, because a remembered lesson never has to be
-re-debugged:
-
-- **`context/lessons.md`** (per project, ~1.5 KB) — one line per lesson:
-  `- [area] symptom → rule`. Auto-captured when `forge-debug` confirms a root cause
-  worth remembering or when a unit close notes a generalizable correction; read by
-  `forge-build`/`forge-debug` at load time. When full, lessons are merged or
-  **promoted** into `code-standards.md`/`ai-workflow-rules.md` — the lessons file is
-  a staging area for rules, not a landfill.
-- **`~/.context-forge/preferences.md`** (cross-project, ~2 KB) — tooling and
-  convention defaults read only by `forge-init` to pre-fill new projects. Written
-  only with explicit approval; project evidence always wins over a preference.
-
-Manage both with `/forge-lesson` ("remember this", "forget that", "show my
-lessons"). Every memory write is shown to you first.
-
-## How it works
-
-`forge-init` runs a deterministic, read-only detector first and branches on its verdict,
-so it never assumes a project is empty:
-
-- **`SETUP`** — no context files → fresh setup (greenfield conversation or brownfield
-  analysis), with a stack profile applied.
-- **`ADOPT`** — all six files present and filled → recognizes the existing setup and only
-  reconciles gaps. Idempotent: a healthy project is left unchanged.
-- **`REPAIR`** — `context/` exists but is incomplete or still a blank template → fills the
-  gaps without touching real content.
-
-Everything else follows the spec-driven loop: decompose the build into ordered, verifiable
-units; build one unit at a time exactly to its spec; verify against a checklist; ship.
-The progress tracker keeps every session grounded in the real state of the project.
+Every file has a soft budget; history rotates into never-auto-read archives; the
+`Stop` hook flags overruns; `/forge-compact` brings an over-budget project back
+under. Verification runs with quiet/failures-only reporters, and the adversarial
+reviewer is tiered — a full subagent review only where the stakes justify it.
 
 ## Requirements
 
-- [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) with plugin support.
-- `git` (and optionally the [GitHub CLI](https://cli.github.com/) `gh`) for the
-  `forge-pr` workflow.
-- No language runtime is required by the plugin itself; your project's own build/test
-  tooling is used during verification.
+- [Claude Code](https://docs.claude.com/en/docs/claude-code/overview) with plugin
+  support; `git` (and optionally the [GitHub CLI](https://cli.github.com/)) for
+  `forge-pr`.
+- No language runtime required by the plugin itself — your project's own
+  build/test/lint tooling is used during verification.
 
 ## Repository structure
 
 ```
 context-forge/
-├── .claude-plugin/
-│   ├── plugin.json          # plugin manifest
-│   └── marketplace.json     # marketplace catalog (makes this repo installable)
-├── skills/                  # the forge-* skills
-│   ├── forge-init/        # + bundled templates, stack profiles, detect.sh
-│   ├── forge-spec/        # + spec template
-│   ├── forge-decision/    # + decisions (ADR) template
-│   └── ...
-├── agents/                  # model-pinned subagents: architect (opus),
-│   └── ...                  #   reviewer (sonnet), scout + archivist (haiku)
-├── hooks/
-│   ├── hooks.json           # SessionStart, PreToolUse, UserPromptExpansion, Stop
-│   └── scripts/             # guard.sh, track.sh, skill-status.sh (all command-based)
-├── statusline/
-│   └── statusline.sh        # reference status line with the forge skill indicator
+├── .claude-plugin/          # plugin + marketplace manifests
+├── skills/                  # the 18 forge-* skills (+ bundled templates,
+│   └── .../                 #   references, detect/migrate scripts)
+├── agents/                  # 5 model-pinned subagents
+├── hooks/                   # hooks.json + zero-token shell scripts
+├── statusline/              # reference status line with skill indicator
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
@@ -364,26 +259,9 @@ context-forge/
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for the
-development workflow, how to validate the plugin, and the versioning policy. In short:
-open an issue to discuss substantial changes, keep skills focused and imperative, run
-`claude plugin validate .`, and bump the version on every release.
+Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for the
+workflow, validation (`claude plugin validate .`), and versioning policy.
 
 ## License
 
 Released under the [MIT License](./LICENSE).
-
-## Credits
-
-Context Forge implements the **Six-File Context System**, described in *"From Idea to
-Product: The AI-Driven Developer's Playbook"* by
-[JavaScript Mastery](https://youtube.com/@javascriptmastery). This plugin is an
-independent implementation of that methodology and is not affiliated with or endorsed by
-JavaScript Mastery.
-
-The code-discipline rules in the build loop and reviewer (simplicity first, surgical
-changes, surface-don't-assume) adapt the
-[Karpathy-inspired guidelines](https://github.com/multica-ai/andrej-karpathy-skills)
-(MIT), derived from Andrej Karpathy's observations on LLM coding pitfalls.
-
-Built and maintained by [yerros](https://github.com/yerros).
