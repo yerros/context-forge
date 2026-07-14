@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.18.2"
+  version: "0.19.0"
 ---
 
 # forge-build
@@ -47,6 +47,10 @@ and the unit's spec file. The spec is the source of truth for what to build.
 Then read only the full context files this unit touches: `context/code-standards.md`
 when writing code (nearly always), `context/ui-context.md` for UI work, and the full
 `context/architecture.md` when the unit touches boundaries, storage, or dependencies.
+**If the spec names a pattern/exemplar** (or `context/patterns.md` has an entry this
+unit resembles), read the exemplar files before writing anything and mimic them on
+the must-match dimensions — sibling features are written in the exemplar's dialect,
+not reinvented.
 Never guess — if the spec references something you haven't read, read that file first.
 (Tier definitions: `${CLAUDE_PLUGIN_ROOT}/skills/forge-resume/references/token-economy.md`.)
 

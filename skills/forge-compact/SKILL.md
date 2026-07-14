@@ -9,7 +9,7 @@ description: >
   dropping facts), rotates tracker history, and (re)generates the compact
   context-digest.md used for tiered loading.
 metadata:
-  version: "0.18.2"
+  version: "0.19.0"
 ---
 
 # forge-compact
@@ -67,6 +67,8 @@ approves:
   `${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md`).
 - **`ideas.md`** — drop dead ideas (with approval), flag ripe ones for promotion
   via `forge-feature`; never auto-read, so its only cost is disk hygiene.
+- **`patterns.md`** — entries must stay exemplar pointers + must-match bullets;
+  drop patterns whose exemplar no longer exists, merge near-duplicate patterns.
 - **Specs and archives** — leave alone. `specs/archived/` and
   `progress-archive.md` are never auto-read, so they cost nothing.
 

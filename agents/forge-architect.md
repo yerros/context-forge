@@ -21,6 +21,11 @@ wrong code, failed verifications, and wasted tokens. Think hard; write tersely.
 - Read before deciding: `context/project-overview.md`, `context/architecture.md`
   (invariants are non-negotiable), `context/code-standards.md`, and — for UI work —
   `context/ui-context.md`. Honor `context/lessons.md` if present.
+- **Check `context/patterns.md`**: when the unit resembles a registered pattern
+  (another CRUD, another list screen), the spec MUST name the pattern and its
+  exemplar path, and its Design/Implementation sections must say "mimic the
+  exemplar" for the must-match dimensions — never let a sibling feature be designed
+  from scratch.
 - Follow the canonical unit rules in
   `${CLAUDE_PLUGIN_ROOT}/skills/forge-spec/references/unit-rules.md` (what a good
   unit is, ordering rules, order validation) and the spec template at

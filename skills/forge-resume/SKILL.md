@@ -8,7 +8,7 @@ description: >
   and tracker first, full files only as the task requires) so work continues without
   drift and without burning tokens.
 metadata:
-  version: "0.18.2"
+  version: "0.19.0"
 ---
 
 # forge-resume

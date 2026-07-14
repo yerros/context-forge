@@ -53,6 +53,12 @@ yourself if the agent is unavailable.
    it to `context/lessons.md` per
    `${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md` — show the user
    the line. Most units produce no lesson; don't force one.
+8. **Register the pattern.** If this unit established an implementation shape that
+   sibling features will repeat (the first CRUD feature, the first list screen, the
+   first API route), add an entry to `context/patterns.md` (create from the
+   forge-init template if absent): pattern name, this unit's files as the
+   **exemplar**, and 3–5 must-match bullets. Show the user the entry. This is what
+   keeps feature #2..#n in the same dialect as feature #1.
 
 ## Shipping
 

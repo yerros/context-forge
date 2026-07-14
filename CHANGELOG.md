@@ -3,6 +3,34 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.19.0] — 2026-07-13
+
+### Added (sibling-consistency system)
+Targets the classic vibe-coding failure: functionally-equivalent sibling features
+(CRUDs, parallel screens) written in different dialects because the emergent pattern
+lived only in code, never in the context files. Two-pronged:
+
+- **Prevention — `context/patterns.md` exemplar registry** (template bundled,
+  ~2 KB budget): one entry per repeatable shape — pattern name, **exemplar file
+  path**, 3–5 must-match bullets. Registered at close-unit (new step 8) when a unit
+  establishes a pattern; `forge-architect` must reference the pattern + exemplar in
+  sibling specs; `forge-build` reads the exemplar before writing and mimics its
+  dialect; `forge-verify` gained a sibling-consistency check (divergence from the
+  exemplar = Warning, Critical when the spec required the pattern). Budget-wired
+  into track.sh, token-economy.md, and forge-compact (drop dead exemplars, merge
+  near-duplicates).
+- **Detection — `forge-aligner` agent (sonnet, read-only, 6th agent)**: discovers
+  feature families (parallel folders, same-suffix files), compares siblings
+  pairwise against the registered exemplar or dominant member across seven
+  dimensions (naming, layout, error handling, validation, data access, state
+  wiring, tests), and reports Align/Info divergences with a
+  `CONSISTENT` / `DRIFT: n families` verdict — the map, never the refactor.
+- **`forge-align`** (new, 18th skill) — orchestrates: aligner report → judge with
+  the user (majority is evidence, not authority; accepted divergences get a lesson
+  line so they stop being flagged) → register patterns → fix via **alignment
+  units** through forge-spec/forge-build (zero behavior change, suite stays green)
+  — never a mass edit.
+
 ## [0.18.2] — 2026-07-13
 
 ### Added

@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.18.2-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.19.0-blue.svg)](./CHANGELOG.md)
 
 Context Forge turns a proven workflow into something you install once and run in every
 project — no more copying template files by hand. It scaffolds the context files, plans
@@ -66,6 +66,12 @@ before it writes anything, and a living tracker that restores full context in on
   `context/progress-archive.md`), completed specs are archived into
   `context/specs/archived/`, `forge-audit` checks every file against a soft token
   budget, and `forge-compact` brings an over-budget project back under it.
+- **Sibling-consistency system** — kills the "five CRUD features, five dialects"
+  failure: the first implementation of a repeatable shape is registered in
+  `patterns.md` as the **exemplar**, specs for sibling features must reference it,
+  `forge-build` mimics it, `forge-verify` flags divergence from it, and
+  `/forge-align` (with the `forge-aligner` agent) audits existing code for drift
+  and turns approved alignments into disciplined refactor units.
 - **Persistent memory, the plain-text way** — corrections and hard-won diagnoses are
   distilled into one-line lessons in `context/lessons.md` (auto-captured by
   `forge-debug` and the build loop, managed with `forge-lesson`), and cross-project
@@ -160,6 +166,7 @@ for `/forge-brainstorm` (grounded ideation before anything is decided),
 | `forge-debug` | Stop-and-diagnose strategy when the agent is stuck or keeps getting something wrong: reproduce, isolate, re-read invariants, present options. |
 | `forge-pr` | Closes a verified unit with git: branch `feat/NN`, conventional commit, and a PR with a spec-derived summary. |
 | `forge-decision` | Logs an Architecture Decision Record (ADR) to `context/decisions.md` and keeps `architecture.md` in sync. |
+| `forge-align` | Finds and fixes code-consistency drift between similar features (the "five CRUDs, five dialects" problem): maps feature families via `forge-aligner`, registers canonical patterns with exemplars in `patterns.md`, and turns approved alignments into refactor units. |
 | `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, then git-history-preserving move + entry-point path rewrite + `.gitignore` guard. |
 | `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers to update the docs. |
 | `forge-resume` | Restores context tier by tier at the start of a session (digest + tracker first, full files per task) and briefs you on where things stand. |
@@ -179,6 +186,7 @@ the main session's context, only its conclusions do.
 | `forge-reviewer` | **sonnet** | Adversarial, read-only review of a unit's diff vs its spec: scope creep, invariant violations, missing tests, silent breakage. Verdict: `RECOMMEND PASS/FAIL`. | `forge-verify`, `forge-pr`, `forge-fix` |
 | `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence, never dumps. | `forge-init`, `forge-audit`, `forge-debug` |
 | `forge-archivist` | **haiku** | Mechanical close-unit bookkeeping (tracker rotation, spec archival, build-plan tidy, digest State refresh) and budget measurement. No judgment calls. | close-unit procedure, `forge-compact` |
+| `forge-aligner` | **sonnet** | Consistency checker: compares sibling implementations pairwise (naming, layout, error handling, validation, data access) against the registered exemplar or dominant pattern; reports divergences and proposes pattern entries. Read-only. | `forge-align`, `forge-verify` (sibling check) |
 
 Design choices worth knowing: `forge-build` deliberately has **no** agent — the
 methodology's bet is intelligence up front (the spec) and literal execution in the

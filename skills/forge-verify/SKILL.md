@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.18.2"
+  version: "0.19.0"
 ---
 
 # forge-verify
@@ -58,6 +58,15 @@ Report exact failures with file/line where available.
 
 Confirm the implementation honors every invariant in `architecture.md` and didn't
 modify protected files from `ai-workflow-rules.md`.
+
+### 4b. Sibling consistency check
+
+If the unit's spec names a pattern/exemplar (or `context/patterns.md` has an entry
+it resembles), verify the implementation matches the exemplar on the must-match
+dimensions — naming, layout, error handling, validation placement, data access.
+Divergence from the exemplar is a **Warning** (Critical if the spec explicitly
+required the pattern). For a deep pairwise comparison, spawn the `forge-aligner`
+agent with the unit + exemplar paths.
 
 ### 5. Adversarial review — tiered by risk
 
