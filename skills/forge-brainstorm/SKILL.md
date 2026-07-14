@@ -22,8 +22,8 @@ project actually is, so the output is options that survive contact with reality.
 
 ## Argument
 
-Text after the command is the topic (e.g. `/forge-brainstorm cara monetisasi app
-ini` or `/forge-brainstorm offline mode: worth it?`). No argument → ask what to
+Text after the command is the topic (e.g. `/forge-brainstorm how to monetize this
+app` or `/forge-brainstorm offline mode: worth it?`). No argument → ask what to
 think about.
 
 ## Load (cheap)
@@ -85,4 +85,4 @@ For the chosen outcome, exactly one of:
 - Don't flatter ideas — the stress-test exists to kill weak options early, which
   is the cheapest place to kill them.
 - Ideas parked in `ideas.md` are re-surfaced by `forge-resume`/`forge-feature` only
-  when the user asks ("apa ide yang kita parkir?") — never auto-read.
+  when the user asks ("what ideas do we have parked?") — never auto-read.

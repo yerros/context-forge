@@ -3,8 +3,8 @@ name: forge-align
 description: >
   This skill should be used to find and fix code-consistency drift between similar
   features in a Six-File Context Methodology project — phrases like "forge-align",
-  "check code consistency", "these features are written differently", "kode CRUD-nya
-  tidak konsisten", "unify the patterns", or "why does every feature look
+  "check code consistency", "these features are written differently", "the CRUD
+  features are inconsistent", "unify the patterns", or "why does every feature look
   different". It maps feature families via the forge-aligner agent, reports
   divergences against the exemplar, registers missing patterns in patterns.md, and
   turns approved alignments into refactor units built with the normal discipline.

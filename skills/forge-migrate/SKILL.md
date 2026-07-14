@@ -2,9 +2,9 @@
 name: forge-migrate
 description: >
   This skill should be used to move a project's context directory from context/ to
-  .forge/ — phrases like "forge-migrate", "migrate to .forge", "pindahkan context ke
-  .forge", "move my context dir", "hide the context folder", or "my framework needs
-  the context folder". It previews the migration, confirms, runs the bundled script
+  .forge/ — phrases like "forge-migrate", "migrate to .forge", "move the context
+  dir to .forge", "move my context dir", "hide the context folder", or "my
+  framework needs the context folder". It previews the migration, confirms, runs the bundled script
   (git mv with history, entry-point path rewrite, .gitignore guard), and offers the
   commit.
 metadata:
