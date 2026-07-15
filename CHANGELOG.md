@@ -3,6 +3,32 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.22.0] — 2026-07-14
+
+### Added (loop engineering)
+Codifies when an agent may loop on its own work — premise: models fail confidently,
+so the source of truth must sit outside the model. New canonical reference
+`skills/forge-build/references/loop-contract.md` (four rules: completion is
+external; claims require evidence; retries add information; state survives
+compaction), wired into forge-build, forge-build-all, forge-verify, forge-fix, and
+forge-debug. Two of the four were already the plugin's architecture (external
+completion conditions; file-based state); the release closes the other two:
+
+- **Evidence-cited claims.** Every checklist "passes" must cite fresh external
+  evidence — command + exit code for mechanical checks, file:line/observed output
+  for inspectable ones; items with no obtainable external evidence are reported
+  `UNVERIFIED — needs human check`, never silently self-attested (an honest
+  UNVERIFIED beats a confident lie). forge-verify lists UNVERIFIED items separately
+  in its verdict.
+- **The attempt log.** Every failed verification appends
+  `attempt N: [check] — tried: [approach] — result: [error]` to the unit's
+  In Progress entry in the tracker (a file — survives compaction). Retries must
+  read the log and **differ materially** from every logged approach (rewording the
+  same fix is not a retry); the 2-failure escalation now **hands the log to
+  forge-debug**, whose diagnosis starts from what is known to not work and may not
+  relabel a logged failed attempt as a hypothesis. The close-unit procedure clears
+  the log (recurring root causes become lessons first).
+
 ## [0.21.0] — 2026-07-14
 
 ### Added

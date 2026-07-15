@@ -10,7 +10,7 @@ description: >
   forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
   or for correcting the unit currently being built (that is forge-build's loop).
 metadata:
-  version: "0.21.0"
+  version: "0.22.0"
 ---
 
 # forge-fix
@@ -62,7 +62,10 @@ Re-run the reproduction (it must now pass), the project's real build/typecheck/l
 the **standards compliance gate** (walk the fix's diff rule-by-rule against
 `code-standards.md` + `lessons.md` — from the files, not memory), and — if the fix
 touched a completed unit's behavior — that unit's "Verify when done" checklist from
-its spec in `context/specs/archived/`. If the fix touched an
+its spec in `context/specs/archived/`. The loop contract applies
+(`${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/loop-contract.md`): passes
+cite fresh evidence, failed attempts go to the attempt log, two failures on the
+same check → `forge-debug` with the log. If the fix touched an
 invariant-adjacent area or multiple call sites, have the `forge-reviewer` agent
 review the diff before closing.
 

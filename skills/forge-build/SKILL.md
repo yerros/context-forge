@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.21.0"
+  version: "0.22.0"
 ---
 
 # forge-build
@@ -104,15 +104,26 @@ any other: fix it and re-run. For a deeper pass, run the `forge-verify` skill.
 line in context, not a thousand passing-test lines. Read full output only for the
 failures.
 
-Then loop:
+The loop obeys the contract in
+`${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/loop-contract.md` — completion
+is external, claims cite evidence, retries read the attempt log:
 
+- **Every "passes" cites its evidence** — command + exit code for mechanical
+  checks, file:line for inspectable ones; items with no obtainable external
+  evidence are marked `UNVERIFIED — needs human check`, never self-attested.
+  Verification is fresh: re-run, don't cite memory of an earlier run.
 - **All green** → go to Close.
-- **Something fails** → correct it precisely, staying in scope:
+- **Something fails** → append to the attempt log (one line under the unit's
+  In Progress entry in the tracker: `attempt N: [check] — tried: [approach] —
+  result: [error]`), then correct it precisely, staying in scope:
   > "The [element] does not match the spec. Expected: [X]. Current: [Y]. Fix only this."
 
-  …then **re-run the verification from the top** (a fix can break something else).
+  Before retrying, **read the attempt log — the new approach must differ
+  materially from every logged one** (rewording the same fix is not a retry). Then
+  re-run the verification from the top (a fix can break something else).
 - **The same check fails after two fix attempts** → STOP. Do not try a third blind
-  fix — switch to `forge-debug` (stop-and-diagnose). Resume this loop only after the
+  fix — switch to `forge-debug` and **hand over the attempt log** so diagnosis
+  starts from what is already known to not work. Resume this loop only after the
   root cause is fixed.
 
 ### 5. Close

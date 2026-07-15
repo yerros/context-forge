@@ -28,7 +28,10 @@ yourself if the agent is unavailable.
 1. **Update the tracker.** In `context/progress-tracker.md`: move the unit to
    "Completed", set the next unit as "Next Up", and add a **one- to two-line**
    Session Note (what shipped + any decision). Keep notes terse — this file is
-   read on every resume/build, so every line costs tokens.
+   read on every resume/build, so every line costs tokens. **Clear the unit's
+   attempt log** (the `attempt N:` lines under its In Progress entry) — it served
+   its purpose; a recurring root cause becomes a lesson (step 7) before the log
+   goes.
 2. **Rotate the tracker if it has grown** past the active window above: move the
    oldest Completed entries and Session Notes into `context/progress-archive.md`
    (create it if absent; append newest-first). Pure token saving — no loss of

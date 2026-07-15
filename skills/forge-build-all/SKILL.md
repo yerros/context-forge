@@ -8,7 +8,7 @@ description: >
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.21.0"
+  version: "0.22.0"
 ---
 
 # forge-build-all
@@ -66,9 +66,13 @@ For each pending unit N:
    **standards compliance gate** (walk the diff rule-by-rule against
    `code-standards.md` + `lessons.md`, from the files, not memory — a rule violation
    fails the unit) — with quiet/failures-only reporters (green needs one line, not a
-   thousand). On failure,
-   correct in scope and re-run from the top; **the same check failing after two fix
-   attempts is a stop condition** (below). For deeper checking, apply the
+   thousand). Follow the loop contract
+   (`${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/loop-contract.md`): passes
+   cite fresh external evidence or say UNVERIFIED; each failure is appended to the
+   unit's attempt log in the tracker; retries must differ from logged approaches.
+   On failure, correct in scope and re-run from the top; **the same check failing
+   after two fix attempts is a stop condition** (below) — the attempt log goes to
+   the user/`forge-debug` with the report. For deeper checking, apply the
    `forge-verify` logic — including its tiered review: spawn `forge-reviewer` only
    for `[complexity: high]`/invariant-touching units, review standard units
    in-session.

@@ -7,7 +7,7 @@ description: >
   circles", "stuck on a bug", or "it broke again". It runs a disciplined stop-and-diagnose
   strategy instead of thrashing with more guesses.
 metadata:
-  version: "0.21.0"
+  version: "0.22.0"
 ---
 
 # forge-debug
@@ -36,6 +36,11 @@ Run this process.
 
 Write down: what was expected, what actually happens, the exact error or wrong output,
 and when it started (which unit/change introduced it). Vague symptoms produce vague fixes.
+
+**Read the attempt log first** (the `attempt N:` lines under the unit's In Progress
+entry in the tracker, per the loop contract): every approach listed there is
+already known to not work — diagnosis starts from that knowledge, and no hypothesis
+below may be a relabeled version of a logged failed attempt.
 
 ### 2. Reproduce reliably
 

@@ -6,7 +6,7 @@ description: >
   ADR", "we decided to...", "document why we chose X", or "add a decision record". It
   appends a structured ADR entry to context/decisions.md.
 metadata:
-  version: "0.21.0"
+  version: "0.22.0"
 ---
 
 # forge-decision

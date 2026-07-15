@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.21.0"
+  version: "0.22.0"
 ---
 
 # forge-verify
@@ -31,8 +31,14 @@ and `context/architecture.md` (invariants).
 
 ### 1. Spec checklist
 
-Go through every item in the spec's "Verify when done" section and check it explicitly.
-Mark each pass/fail with evidence.
+Go through every item in the spec's "Verify when done" section and check it
+explicitly, per the loop contract
+(`${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/loop-contract.md`): every
+pass **cites its external evidence** — command + exit code for mechanical items,
+file:line or observed output for inspectable ones — from a **fresh** run, never
+from memory of an earlier one. Items with no obtainable external evidence are
+reported `UNVERIFIED — needs human check`, never self-attested; UNVERIFIED items
+are listed separately in the verdict.
 
 ### 2. The unit's tests
 
