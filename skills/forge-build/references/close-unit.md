@@ -19,7 +19,7 @@ newest-first, **never auto-read** on resume/build.
 The whole procedure below is mechanical — it can be delegated to the
 `forge-archivist` agent (haiku-pinned) with the unit number/name, the session note,
 and the next-up unit; it follows this file exactly and reports the file operations
-performed. Steps 5 and 7 involve judgment (what changed, what generalizes) — decide
+performed. Steps 5, 8, and 9 involve judgment (what changed, what generalizes, what repeats) — decide
 those in-session and pass the conclusions to the archivist, or run the steps
 yourself if the agent is unavailable.
 
@@ -30,7 +30,7 @@ yourself if the agent is unavailable.
    Session Note (what shipped + any decision). Keep notes terse — this file is
    read on every resume/build, so every line costs tokens. **Clear the unit's
    attempt log** (the `attempt N:` lines under its In Progress entry) — it served
-   its purpose; a recurring root cause becomes a lesson (step 7) before the log
+   its purpose; a recurring root cause becomes a lesson (step 8) before the log
    goes.
 2. **Rotate the tracker if it has grown** past the active window above: move the
    oldest Completed entries and Session Notes into `context/progress-archive.md`
@@ -45,18 +45,22 @@ yourself if the agent is unavailable.
 5. **Sync the context files.** If implementation changed the architecture, scope,
    or standards, update the relevant file (`architecture.md` / `code-standards.md`
    / `project-overview.md`) before continuing.
-6. **Refresh the digest.** In `context/context-digest.md` (if the project has one),
+6. **Refresh the retrieval index** (if the project has one — `.index.db` in the
+   context dir): run
+   `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/forge-index.sh" build` —
+   one cheap command, so the just-archived spec and new decisions stay findable.
+7. **Refresh the digest.** In `context/context-digest.md` (if the project has one),
    update the **State** section (phase, last completed, next up) — a three-line
    edit. If step 5 changed what the digest summarizes (stack, invariants, key
    conventions), update those digest lines too, keeping it within its ~2.5 KB
    budget.
-7. **Capture lessons.** If the user corrected the agent's approach during this unit
+8. **Capture lessons.** If the user corrected the agent's approach during this unit
    in a way that generalizes beyond it (a rejected pattern, a misunderstood
    convention, a diagnosis that cost real effort), distill it to one line and append
    it to `context/lessons.md` per
    `${CLAUDE_PLUGIN_ROOT}/skills/forge-lesson/references/memory.md` — show the user
    the line. Most units produce no lesson; don't force one.
-8. **Register the pattern.** If this unit established an implementation shape that
+9. **Register the pattern.** If this unit established an implementation shape that
    sibling features will repeat (the first CRUD feature, the first list screen, the
    first API route), add an entry to `context/patterns.md` (create from the
    forge-init template if absent): pattern name, this unit's files as the

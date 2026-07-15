@@ -9,7 +9,7 @@ description: >
   dropping facts), rotates tracker history, and (re)generates the compact
   context-digest.md used for tiered loading.
 metadata:
-  version: "0.22.0"
+  version: "0.23.0"
 ---
 
 # forge-compact
@@ -58,7 +58,13 @@ approves:
   merge repetition, convert paragraphs to dense bullets), and move long
   examples/tables that are rarely needed into an on-demand file under
   `context/reference/` with a one-line pointer left behind. Show a before/after
-  summary for each file before writing.
+  summary for each file before writing. **If tightening isn't enough** (the
+  project has genuinely outgrown the file), propose the **module split**: per
+  boundary, create `context/modules/<area>.md` (~8 KB budget each) holding that
+  area's architecture/conventions/gotchas, shrink the core file to the boundary
+  map + global invariants, and add the module list to the digest's tier map. Per
+  token-economy.md — Tier 2 loads only the module(s) a task touches, so the
+  per-session cost stays flat regardless of module count.
 - **Entry point** (`CLAUDE.md`/`AGENTS.md`) — keep only the tiered-loading contract
   and pointers; move anything bulky into `context/`.
 - **`lessons.md`** — dedupe/generalize overlapping lessons, **promote** lessons that

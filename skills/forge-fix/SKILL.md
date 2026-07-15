@@ -10,7 +10,7 @@ description: >
   forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
   or for correcting the unit currently being built (that is forge-build's loop).
 metadata:
-  version: "0.22.0"
+  version: "0.23.0"
 ---
 
 # forge-fix
@@ -73,7 +73,7 @@ review the diff before closing.
 
 - Update `context/progress-tracker.md`: one-line entry for the fix (what + root
   cause), per the close-unit procedure in
-  `${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md` (steps 1–2, 5–7
+  `${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md` (steps 1–2, 5–8
   apply; there is no spec to archive unless the fix was promoted to a full unit).
 - If the root cause is likely to recur, distill **one lesson line** into
   `context/lessons.md` per

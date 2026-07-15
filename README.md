@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.22.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.23.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -200,6 +200,8 @@ context/                  # or .forge/ — same layout either way
 ├── ai-workflow-rules.md  # agent behavior + code discipline rules
 ├── progress-tracker.md   # living state — active window only
 ├── patterns.md           # exemplar registry: "how we do X here"
+├── modules/              # per-boundary context files (large projects)
+├── .index.db             # FTS5 retrieval index (git-ignored, rebuildable)
 ├── lessons.md            # one-line lessons from corrections & diagnoses
 ├── ideas.md              # parked ideas from brainstorms (never auto-read)
 ├── decisions.md          # ADR log
@@ -234,6 +236,19 @@ Every file has a soft budget; history rotates into never-auto-read archives; the
 `Stop` hook flags overruns; `/forge-compact` brings an over-budget project back
 under. Verification runs with quiet/failures-only reporters, and the adversarial
 reviewer is tiered — a full subagent review only where the stakes justify it.
+
+Two mechanisms keep the cost flat as projects grow large:
+
+- **Module contexts** — when the core files can't hold the whole system, each
+  boundary gets its own budgeted `context/modules/<area>.md`; the core files
+  shrink to the boundary map + global invariants, and a task loads only the
+  module(s) it touches.
+- **The retrieval index** — `forge-index.sh` builds a SQLite FTS5 index
+  (`.index.db`, a git-ignored, rebuildable cache — markdown stays the source of
+  truth) over every context artifact *including the never-auto-read archives*.
+  Resume, spec, and debug query it for relevant history (`path:line` + snippet,
+  ranked) at **zero model-token cost**, then read only the hits — no more blind
+  grepping through hundreds of archived files.
 
 ## Requirements
 

@@ -8,7 +8,7 @@ description: >
   and tracker first, full files only as the task requires) so work continues without
   drift and without burning tokens.
 metadata:
-  version: "0.22.0"
+  version: "0.23.0"
 ---
 
 # forge-resume
@@ -52,6 +52,12 @@ and load its Tier 2 file(s). No argument → standard resume to whatever is Next
    task is known (step 4), read only the file(s) that task touches, per the tier map
    in the digest / token-economy.md. Never guess: if a decision depends on a file you
    haven't read, read it first.
+
+   **History via the index, not grep.** When the session's focus needs past
+   context (a related decision, an archived spec, an old lesson) and the project
+   has a retrieval index (`.index.db` in the context dir), query it —
+   `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/forge-index.sh" query "<focus terms>"`
+   — and read only the hits. Zero tokens for the search itself.
 
    Do **not** read `context/progress-archive.md` or `context/specs/archived/` — that
    is rotated-out history, not active context; open it only if the user explicitly

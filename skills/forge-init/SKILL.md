@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.22.0"
+  version: "0.23.0"
 ---
 
 # forge-init
@@ -133,7 +133,12 @@ idempotent: running it on a healthy project changes nothing.
      present but `entry_links_context: no`, merge in the "Application Building Context"
      section without disturbing the rest.
    - **Optional pieces** — offer (don't force) to add `context/specs/` + a build plan and
-     `context/decisions.md` if absent.
+     `context/decisions.md` if absent. For projects with history worth searching,
+     offer the retrieval index: run
+     `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/forge-index.sh" build`
+     and add `.index.db` to `.gitignore` (it's a rebuildable cache — the markdown
+     stays the source of truth). For large multi-boundary projects, offer
+     `context/modules/<area>.md` files per token-economy.md's module convention.
 
 4. **Offer a drift check.** For ADOPT projects with a codebase, recommend running
    `forge-audit` to confirm the existing docs still match the code. Don't auto-rewrite

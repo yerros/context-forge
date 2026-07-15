@@ -37,6 +37,28 @@ The digest **summarizes** the six files; it never replaces them as the source of
 truth. When the digest and a full file disagree, the full file wins — and the
 digest should be regenerated.
 
+## Scaling: module contexts and the retrieval index
+
+Budgets keep the per-session cost flat, but a growing project eventually saturates
+the curated files and makes history hard to find. Two mechanisms scale past that —
+same philosophy, one level deeper:
+
+- **Module contexts** (`context/modules/<area>.md`, ~8 KB each): when
+  `architecture.md`/`code-standards.md` can't hold the whole system anymore, each
+  boundary (auth, payments, invoicing…) gets its own budgeted file with that
+  area's architecture, conventions, and gotchas. The core files shrink to the
+  boundary map + global invariants and stay lean forever. Tier 2 loads only the
+  module(s) the task touches — per-session cost stays flat no matter how many
+  modules exist. Created by `forge-compact` (splitting an over-budget core file)
+  or `forge-init` on large projects.
+- **The retrieval index** (`<context-dir>/.index.db`, SQLite FTS5): built by
+  `forge-index.sh build` from every context artifact *including the never-auto-read
+  archives*, queried with `forge-index.sh query "terms" [k]` → top-k `path:line`
+  + snippet, **zero model tokens for the search**. The markdown stays the single
+  source of truth — the DB is a rebuildable cache; add `.index.db` to `.gitignore`.
+  Refreshed at close-unit; used by resume/spec/debug to find relevant history
+  instead of blind grepping.
+
 ## Loading tiers
 
 - **Tier 1 — always (cheap):** the entry point (`CLAUDE.md`/`AGENTS.md`), the
@@ -47,6 +69,8 @@ digest should be regenerated.
   | Task involves | Read |
   | --- | --- |
   | building or debugging | `context/lessons.md` first (tiny — known mistakes & rules) |
+  | a specific boundary/module | `context/modules/<area>.md` (when the project has them) |
+  | past decisions/specs/history | `forge-index.sh query` first, then read only the hits |
   | UI, styling, components | `context/ui-context.md` |
   | architecture, boundaries, storage, new dependencies | `context/architecture.md` |
   | writing/reviewing code | `context/code-standards.md` |
@@ -71,6 +95,7 @@ unchanged prefix stays cacheable across sessions.
 | `context/patterns.md` | ~2 KB / ~500 tokens (exemplar registry — read by architect/build for sibling features) |
 | `context/progress-tracker.md` | ~6 KB / ~1,500 tokens (active window; see close-unit.md) |
 | `architecture.md`, `ui-context.md`, `code-standards.md`, `project-overview.md`, `ai-workflow-rules.md` | ~10 KB / ~2,500 tokens each |
+| `context/modules/<area>.md` | ~8 KB / ~2,000 tokens each (loaded only when the task touches that module) |
 | Entry point (`CLAUDE.md`/`AGENTS.md`) | keep lean; big tables/reference blocks go in on-demand files |
 
 Approximation: tokens ≈ bytes / 4. Measure with:

@@ -3,6 +3,34 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.23.0] — 2026-07-14
+
+### Added (scaling: module contexts + retrieval index)
+Answers the growth problem: budgets keep the per-session cost flat, but a large
+project saturates the curated files and makes history unfindable. Two layers, both
+keeping markdown as the single source of truth:
+
+- **Module contexts** (`context/modules/<area>.md`, ~8 KB each): when a core file
+  genuinely outgrows tightening, `forge-compact` proposes the module split — per
+  boundary, that area's architecture/conventions/gotchas move into its own budgeted
+  file; the core file shrinks to the boundary map + global invariants and stays
+  lean forever. Tier 2 loads only the module(s) a task touches (forge-build load
+  step + architect read list), so the per-session cost stays flat regardless of
+  module count. Budget-checked by `track.sh`; offered by `forge-init` for large
+  projects; canonical convention in token-economy.md.
+- **`forge-index.sh`** (new bundled script) — deterministic retrieval at zero
+  model-token search cost: `build` indexes every markdown section under the
+  context dir (specs, **archives**, decisions, lessons, patterns, progress
+  history) into SQLite FTS5 (`.index.db` — git-ignored rebuildable cache; sqlite3
+  ships with macOS/Linux, no new dependencies); `query "terms" [k]` returns top-k
+  BM25-ranked `path:line` + title + snippet. Wired in: close-unit refreshes the
+  index (new step 6; steps renumbered); `forge-resume` queries it for
+  session-focus history; `forge-architect` queries for prior art (an existing
+  decision must be honored or explicitly superseded, never unknowingly re-made);
+  `forge-debug` queries for prior encounters with the symptom. Deliberately **not**
+  a vector DB: no runtime deps, no embedding costs, deterministic — and the
+  semantic-recall niche is already served by claude-mem for those who run it.
+
 ## [0.22.0] — 2026-07-14
 
 ### Added (loop engineering)

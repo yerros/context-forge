@@ -42,6 +42,11 @@ check_budget "$CTX/patterns.md"         2048  "2 KB"   "keep entries as exemplar
 for f in architecture ui-context code-standards project-overview ai-workflow-rules; do
   check_budget "$CTX/$f.md" 10240 "10 KB" "tighten prose or split detail into an on-demand reference file (or run forge-compact)"
 done
+if [ -d "$CTX/modules" ]; then
+  for f in "$CTX"/modules/*.md; do
+    [ -f "$f" ] && check_budget "$f" 8192 "8 KB" "tighten the module context or split the boundary (or run forge-compact)"
+  done
+fi
 
 {
   printf '# Last session activity\n\n'

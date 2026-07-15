@@ -20,7 +20,13 @@ wrong code, failed verifications, and wasted tokens. Think hard; write tersely.
 
 - Read before deciding: `context/project-overview.md`, `context/architecture.md`
   (invariants are non-negotiable), `context/code-standards.md`, and — for UI work —
-  `context/ui-context.md`. Honor `context/lessons.md` if present.
+  `context/ui-context.md`. Honor `context/lessons.md` if present. When the project
+  has `context/modules/`, read the module file(s) for the boundaries the work
+  touches. Before designing, query history for prior art — related decisions and
+  archived specs — via
+  `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/forge-index.sh" query "<topic>"`
+  (if the index exists) and read only the hits: a decision that already exists must
+  be honored or explicitly superseded, never unknowingly re-made.
 - **Check `context/patterns.md`**: when the unit resembles a registered pattern
   (another CRUD, another list screen), the spec MUST name the pattern and its
   exemplar path, and its Design/Implementation sections must say "mimic the

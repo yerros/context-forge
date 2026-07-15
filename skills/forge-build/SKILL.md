@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.22.0"
+  version: "0.23.0"
 ---
 
 # forge-build
@@ -45,8 +45,10 @@ invariants; fall back to `context/architecture.md` if there is no digest),
 and the unit's spec file. The spec is the source of truth for what to build.
 
 Then read only the full context files this unit touches: `context/code-standards.md`
-when writing code (nearly always), `context/ui-context.md` for UI work, and the full
-`context/architecture.md` when the unit touches boundaries, storage, or dependencies.
+when writing code (nearly always), `context/ui-context.md` for UI work, the full
+`context/architecture.md` when the unit touches boundaries, storage, or dependencies —
+and, when the project has `context/modules/`, the **module file(s) for the
+boundary this unit lives in** (that's where the area's conventions and gotchas are).
 **If the spec names a pattern/exemplar** (or `context/patterns.md` has an entry this
 unit resembles), read the exemplar files before writing anything and mimic them on
 the must-match dimensions — sibling features are written in the exemplar's dialect,
