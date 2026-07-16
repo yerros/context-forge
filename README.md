@@ -268,9 +268,9 @@ Two mechanisms keep the cost flat as projects grow large:
 ```
 context-forge/
 ├── .claude-plugin/          # plugin + marketplace manifests
-├── skills/                  # the 19 forge-* skills (+ bundled templates,
+├── skills/                  # the 20 forge-* skills (+ bundled templates,
 │   └── .../                 #   references, detect/migrate scripts)
-├── agents/                  # 5 model-pinned subagents
+├── agents/                  # 9 model-pinned subagents
 ├── hooks/                   # hooks.json + zero-token shell scripts
 ├── statusline/              # reference status line with skill indicator
 ├── CHANGELOG.md
