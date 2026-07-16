@@ -3,6 +3,34 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.24.0] — 2026-07-16
+
+### Added (forge-review: multi-lens diff review)
+- **`forge-review`** (new skill) — a comprehensive, multi-perspective review of a
+  pull request, a branch, or the local working changes, adapted from the standalone
+  `/review-pr` workflow into Context Forge conventions. Resolves the scope (PR via
+  `gh`, the branch's PR, or the working diff), loads the project's context files
+  (invariants, standards, lessons, the unit spec when the diff maps to one), and
+  reviews across quality lenses — spec, standards, invariants, tests, errors, types,
+  comments, silent-breakage, simplicity — with `--focus=` flags whose aliases match
+  the external command's focus values. Findings are confidence-gated (≥80), deduped
+  across lenses, and ranked Critical / Important / Advisory with a
+  `RECOMMEND MERGE / CHANGES` verdict. Fans out per lens to the bundled review
+  agents (below) — one pass for the `forge-reviewer`-owned lenses plus each applicable
+  specialist; `parallel` launches them concurrently for a big diff. Read-only: it
+  reports; fixes route back through `forge-fix` / `forge-build`. It is the wide
+  quality sweep to `forge-verify`'s per-unit close gate.
+- **Four bundled review specialists** (new agents) so `forge-review`'s per-lens
+  fan-out is fully self-contained — no dependency on globally-installed agents, the
+  review runs identically on any machine: `forge-tester` (tests lens, sonnet),
+  `forge-failure-hunter` (errors/silent-failure lens, sonnet), `forge-typer` (types
+  lens, sonnet), `forge-commenter` (comments lens, haiku). All read-only, each
+  returning severity-ranked findings + a `RECOMMEND PASS/FAIL` verdict. Adapted from
+  the external `/review-pr` specialist agents into Context Forge conventions
+  (context-file aware, plugin severity vocabulary). The spec / standards / invariants
+  / simplify / silent-breakage lenses remain owned by the existing `forge-reviewer`.
+  Agent count: 5 → 9.
+
 ## [0.23.0] — 2026-07-14
 
 ### Added (scaling: module contexts + retrieval index)

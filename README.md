@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.23.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.24.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -132,6 +132,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-build` | The disciplined implement → verify → close loop for one spec'd unit: tests written during implementation, full-suite regression gate, 2-failure escalation to `forge-debug`. |
 | `forge-build-all` | The autonomous multi-unit version: builds every remaining unit in order, verifying each, **stopping at the first failure**. |
 | `forge-verify` | The pre-close gate: spec checklist + the unit's tests + full suite + build/typecheck/lint + tiered adversarial review, with a hard PASS/FAIL verdict. |
+| `forge-review` | Comprehensive multi-lens review of a PR, branch, or working diff (spec, standards, tests, errors, types, comments, simplicity) — confidence-gated, severity-ranked, read-only. The wide sweep to `forge-verify`'s unit close-gate. |
 | `forge-fix` | Intake for bug reports in shipped work: reproduce, triage (fix directly when obvious; hand off to `forge-debug` when not), verify, close with tracker + lesson + `fix/` branch. |
 | `forge-debug` | Stop-and-diagnose when stuck or after repeated failures: reproduce, isolate, re-read invariants, present root-cause options — no guess-fixing. |
 | `forge-align` | Finds and fixes consistency drift between similar features: maps feature families, registers canonical patterns with exemplars, and turns approved alignments into refactor units. |
@@ -146,7 +147,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 
 ## Agents
 
-Five bundled subagents route each kind of work to the right model — maximum
+Nine bundled subagents route each kind of work to the right model — maximum
 intelligence at the highest-leverage, lowest-frequency point, cheap models for bulk
 work. An agent's reading never enters the main session's context; only its
 conclusions do.
@@ -158,6 +159,10 @@ conclusions do.
 | `forge-aligner` | **sonnet** | Consistency checker: compares sibling features across eight dimensions (naming, layout, error handling, validation, data access, state, tests, implementation style) against the registered exemplar. |
 | `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence. |
 | `forge-archivist` | **haiku** | Mechanical bookkeeping: tracker rotation, spec archival, build-plan tidying, digest refresh, budget measurement. No judgment calls. |
+| `forge-tester` | **sonnet** | `forge-review`'s **tests** lens: behavioral coverage of the diff, untested edge/error paths, hollow or flaky tests. Read-only. |
+| `forge-failure-hunter` | **sonnet** | `forge-review`'s **errors** lens: swallowed catches, dangerous fallbacks, broken error propagation — failures that never surface. Read-only. |
+| `forge-typer` | **sonnet** | `forge-review`'s **types** lens: encapsulation, invariants expressed in the type, illegal states left representable. Read-only. |
+| `forge-commenter` | **haiku** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
 
 `forge-build` deliberately has no pinned agent — intelligence is paid up front in the
 spec, execution runs in your session's model (with an opus recommendation for units

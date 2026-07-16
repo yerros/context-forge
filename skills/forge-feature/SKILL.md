@@ -7,7 +7,7 @@ description: >
   updates scope in project-overview.md, inserts correctly-ordered units into the build
   plan, and generates the spec(s) — without breaking existing work.
 metadata:
-  version: "0.23.0"
+  version: "0.24.0"
 ---
 
 # forge-feature

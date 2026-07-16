@@ -6,7 +6,7 @@ description: >
   unit", "commit and push", or "close unit NN". It creates the branch, makes a
   conventional commit, and opens a pull request with a spec-derived summary.
 metadata:
-  version: "0.23.0"
+  version: "0.24.0"
 ---
 
 # forge-pr
