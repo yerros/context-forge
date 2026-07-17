@@ -3,6 +3,16 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.25.2] — 2026-07-17
+
+### Changed
+- Agent personas renamed to the user's real team roster: **DevTeam** (architect —
+  the chief architect, deliberately holding the highest-leverage opus role),
+  **Giuseppe** (reviewer), **Tatti** (aligner), **Karen** (tester), **Pat**
+  (failure-hunter), **Adam** (typer), **Eleonor** (commenter), **Tim** (scout —
+  fittingly, transport), **Tooba** (archivist). Same persona mechanics as v0.25.1:
+  labels and signatures only, identifiers and rigor unchanged.
+
 ## [0.25.1] — 2026-07-17
 
 ### Added (agent personas)

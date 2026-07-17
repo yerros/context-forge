@@ -10,7 +10,7 @@ description: >
   pipeline. Distinct from forge-audit (docs vs code) and forge-align (consistency):
   this checks the quality of the code itself.
 metadata:
-  version: "0.25.1"
+  version: "0.25.2"
 ---
 
 # forge-health
