@@ -9,7 +9,7 @@ description: >
   worktrees), creates the worktree, and hands the user the exact commands for the
   new terminal. Also lists claims and releases finished ones.
 metadata:
-  version: "0.25.2"
+  version: "0.25.3"
 ---
 
 # forge-worktree

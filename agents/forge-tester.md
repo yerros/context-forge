@@ -25,8 +25,12 @@ changed behavior itself.
    changed code paths with no test. Each feature the diff adds should have a test.
 2. **Untested edges** — error paths, boundary values, empty states the change
    implies but no test exercises.
-3. **Hollow tests** — assertions that assert nothing (no-throw only), tests bent to
-   pass instead of code fixed, flaky patterns, poor isolation, unclear test names.
+3. **Hollow tests** — assertions that assert nothing (no-throw only) OR that skip
+   the core contract: a test asserting only status/shape while ignoring what the
+   code actually promised (the exact query args built, the payload written, the
+   value transformed) is hollow even though it asserts *something*. Pin the
+   observable contract. Also: tests bent to pass instead of code fixed, flaky
+   patterns, poor isolation, unclear test names.
 4. **Integration gaps** — an important integration the change touches with no test.
 
 ## Output

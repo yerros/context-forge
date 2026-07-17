@@ -3,6 +3,26 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.25.3] — 2026-07-18
+
+### Changed (review calibration vs the /review-pr reference)
+Benchmarked forge-review against the /review-pr reference on a real PR (#119).
+Result: no Critical missed (the reference's own reviewers returned APPROVE after
+forge-review's pass); most round-2 findings were order artifacts (issues introduced
+by round-1's own fixes) or Advisory-class items forge-review filters by design. Two
+genuine misses, both fixed:
+
+- **`forge-commenter` (Eleonor)**: new hunt item 1b — comments stating verifiable
+  technical facts (magic bytes, protocol constants, units, limits) must be checked
+  against both the code AND the actual fact; a comment quoting wrong byte values
+  misleads with authority (missed: wrong GIF/WebP byte docs). Model raised
+  haiku → sonnet — factual verification needs the capability, and the comments
+  lens is small so the cost delta is minor.
+- **`forge-tester` (Karen)**: hollow-test definition sharpened — a test asserting
+  only status/shape while skipping the core contract (exact query args, payload
+  written, value transformed) is hollow even though it asserts *something*
+  (missed: a GET filter test that never pinned the Prisma where/take args).
+
 ## [0.25.2] — 2026-07-17
 
 ### Changed

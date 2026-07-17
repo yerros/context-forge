@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.25.2-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.25.3-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -163,7 +163,7 @@ conclusions do.
 | `forge-tester` ("Karen") | **sonnet** | `forge-review`'s **tests** lens: behavioral coverage of the diff, untested edge/error paths, hollow or flaky tests. Read-only. |
 | `forge-failure-hunter` ("Pat") | **sonnet** | `forge-review`'s **errors** lens: swallowed catches, dangerous fallbacks, broken error propagation — failures that never surface. Read-only. |
 | `forge-typer` ("Adam") | **sonnet** | `forge-review`'s **types** lens: encapsulation, invariants expressed in the type, illegal states left representable. Read-only. |
-| `forge-commenter` ("Eleonor") | **haiku** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
+| `forge-commenter` ("Eleonor") | **sonnet** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
 
 `forge-build` deliberately has no pinned agent — intelligence is paid up front in the
 spec, execution runs in your session's model (with an opus recommendation for units

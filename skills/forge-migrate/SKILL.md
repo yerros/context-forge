@@ -8,7 +8,7 @@ description: >
   (git mv with history, entry-point path rewrite, .gitignore guard), and offers the
   commit.
 metadata:
-  version: "0.25.2"
+  version: "0.25.3"
 ---
 
 # forge-migrate

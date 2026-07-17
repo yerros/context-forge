@@ -9,7 +9,7 @@ description: >
   tests, errors, types, comments, simplicity), gates on confidence, and reports
   findings ranked by severity. Read-only — reviews and reports, never fixes.
 metadata:
-  version: "0.25.2"
+  version: "0.25.3"
 ---
 
 # forge-review
@@ -89,7 +89,7 @@ Two modes:
   `forge-commenter`) only when its lens applies to the changed files — skip the
   specialist otherwise (no test files → no `forge-tester`; no type changes → no
   `forge-typer`). This is the normal review: full coverage, one subagent per relevant
-  lens, cheap ones (`forge-commenter` is haiku) staying cheap.
+  lens, each specialist scoped to its lens.
 - **`parallel`** — same set, launched concurrently rather than sequentially. Faster
   for a big diff; same token cost.
 
