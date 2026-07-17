@@ -3,6 +3,22 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.25.1] — 2026-07-17
+
+### Added (agent personas)
+- Every bundled agent now has an Indonesian-name **persona** — a display/signature
+  layer on top of the unchanged technical identifier (renaming the identifiers
+  would break skill references and strip the semantic signal the model uses to
+  pick agents): Arif (architect, "the wise one"), Bima (reviewer, blunt and
+  fearless), Laras (aligner, harmony), Titi (tester, meticulous), Galih
+  (failure-hunter, digs to the core), Wanda (typer, form), Citra (commenter),
+  Kelana (scout, the wanderer), Tata (archivist, order). Carried in each agent's
+  frontmatter description (so callers see it and title spawns
+  "Bima — multi-lens review of PR 42"), and each agent opens and signs its report
+  with its persona (`Bima: RECOMMEND PASS`, `Laras: CONSISTENT`). Explicit rule:
+  the persona changes the label, never the rigor. `forge-review` titles its
+  fan-out with the crew's names; README agents table shows them.
+
 ## [0.25.0] — 2026-07-17
 
 ### Added (parallel builds)

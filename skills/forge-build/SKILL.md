@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.25.0"
+  version: "0.25.1"
 ---
 
 # forge-build

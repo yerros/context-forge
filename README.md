@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.25.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.25.1-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -155,15 +155,15 @@ conclusions do.
 
 | Agent | Model | Role |
 | ----- | ----- | ---- |
-| `forge-architect` | **opus** | Decomposes features into units and writes the specs; deep ADR analysis. Runs rarely; its output steers every downstream token. |
-| `forge-reviewer` | **sonnet** | Adversarial, read-only diff-vs-spec review: scope creep, invariant violations, missing tests, silent breakage, overengineering, orthogonal edits. Verdict: `RECOMMEND PASS/FAIL`. |
-| `forge-aligner` | **sonnet** | Consistency checker: compares sibling features across eight dimensions (naming, layout, error handling, validation, data access, state, tests, implementation style) against the registered exemplar. |
-| `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence. |
-| `forge-archivist` | **haiku** | Mechanical bookkeeping: tracker rotation, spec archival, build-plan tidying, digest refresh, budget measurement. No judgment calls. |
-| `forge-tester` | **sonnet** | `forge-review`'s **tests** lens: behavioral coverage of the diff, untested edge/error paths, hollow or flaky tests. Read-only. |
-| `forge-failure-hunter` | **sonnet** | `forge-review`'s **errors** lens: swallowed catches, dangerous fallbacks, broken error propagation — failures that never surface. Read-only. |
-| `forge-typer` | **sonnet** | `forge-review`'s **types** lens: encapsulation, invariants expressed in the type, illegal states left representable. Read-only. |
-| `forge-commenter` | **haiku** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
+| `forge-architect` ("Arif") | **opus** | Decomposes features into units and writes the specs; deep ADR analysis. Runs rarely; its output steers every downstream token. |
+| `forge-reviewer` ("Bima") | **sonnet** | Adversarial, read-only diff-vs-spec review: scope creep, invariant violations, missing tests, silent breakage, overengineering, orthogonal edits. Verdict: `RECOMMEND PASS/FAIL`. |
+| `forge-aligner` ("Laras") | **sonnet** | Consistency checker: compares sibling features across eight dimensions (naming, layout, error handling, validation, data access, state, tests, implementation style) against the registered exemplar. |
+| `forge-scout` ("Kelana") | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence. |
+| `forge-archivist` ("Tata") | **haiku** | Mechanical bookkeeping: tracker rotation, spec archival, build-plan tidying, digest refresh, budget measurement. No judgment calls. |
+| `forge-tester` ("Titi") | **sonnet** | `forge-review`'s **tests** lens: behavioral coverage of the diff, untested edge/error paths, hollow or flaky tests. Read-only. |
+| `forge-failure-hunter` ("Galih") | **sonnet** | `forge-review`'s **errors** lens: swallowed catches, dangerous fallbacks, broken error propagation — failures that never surface. Read-only. |
+| `forge-typer` ("Wanda") | **sonnet** | `forge-review`'s **types** lens: encapsulation, invariants expressed in the type, illegal states left representable. Read-only. |
+| `forge-commenter` ("Citra") | **haiku** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
 
 `forge-build` deliberately has no pinned agent — intelligence is paid up front in the
 spec, execution runs in your session's model (with an opus recommendation for units

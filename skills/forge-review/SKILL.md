@@ -9,7 +9,7 @@ description: >
   tests, errors, types, comments, simplicity), gates on confidence, and reports
   findings ranked by severity. Read-only — reviews and reports, never fixes.
 metadata:
-  version: "0.25.0"
+  version: "0.25.1"
 ---
 
 # forge-review
@@ -92,6 +92,10 @@ Two modes:
   lens, cheap ones (`forge-commenter` is haiku) staying cheap.
 - **`parallel`** — same set, launched concurrently rather than sequentially. Faster
   for a big diff; same token cost.
+
+Title each spawn with the agent's persona from its description — e.g.
+"Bima — multi-lens review of PR 42", "Titi — tests lens on PR 42" — so the task
+list reads like a crew at work; each agent opens and signs with that persona.
 
 Each agent returns its own `RECOMMEND PASS/FAIL`; collapse them into the single
 verdict below (any agent FAIL, or any surviving Critical/Important, → overall
