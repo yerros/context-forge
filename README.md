@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.24.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.25.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -268,7 +268,7 @@ Two mechanisms keep the cost flat as projects grow large:
 ```
 context-forge/
 ├── .claude-plugin/          # plugin + marketplace manifests
-├── skills/                  # the 20 forge-* skills (+ bundled templates,
+├── skills/                  # the 21 forge-* skills (+ bundled templates,
 │   └── .../                 #   references, detect/migrate scripts)
 ├── agents/                  # 9 model-pinned subagents
 ├── hooks/                   # hooks.json + zero-token shell scripts

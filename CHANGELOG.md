@@ -3,6 +3,33 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.25.0] — 2026-07-17
+
+### Added (parallel builds)
+Run multiple `forge-build`s at once — one per terminal — without collisions.
+Naive parallelism in one working tree crashes three ways (shared test suite runs a
+sibling's half-finished code; shared git state breaks under branch switches; shared
+context files get clobbered), so parallelism = isolation:
+
+- **`forge-worktree`** (new, 21st skill) + **`forge-worktree.sh`**: one unit = one
+  git worktree = one branch = one terminal. `new <NN> <slug>` dependency-gates the
+  unit (only claimable when every dependency is Completed), **claims it atomically**
+  in the shared git common dir (`forge-claims/<NN>`, noclobber — visible to every
+  worktree, double claims lose cleanly, claim rolls back if worktree creation
+  fails), creates `../<repo>-uNN` on `feat/NN-<slug>`, and prints the exact
+  next-terminal commands. `list` shows claims + ages; `done <NN>` refuses dirty
+  worktrees, then removes and releases. Worktrees always hang off the MAIN repo
+  even when invoked from inside a linked worktree; portable mtime (GNU/BSD stat).
+- **`forge-build` is parallel-aware**: in a linked worktree it hard-stops unless
+  the unit's claim names that worktree, and close follows close-unit.md's new
+  **Parallel mode**: tracker edits touch only the unit's own lines (no rotation —
+  merge conflicts stay small and mechanical), digest + index refresh are SKIPPED
+  and reconciled once on main.
+- **`forge-resume` reconciles after the merges**: refreshes the digest State from
+  the merged tracker, rebuilds the retrieval index, and surfaces stale claims.
+- Honest framing in the skill: parallel sessions buy wall-clock time, not tokens —
+  each burns quota independently; 2–3 parallel units is the sweet spot.
+
 ## [0.24.0] — 2026-07-16
 
 ### Added (forge-review: multi-lens diff review)

@@ -9,7 +9,7 @@ description: >
   tests, errors, types, comments, simplicity), gates on confidence, and reports
   findings ranked by severity. Read-only — reviews and reports, never fixes.
 metadata:
-  version: "0.24.0"
+  version: "0.25.0"
 ---
 
 # forge-review

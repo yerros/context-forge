@@ -7,7 +7,7 @@ description: >
   disciplined implement → verify → close loop for a single spec'd unit and keeps the
   progress tracker in sync.
 metadata:
-  version: "0.24.0"
+  version: "0.25.0"
 ---
 
 # forge-build
@@ -21,6 +21,12 @@ exactly that work and nothing more.
 - The project has `context/` and an entry point (`CLAUDE.md`/`AGENTS.md`).
 - The target unit has a spec at `context/specs/NN-feature-name.md`. If it doesn't,
   stop and tell the user to run `forge-spec` first.
+- **Parallel mode check**: if this session runs in a linked worktree
+  (`git rev-parse --git-dir` ≠ `--git-common-dir`), verify the unit's claim in
+  `$(git rev-parse --git-common-dir)/forge-claims/<NN>` names THIS worktree —
+  unclaimed or claimed elsewhere is a hard stop (route to `/forge-worktree`). The
+  close step then follows close-unit.md's **Parallel mode** section (own-lines
+  tracker edits; digest/index deferred to main).
 
 ## Argument
 

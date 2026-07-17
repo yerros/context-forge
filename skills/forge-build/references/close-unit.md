@@ -67,6 +67,26 @@ yourself if the agent is unavailable.
    **exemplar**, and 3–5 must-match bullets. Show the user the entry. This is what
    keeps feature #2..#n in the same dialect as feature #1.
 
+## Parallel mode (linked worktrees)
+
+When the session runs in a **linked git worktree** (detect:
+`git rev-parse --git-dir` differs from `git rev-parse --git-common-dir`), builds
+may be running in sibling worktrees simultaneously. Before starting, `forge-build`
+must confirm this unit's claim exists and points at THIS worktree
+(`$(git rev-parse --git-common-dir)/forge-claims/<NN>`) — an unclaimed or
+foreign-claimed unit is a hard stop (route to `/forge-worktree`). At close, three
+steps change:
+
+- **Steps 1–2 (tracker): touch only this unit's lines** — its Completed entry, its
+  Session Note, its attempt-log cleanup. Do NOT rotate the tracker, reorder
+  sections, or edit other units' entries: minimal own-lines edits keep the eventual
+  merge conflicts small and mechanical.
+- **Steps 6–7 (index + digest): SKIP.** Both describe global state and would
+  conflict across branches; they are reconciled ONCE on main by `forge-resume`
+  after the PRs merge.
+- Everything else (spec archive, build-plan line move, lessons, patterns) proceeds
+  normally — those are also own-lines edits.
+
 ## Shipping
 
 Shipping is `forge-pr`'s job — branch `feat/NN-feature-name`, conventional commit,

@@ -8,7 +8,7 @@ description: >
   and tracker first, full files only as the task requires) so work continues without
   drift and without burning tokens.
 metadata:
-  version: "0.24.0"
+  version: "0.25.0"
 ---
 
 # forge-resume
@@ -62,6 +62,13 @@ and load its Tier 2 file(s). No argument → standard resume to whatever is Next
    Do **not** read `context/progress-archive.md` or `context/specs/archived/` — that
    is rotated-out history, not active context; open it only if the user explicitly
    asks about past work.
+
+1b. **Post-parallel reconciliation.** If parallel worktrees were in play (claims
+   exist in `$(git rev-parse --git-common-dir)/forge-claims/`, or recently-merged
+   `feat/NN` branches touched the tracker), reconcile once on main: refresh the
+   digest's State section from the merged tracker, rebuild the retrieval index
+   (`forge-index.sh build`), and surface stale claims (worktrees finished but never
+   `done`d) to the user.
 
 2. From `progress-tracker.md`, extract: current phase, current goal, what's completed,
    what's in progress, what's next up, and any open questions or recent architecture
