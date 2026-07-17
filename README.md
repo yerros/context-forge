@@ -143,6 +143,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-resume` | Restores context tier by tier at session start (digest + tracker first, full files per task) and briefs you on where things stand. |
 | `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers doc updates. |
 | `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses with approval, rotates history, (re)generates the digest. |
+| `forge-worktree` | Parallel builds across terminals: one unit = one git worktree = one branch. Dependency-gates the unit, claims it atomically (visible to every terminal), creates the worktree, and hands you the commands for the new terminal. `list` / `done` manage claims. |
 | `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, git-history-preserving move, entry-point rewrite, `.gitignore` guard. |
 
 ## Agents
