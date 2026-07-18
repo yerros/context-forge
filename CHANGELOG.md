@@ -3,6 +3,32 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.34.0] — 2026-07-18
+
+### Changed (dashboard visual redesign — ui-ux-pro-max pass)
+Full visual overhaul against the design database (Developer Tool/IDE palette,
+glassmorphism guidance, UX priority rules); all logic and realtime behavior
+unchanged, 25 headless tests green.
+
+- **Design system**: semantic tokens (surface/line/text/status scales),
+  aurora background (violet/cyan/green radial glows on deep navy),
+  glass panels (backdrop-blur 14px, translucent borders, layered shadows),
+  Space Grotesk / Inter / JetBrains Mono type stack (system fallbacks).
+- **New KPI strip**: Shipped / In Progress / Next Up / Agents Live tiles with
+  status accent rails; office header shows live occupancy.
+- **Sticky glass topbar** with gradient logo mark, live pill (cyan when
+  working), pulsing connection ring.
+- **Kanban polish**: colored column dots + count pills, hover lift cards,
+  animated gradient border + blinking dot on the LIVE card, refined tags,
+  SVG chevron pagers, pill search field with icon.
+- **Feed as timeline**: color-coded event dots (skill=violet, start=green,
+  stop=red, changes=amber), monospace timestamps, row fade-in.
+- **Drawer**: dim overlay, smooth slide, refined markdown styles.
+- **Standards**: SVG icons everywhere in chrome (no emoji UI glyphs),
+  focus-visible rings, aria labels/roles (log, dialog, status), 4.5:1 text
+  contrast on glass, transitions 150–300 ms, `prefers-reduced-motion`
+  honored, responsive down to single column.
+
 ## [0.33.1] — 2026-07-18
 
 ### Changed

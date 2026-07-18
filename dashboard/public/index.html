@@ -4,137 +4,310 @@
 <meta charset="utf-8">
 <title>forge-office</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* ---------- design tokens (semantic, dashboard density) ---------- */
   :root{
-    --bg:#0e1116; --panel:#161b22; --panel2:#1c2330; --line:#2a3242;
-    --text:#dbe2ee; --dim:#8b96a8; --accent:#7c6cf0; --green:#3fb950;
-    --amber:#d29922; --red:#f85149; --cyan:#39c5cf;
+    --bg:#060913; --bg-2:#0b1120;
+    --surface:rgba(15,23,42,.62); --surface-2:rgba(30,41,59,.55); --surface-3:#1a2436;
+    --line:rgba(148,163,184,.14); --line-strong:rgba(148,163,184,.28);
+    --text:#e6edf6; --text-dim:#9aa8bd; --text-faint:#64748b;
+    --accent:#8b7cf7; --accent-2:#22d3ee; --ok:#34d399; --warn:#fbbf24; --danger:#f87171;
+    --r-sm:8px; --r-md:12px; --r-lg:16px;
+    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.5);
+    --shadow-lift:0 2px 4px rgba(0,0,0,.4),0 16px 32px -12px rgba(2,6,23,.7);
+    --blur:14px; --ease:cubic-bezier(.2,.7,.3,1); --dur:190ms;
+    --font-body:"Inter",ui-sans-serif,system-ui,sans-serif;
+    --font-display:"Space Grotesk",var(--font-body);
+    --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
   }
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);
-    font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-  header{display:flex;align-items:center;gap:12px;padding:10px 16px;
-    border-bottom:1px solid var(--line);background:var(--panel)}
-  header h1{font-size:15px;margin:0;font-weight:700}
-  header .proj{color:var(--cyan);font-weight:600}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
-  .dot.on{background:var(--green)}
-  .meta{margin-left:auto;color:var(--dim);font-size:12px;display:flex;gap:14px}
-  .badge{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
-    padding:1px 8px;font-size:11px;color:var(--dim)}
-  main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:12px;
-    padding:12px 16px;max-width:1600px;margin:0 auto}
+  *{box-sizing:border-box}
+  html{font-size:16px}
+  body{
+    margin:0;color:var(--text);font:14px/1.5 var(--font-body);
+    background:var(--bg);min-height:100vh;
+  }
+  /* aurora backdrop */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(52rem 30rem at 12% -6%, rgba(139,124,247,.16), transparent 60%),
+      radial-gradient(44rem 28rem at 96% 4%, rgba(34,211,238,.12), transparent 60%),
+      radial-gradient(40rem 30rem at 55% 110%, rgba(52,211,153,.08), transparent 60%),
+      linear-gradient(180deg,#070b16 0%,#060913 100%);
+  }
+  ::selection{background:rgba(139,124,247,.35)}
+  :focus-visible{outline:2px solid var(--accent-2);outline-offset:2px;border-radius:4px}
+
+  /* ---------- top bar ---------- */
+  header.top{
+    position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:var(--sp-3);
+    padding:10px clamp(14px,2vw,28px);
+    background:rgba(6,9,19,.72);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    border-bottom:1px solid var(--line);
+  }
+  .logo{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:700;font-size:15px;letter-spacing:.01em}
+  .logo .mark{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none;
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 120%);color:#0b1120;
+    box-shadow:0 0 0 1px rgba(255,255,255,.12) inset,0 4px 14px -4px rgba(139,124,247,.6)}
+  .logo .proj{color:var(--accent-2);font-weight:600}
+  .logo .sep{color:var(--text-faint);font-weight:400}
+  .pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);
+    border-radius:999px;padding:4px 12px;font-size:12px;color:var(--text-dim);
+    background:var(--surface);backdrop-filter:blur(var(--blur));white-space:nowrap;
+    max-width:46vw;overflow:hidden;text-overflow:ellipsis}
+  .pill.live{color:var(--accent-2);border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.08)}
+  .meta{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2);font-size:12px;color:var(--text-dim)}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11px;
+    color:var(--text-dim);background:var(--surface)}
+  #updated{font-family:var(--font-mono);font-size:11px;color:var(--text-faint)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--danger);position:relative;flex:none}
+  .dot.on{background:var(--ok)}
+  .dot.on::after{content:"";position:absolute;inset:-4px;border-radius:50%;
+    border:1.5px solid rgba(52,211,153,.5);animation:ring 2.2s var(--ease) infinite}
+  @keyframes ring{0%{transform:scale(.5);opacity:1}80%,100%{transform:scale(1.25);opacity:0}}
+
+  /* ---------- layout ---------- */
+  main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);
+    gap:var(--sp-4);padding:var(--sp-4) clamp(14px,2vw,28px);max-width:1680px;margin:0 auto}
   @media(max-width:1150px){main{grid-template-columns:1fr}}
-  section{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  section>h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);
-    margin:0;padding:9px 12px;border-bottom:1px solid var(--line)}
-  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px;min-height:240px}
-  .col h3{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);margin:2px 0 8px}
-  .col h3 .n{color:var(--text)}
-  .card{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--line);
-    border-radius:7px;padding:7px 9px;margin-bottom:7px;font-size:12.5px;word-wrap:break-word}
-  .card.wip{border-left-color:var(--amber)}
-  .card.next{border-left-color:var(--accent)}
-  .card.done{border-left-color:var(--green);color:var(--dim)}
-  .card .tag{display:inline-block;font-size:10px;border-radius:8px;padding:0 6px;margin-left:5px;vertical-align:1px}
-  .tag.high{background:#3d2b12;color:var(--amber)}
-  .tag.claim{background:#14283d;color:var(--cyan)}
-  .tag.att{background:#3a1618;color:var(--red)}
-  .empty{color:var(--dim);font-size:12px;font-style:italic;padding:4px 2px}
-  .pager{display:flex;align-items:center;gap:8px;justify-content:center;padding:2px 0;color:var(--dim);font-size:11px}
-  .pager button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
-    color:var(--text);cursor:pointer;font-size:12px;line-height:1;padding:2px 8px}
-  .pager button:disabled{opacity:.35;cursor:default}
-  .card[data-unit]{cursor:pointer} .card[data-unit]:hover{border-color:var(--accent)}
-  .card a{color:var(--cyan);text-decoration:none}
-  .card .date{float:right;color:var(--dim);font-size:10px}
-  .card.live{border-left-color:var(--cyan);background:#15242c}
-  #drawer{position:fixed;top:0;right:-620px;width:min(600px,92vw);height:100vh;z-index:50;
-    background:var(--panel);border-left:1px solid var(--line);transition:right .2s;display:flex;flex-direction:column}
-  #drawer.open{right:0}
-  #drawer header{display:flex;gap:10px;align-items:center}
-  #drawer .md{flex:1;overflow:auto;margin:0;padding:6px 18px 20px;font-size:13px;
-    line-height:1.6;color:var(--text)}
-  .md h1{font-size:16px;margin:14px 0 8px;color:#fff}
-  .md h2{font-size:14px;margin:16px 0 6px;color:var(--cyan);border-bottom:1px solid var(--line);padding-bottom:4px}
-  .md h3{font-size:13px;margin:12px 0 4px;color:var(--accent)}
-  .md p{margin:6px 0}
-  .md ul,.md ol{margin:6px 0;padding-left:22px}
-  .md li{margin:3px 0}
-  .md code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;
-    padding:0 4px;font-size:12px;color:#9fd0ff}
-  .md pre{background:#11151c;border:1px solid var(--line);border-radius:8px;
-    padding:10px 12px;overflow-x:auto;font-size:12px;line-height:1.5;margin:8px 0}
-  .md pre code{background:none;border:none;padding:0;color:#dbe2ee}
-  .md blockquote{border-left:3px solid var(--accent);margin:8px 0;padding:2px 12px;color:var(--dim)}
-  .md hr{border:none;border-top:1px solid var(--line);margin:12px 0}
+  .stack{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
+
+  /* ---------- KPI strip ---------- */
+  .kpis{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-4)}
+  @media(max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--r-md);
+    background:var(--surface);backdrop-filter:blur(var(--blur));padding:12px 16px;
+    box-shadow:var(--shadow);transition:transform var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+  .kpi:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+  .kpi .k-label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--text-faint)}
+  .kpi .k-value{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1.2;margin-top:2px}
+  .kpi .k-sub{font-size:11px;color:var(--text-dim)}
+  .kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px}
+  .kpi.v-done::after{background:var(--ok)} .kpi.v-wip::after{background:var(--warn)}
+  .kpi.v-next::after{background:var(--accent)} .kpi.v-agents::after{background:var(--accent-2)}
+
+  /* ---------- panels ---------- */
+  section.panel{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+    background:var(--surface);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    box-shadow:var(--shadow)}
+  .panel>h2{display:flex;align-items:center;gap:9px;margin:0;padding:11px 16px;
+    font-family:var(--font-display);font-size:12.5px;font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--line)}
+  .panel>h2 svg{width:15px;height:15px;color:var(--accent);flex:none}
+  .panel>h2 .right{margin-left:auto;display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0}
+
+  /* search */
+  .search{position:relative}
+  .search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-faint)}
+  .search input{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;
+    color:var(--text);font:12px var(--font-body);padding:6px 12px 6px 28px;width:170px;
+    transition:border-color var(--dur) var(--ease),width var(--dur) var(--ease)}
+  .search input:focus{border-color:var(--accent-2);width:200px;outline:none}
+  .search input::placeholder{color:var(--text-faint)}
+
+  /* ---------- kanban ---------- */
+  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);min-height:230px}
+  @media(max-width:760px){.board{grid-template-columns:1fr}}
+  .col h3{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:4px 0 10px}
+  .col h3::before{content:"";width:8px;height:8px;border-radius:3px;flex:none}
+  .col.c-next h3::before{background:var(--accent)} .col.c-wip h3::before{background:var(--warn)}
+  .col.c-done h3::before{background:var(--ok)}
+  .col h3 .n{margin-left:auto;font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);
+    border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+  .card{position:relative;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:9px 11px 9px 14px;margin-bottom:8px;font-size:12.5px;
+    line-height:1.45;word-wrap:break-word;box-shadow:0 1px 2px rgba(0,0,0,.25);
+    transition:transform var(--dur) var(--ease),border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;background:var(--line-strong)}
+  .card.wip::before{background:var(--warn)} .card.next::before{background:var(--accent)}
+  .card.done::before{background:var(--ok)}
+  .card.done{color:var(--text-dim)}
+  .card[data-unit]{cursor:pointer}
+  .card[data-unit]:hover{transform:translateY(-2px);border-color:var(--line-strong);box-shadow:var(--shadow-lift)}
+  .card a{color:var(--accent-2);text-decoration:none} .card a:hover{text-decoration:underline}
+  .card .date{float:right;color:var(--text-faint);font-size:10px;font-family:var(--font-mono);margin-left:6px}
+  .tag{display:inline-block;font-size:10px;font-weight:600;border-radius:999px;padding:1px 8px;
+    margin-left:6px;vertical-align:1px;letter-spacing:.02em}
+  .tag.high{background:rgba(251,191,36,.14);color:var(--warn)}
+  .tag.claim{background:rgba(34,211,238,.12);color:var(--accent-2)}
+  .tag.att{background:rgba(248,113,113,.14);color:var(--danger)}
+  /* live card: animated gradient edge + pulse */
+  .card.live{background:linear-gradient(rgba(10,20,34,.9),rgba(10,20,34,.9)) padding-box,
+    linear-gradient(120deg,var(--accent-2),var(--accent),var(--accent-2)) border-box;
+    border:1px solid transparent;background-size:100% 100%,220% 100%;
+    animation:liveEdge 4s linear infinite;color:var(--text)}
+  .card.live::before{background:var(--accent-2)}
+  @keyframes liveEdge{to{background-position:0 0,220% 0}}
+  .livedot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent-2);
+    margin-right:7px;animation:blink 1.1s var(--ease) infinite alternate}
+  @keyframes blink{from{opacity:1}to{opacity:.25}}
+  .empty{display:flex;align-items:center;gap:8px;color:var(--text-faint);font-size:12px;
+    font-style:italic;padding:10px 4px}
+  .pager{display:flex;align-items:center;gap:10px;justify-content:center;padding:4px 0 2px;
+    color:var(--text-faint);font-family:var(--font-mono);font-size:11px}
+  .pager button{display:grid;place-items:center;width:26px;height:26px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:8px;color:var(--text);cursor:pointer;
+    transition:border-color var(--dur) var(--ease),transform var(--dur) var(--ease)}
+  .pager button:hover:not(:disabled){border-color:var(--accent-2);transform:translateY(-1px)}
+  .pager button:disabled{opacity:.3;cursor:default}
+  .locks{padding:9px 16px;font-size:12px;color:var(--text-dim);border-top:1px solid var(--line);
+    font-family:var(--font-mono)}
+  .locks b{color:var(--warn);font-weight:600}
+
+  /* ---------- feed ---------- */
+  #feed{list-style:none;margin:0;padding:4px 0;max-height:320px;overflow-y:auto;overscroll-behavior:contain}
+  #feed li{display:flex;align-items:baseline;gap:10px;padding:5px 16px;font-size:12px;
+    border-bottom:1px solid rgba(148,163,184,.06);animation:rowIn .25s var(--ease) both}
+  @keyframes rowIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+  #feed li:hover{background:rgba(148,163,184,.05)}
+  #feed .fdot{width:7px;height:7px;border-radius:50%;flex:none;align-self:center;background:var(--text-faint)}
+  #feed .fdot.skill_invoked{background:var(--accent)} #feed .fdot.agent_started{background:var(--ok)}
+  #feed .fdot.agent_stopped{background:var(--danger)} #feed .fdot.stop_with_changes{background:var(--warn)}
+  #feed .t{color:var(--text-faint);white-space:nowrap;font-family:var(--font-mono);font-size:10.5px}
+  #feed .ev{color:var(--text);font-weight:500}
+  #feed .pj{color:var(--text-faint)}
+  #feed .ex{color:var(--text-dim);font-family:var(--font-mono);font-size:11px}
+  ::-webkit-scrollbar{width:9px;height:9px} ::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
+
+  /* ---------- office & notes ---------- */
+  #office{display:block;width:100%;image-rendering:pixelated;background:#7d828c;border-radius:0 0 var(--r-lg) var(--r-lg)}
+  #notes{list-style:none;margin:0;padding:10px 16px;font-size:12.5px;color:var(--text-dim)}
+  #notes li{padding:4px 0;border-bottom:1px dashed rgba(148,163,184,.08)} #notes li:last-child{border:none}
+
+  footer{color:var(--text-faint);text-align:center;font-size:11px;padding:6px 0 20px}
+
+  /* ---------- drawer ---------- */
+  #overlay{position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(2px);
+    opacity:0;pointer-events:none;transition:opacity var(--dur) var(--ease);z-index:49}
+  #overlay.open{opacity:1;pointer-events:auto}
+  #drawer{position:fixed;top:0;right:0;transform:translateX(105%);width:min(620px,94vw);height:100vh;z-index:50;
+    background:rgba(10,16,30,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-left:1px solid var(--line-strong);display:flex;flex-direction:column;
+    transition:transform 220ms var(--ease);box-shadow:-24px 0 60px -20px rgba(0,0,0,.6)}
+  #drawer.open{transform:none}
+  #drawer header{display:flex;gap:10px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+  #drawer h1{font:600 14px var(--font-display);margin:0}
+  #drawer .x{margin-left:auto;display:flex;align-items:center;gap:6px;cursor:pointer;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:8px;color:var(--text);
+    padding:5px 11px;font:12px var(--font-body);transition:border-color var(--dur) var(--ease)}
+  #drawer .x:hover{border-color:var(--danger)}
+  #drawer .md{flex:1;overflow:auto;margin:0;padding:8px 20px 24px;font-size:13px;line-height:1.65;color:var(--text)}
+  .md h1{font:700 16px var(--font-display);margin:16px 0 8px;color:#fff}
+  .md h2{font:600 14px var(--font-display);margin:18px 0 6px;color:var(--accent-2);
+    border-bottom:1px solid var(--line);padding-bottom:5px}
+  .md h3{font:600 13px var(--font-display);margin:12px 0 4px;color:var(--accent)}
+  .md p{margin:7px 0}
+  .md ul,.md ol{margin:6px 0;padding-left:22px} .md li{margin:3px 0}
+  .md code{background:var(--surface-2);border:1px solid var(--line);border-radius:5px;
+    padding:0 5px;font:11.5px var(--font-mono);color:#9fd0ff}
+  .md pre{background:#0a0f1c;border:1px solid var(--line);border-radius:10px;
+    padding:11px 13px;overflow-x:auto;font:12px/1.55 var(--font-mono);margin:9px 0}
+  .md pre code{background:none;border:none;padding:0;color:var(--text)}
+  .md blockquote{border-left:3px solid var(--accent);margin:8px 0;padding:2px 12px;color:var(--text-dim)}
+  .md hr{border:none;border-top:1px solid var(--line);margin:14px 0}
   .md b{color:#fff}
   .md table{border-collapse:collapse;margin:8px 0;font-size:12px}
-  .md th,.md td{border:1px solid var(--line);padding:4px 9px;text-align:left}
-  .md th{background:var(--panel2);color:var(--dim)}
-  .md input[type=checkbox]{accent-color:var(--green);margin-right:6px}
-  .md a{color:var(--cyan)}
-  #drawer .x{margin-left:auto;cursor:pointer;background:var(--panel2);border:1px solid var(--line);
-    border-radius:6px;color:var(--text);padding:2px 10px}
-  #office{display:block;width:100%;image-rendering:pixelated;background:#7d828c}
-  #feed{list-style:none;margin:0;padding:6px 0;max-height:300px;overflow-y:auto}
-  #feed li{display:flex;gap:10px;padding:4px 14px;font-size:12px;border-bottom:1px solid #1a2030}
-  #feed .t{color:var(--dim);white-space:nowrap;font-variant-numeric:tabular-nums}
-  #feed .ev{color:var(--cyan)} #feed .ex{color:var(--dim)}
-  .locks{padding:8px 12px;font-size:12px;color:var(--dim);border-top:1px solid var(--line)}
-  .locks b{color:var(--amber)}
-  footer{color:var(--dim);text-align:center;font-size:11px;padding:8px 0 16px}
+  .md th,.md td{border:1px solid var(--line);padding:4px 10px;text-align:left}
+  .md th{background:var(--surface-2);color:var(--text-dim)}
+  .md input[type=checkbox]{accent-color:var(--ok);margin-right:6px}
+  .md a{color:var(--accent-2)}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+      transition-duration:.01ms !important}
+  }
 </style>
 </head>
 <body>
-<header>
-  <div class="dot" id="conn"></div>
-  <h1>forge-office · <span class="proj" id="proj">…</span></h1>
-  <span class="badge" id="phase"></span>
+
+<header class="top">
+  <div class="logo">
+    <span class="mark" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 9 15"/><path d="M4 9v11h11"/></svg>
+    </span>
+    forge-office <span class="sep">·</span> <span class="proj" id="proj">…</span>
+  </div>
+  <span class="pill" id="phase"></span>
   <div class="meta">
-    <span id="schema" class="badge"></span>
-    <span id="skillnow" class="badge"></span>
+    <span id="schema" class="chip"></span>
+    <span id="skillnow" class="chip"></span>
     <span id="updated"></span>
+    <div class="dot" id="conn" title="realtime connection" role="status" aria-label="realtime connection"></div>
   </div>
 </header>
 
 <main>
-  <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
-    <section>
-      <h2>Board — progress tracker
-        <input id="search" placeholder="filter units…" style="float:right;background:var(--panel2);
-          border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:11px;
-          padding:2px 8px;width:130px;margin-top:-2px" oninput="boardFilter=this.value;state&&renderBoard(state)">
+  <div class="kpis" aria-label="project stats">
+    <div class="kpi v-done"><div class="k-label">Shipped units</div><div class="k-value" id="k-done">–</div><div class="k-sub">archived specs + tracker</div></div>
+    <div class="kpi v-wip"><div class="k-label">In progress</div><div class="k-value" id="k-wip">–</div><div class="k-sub">tracker · claims · live</div></div>
+    <div class="kpi v-next"><div class="k-label">Next up</div><div class="k-value" id="k-next">–</div><div class="k-sub">specs ready · build plan</div></div>
+    <div class="kpi v-agents"><div class="k-label">Agents live</div><div class="k-value" id="k-agents">–</div><div class="k-sub" id="k-agents-sub">right now</div></div>
+  </div>
+
+  <div class="stack">
+    <section class="panel">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="8" rx="1"/></svg>
+        Board — progress tracker
+        <span class="right">
+          <span class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="search" placeholder="Filter units…" aria-label="filter units"
+              oninput="boardFilter=this.value;state&&renderBoard(state)">
+          </span>
+        </span>
       </h2>
       <div class="board">
-        <div class="col"><h3>Next Up <span class="n" id="n-next"></span></h3><div id="c-next"></div></div>
-        <div class="col"><h3>In Progress <span class="n" id="n-wip"></span></h3><div id="c-wip"></div></div>
-        <div class="col"><h3>Completed <span class="n" id="n-done"></span></h3><div id="c-done"></div></div>
+        <div class="col c-next"><h3>Next Up <span class="n" id="n-next">0</span></h3><div id="c-next"></div></div>
+        <div class="col c-wip"><h3>In Progress <span class="n" id="n-wip">0</span></h3><div id="c-wip"></div></div>
+        <div class="col c-done"><h3>Completed <span class="n" id="n-done">0</span></h3><div id="c-done"></div></div>
       </div>
       <div class="locks" id="locks"></div>
     </section>
-    <section>
-      <h2>Activity feed <span style="float:right;color:var(--dim);text-transform:none" id="feedhint"></span></h2>
-      <ul id="feed"></ul>
+
+    <section class="panel">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 8L9 4l-3 8H2"/></svg>
+        Activity feed
+        <span class="right" style="color:var(--text-faint);font-size:11px" id="feedhint"></span>
+      </h2>
+      <ul id="feed" role="log" aria-live="polite" aria-label="activity feed"></ul>
     </section>
   </div>
 
-  <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
-    <section>
-      <h2>The office</h2>
-      <canvas id="office" width="960" height="680"></canvas>
+  <div class="stack">
+    <section class="panel">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 10h.01M15 10h.01M9 14h.01M15 14h.01"/></svg>
+        The office
+        <span class="right" id="occupancy" style="color:var(--text-faint);font-size:11px"></span>
+      </h2>
+      <canvas id="office" width="960" height="680" role="img" aria-label="live 2D office simulation of Claude Code agents"></canvas>
     </section>
-    <section>
-      <h2>Session notes</h2>
-      <ul id="notes" style="list-style:none;margin:0;padding:8px 14px;font-size:12px;color:var(--dim)"></ul>
+    <section class="panel">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        Session notes
+      </h2>
+      <ul id="notes"></ul>
     </section>
   </div>
 </main>
-<footer>forge-office — read-only window into a Context Forge project · 127.0.0.1 only</footer>
+<footer>forge-office — read-only realtime mirror of a Context Forge project · 127.0.0.1 only</footer>
 
-<div id="drawer">
-  <header><h1 id="drawer-title" style="font-size:14px">spec</h1>
-    <span id="drawer-tag" class="badge"></span>
-    <button class="x" onclick="closeDrawer()">✕ esc</button></header>
+<div id="overlay" onclick="closeDrawer()"></div>
+<div id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+  <header><h1 id="drawer-title">spec</h1>
+    <span id="drawer-tag" class="chip"></span>
+    <button class="x" onclick="closeDrawer()" aria-label="close spec drawer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg> esc
+    </button></header>
   <div id="drawer-body" class="md">…</div>
 </div>
 
@@ -200,7 +373,7 @@ function esc(x){const d=document.createElement("div");d.textContent=x;return d.i
 
 function renderHeader(s) {
   $("proj").textContent = s.project;
-  // The headline badge is LIVE: what Claude Code is doing right now. The
+  // The headline pill is LIVE: what Claude Code is doing right now. The
   // tracker phase is history — it only shows while nothing is running.
   const liveAgents = [...new Set((s.sessions||[]).flatMap(x => (x.agents||[]).map(a => a.agent)))];
   const liveSkills = (s.sessions||[]).filter(freshSkill).map(x => x.skill);
@@ -209,15 +382,19 @@ function renderHeader(s) {
     const what = ((liveAgents.length ? feedSkillNow() : null) || liveSkills[0] || "working").replace(/^forge-/, "");
     const who = liveAgents.length ? liveAgents.map(AGENT_LABEL).join(", ") : "main session";
     ph.textContent = `⚒ ${what} — ${who}`;
-    ph.style.color = "var(--cyan)"; ph.style.borderColor = "var(--cyan)";
+    ph.classList.add("live");
   } else {
     ph.textContent = stripMd(s.tracker.phase || "").slice(0, 80) || "";
-    ph.style.color = ""; ph.style.borderColor = "";
+    ph.classList.remove("live");
   }
   ph.style.display = ph.textContent ? "" : "none";
   $("schema").textContent = "schema " + s.schema;
   $("skillnow").textContent = liveSkills.length ? "⚒ " + liveSkills.map(k=>k.replace(/^forge-/,"")).join(", ") : "idle";
   $("updated").textContent = new Date(s.generatedAt).toLocaleTimeString();
+  $("k-agents").textContent = liveAgents.length;
+  $("k-agents-sub").textContent = liveAgents.length ? liveAgents.map(AGENT_LABEL).slice(0,3).join(", ") + (liveAgents.length>3?"…":"") : "right now";
+  const occ = liveAgents.length + (liveSkills.length ? 1 : 0);
+  $("occupancy").textContent = occ ? `${occ} working` : "everyone idle";
 }
 
 const stripMd = (t) => t.replace(/\*\*|__|`/g, "");
@@ -282,10 +459,9 @@ function renderMd(src) {
 }
 
 async function openSpec(unit) {
-  const d = $("drawer");
   $("drawer-title").textContent = "unit " + unit;
   $("drawer-body").textContent = "loading…";
-  d.classList.add("open");
+  $("drawer").classList.add("open"); $("overlay").classList.add("open");
   try {
     const s = await fetch("/api/spec?unit=" + unit).then(r => r.json());
     if (s && s.content) {
@@ -298,7 +474,7 @@ async function openSpec(unit) {
     }
   } catch { $("drawer-body").textContent = "(failed to load spec)"; }
 }
-function closeDrawer(){ $("drawer").classList.remove("open"); }
+function closeDrawer(){ $("drawer").classList.remove("open"); $("overlay").classList.remove("open"); }
 window.openSpec = openSpec; window.closeDrawer = closeDrawer;
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
 function pageNav(key, delta, total) {
@@ -339,7 +515,7 @@ function renderBoard(s) {
     // different, older workflow.
     const launcher = liveAgents.length ? feedSkillNow() : null;
     const what = (launcher || liveSkills[0] || "agents").replace(/^forge-/,"");
-    wip.unshift(`<div class="card wip live">⚒ ${esc(what)} — ${esc(who)} working now` +
+    wip.unshift(`<div class="card wip live"><span class="livedot"></span>⚒ ${esc(what)} — ${esc(who)} working now` +
       `<span class="tag claim">live</span></div>`);
   }
 
@@ -376,6 +552,10 @@ function renderBoard(s) {
         `<span class="tag claim">archived spec</span><span class="date">${fmtDate(a.mtime)}</span>`));
   }
 
+  $("k-done").textContent = done.length;
+  $("k-wip").textContent = wip.length;
+  $("k-next").textContent = next.length;
+
   const q = (boardFilter || window.boardFilter || "").toLowerCase().trim();
   const match = (h) => !q || h.toLowerCase().includes(q);
   fill("c-next","n-next", next.filter(match), "next");
@@ -391,7 +571,7 @@ function card(text, cls, claims, extra="") {
   const u = unitOf(text);
   const high = /\[complexity:\s*high\]/i.test(text);
   const claim = u != null && claims[String(u)];
-  const clickable = u != null ? ` data-unit="${u}" onclick="openSpec(${u})" title="view spec"` : "";
+  const clickable = u != null ? ` data-unit="${u}" onclick="openSpec(${u})" title="view spec" role="button" tabindex="0"` : "";
   return `<div class="card ${cls}"${clickable}>${esc(stripMd(text.replace(/\[complexity:\s*high\]/i,"")).trim())}` +
     (high ? `<span class="tag high">high</span>` : "") +
     (claim ? `<span class="tag claim">claimed</span>` : "") + extra + `</div>`;
@@ -406,16 +586,18 @@ function fill(cid, nid, cards, pageKey) {
   let html = slice.join("") || `<div class="empty">(none)</div>`;
   if (pages > 1) {
     html += `<div class="pager">` +
-      `<button ${page===0?"disabled":""} onclick="pageNav('${pageKey}',-1,${total})">‹</button>` +
+      `<button ${page===0?"disabled":""} onclick="pageNav('${pageKey}',-1,${total})" aria-label="previous page">` +
+      `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>` +
       `<span>${page+1}/${pages}</span>` +
-      `<button ${page===pages-1?"disabled":""} onclick="pageNav('${pageKey}',1,${total})">›</button></div>`;
+      `<button ${page===pages-1?"disabled":""} onclick="pageNav('${pageKey}',1,${total})" aria-label="next page">` +
+      `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button></div>`;
   }
   $(cid).innerHTML = html;
-  $(nid).textContent = total ? `· ${total}` : "";
+  $(nid).textContent = String(total);
 }
 
 function renderNotes(s) {
-  $("notes").innerHTML = (s.tracker.notes.slice(0,8).map(n => `<li>• ${esc(n)}</li>`).join("")) ||
+  $("notes").innerHTML = (s.tracker.notes.slice(0,8).map(n => `<li>${esc(n)}</li>`).join("")) ||
     `<li class="empty">(no session notes)</li>`;
 }
 
@@ -424,8 +606,9 @@ function renderFeed(events) {
   $("feed").innerHTML = events.map(e => {
     const extras = Object.entries(e).filter(([k]) => !["ts","event","project"].includes(k))
       .map(([k,v]) => `${k}=${v}`).join(" ");
-    return `<li><span class="t">${esc((e.ts||"").replace("T"," "))}</span>` +
-      `<span class="ev">${esc(e.event||"")}</span><span>${esc(e.project||"")}</span>` +
+    const cls = String(e.event||"").replace(/[^a-z_]/g,"");
+    return `<li><span class="fdot ${cls}"></span><span class="t">${esc((e.ts||"").replace("T"," "))}</span>` +
+      `<span class="ev">${esc(String(e.event||"").replace(/_/g," "))}</span><span class="pj">${esc(e.project||"")}</span>` +
       `<span class="ex">${esc(extras)}</span></li>`;
   }).join("");
 }
@@ -437,11 +620,11 @@ function renderFeed(events) {
      arms alternate on the keyboard, a work bubble pulses
    - the main session runs a skill -> "Claude" works at the command desk and
      the bubble names the skill (e.g. "align…")
-   - idle                          -> characters roam the whole office and
-     doze ("z z z") wherever they stop
+   - idle                          -> characters sit at their desks, take
+     short breaks (coffee, water cooler, ping-pong), then return
    - 3+ agents at once             -> stand-up around the meeting table
-   Presence lingers a few seconds after the last event so short-lived agents
-   are still visible. Everything is procedural; logical 480x340 @2x.       */
+   Presence is snapshot membership (no flapping); everything is procedural;
+   logical 480x340 @2x.                                                     */
 
 const ROSTER = [
   { id:"claude",               label:"Claude",  shirt:"#2fb3bd", hair:"#2b2b33", desk:"boss" },
