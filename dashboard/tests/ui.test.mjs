@@ -56,7 +56,16 @@ test("inline UI script runs headlessly: refresh + 30 animation frames, no errors
   const ops = [];
   const frames = [];
   const ctxGlobal = {
-    document: { getElementById: () => makeEl(ops), createElement: () => makeEl(ops), addEventListener: () => {} },
+    document: {
+      getElementById: () => makeEl(ops),
+      addEventListener: () => {},
+      // real-browser-like div used by esc(): innerHTML returns escaped text
+      createElement: () => { let t = ""; return {
+        set textContent(v) { t = String(v); }, get textContent() { return t; },
+        get innerHTML() { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); },
+        set innerHTML(_) {}, classList: { add(){}, remove(){} }, style: {},
+      }; },
+    },
     fetch: async (url) => ({
       json: async () => (String(url).includes("feed") ? SAMPLE_FEED : SAMPLE_STATE),
     }),
@@ -85,4 +94,40 @@ test("inline UI script runs headlessly: refresh + 30 animation frames, no errors
   // the scene actually drew: thousands of fillRect/fill/stroke calls recorded
   const draws = ops.filter((o) => ["fillRect", "fill", "stroke", "fillText"].includes(o)).length;
   assert.ok(draws > 2000, `expected heavy canvas activity, got ${draws}`);
+
+  // ---- renderMd: the spec drawer's markdown preview ----
+  const md = ctxGlobal.renderMd([
+    "# Unit 7: title",
+    "",
+    "## Goal",
+    "Make **bold** work with `inline code` and [a link](https://x.dev/d).",
+    "",
+    "- [ ] unchecked item",
+    "- [x] done item",
+    "1. ordered",
+    "",
+    "| col A | col B |",
+    "| ----- | ----- |",
+    "| 1     | 2     |",
+    "",
+    "```",
+    "const x = '<script>alert(1)</script>';",
+    "```",
+    "",
+    "> a quote",
+    "<img src=x onerror=alert(1)>",
+  ].join("\n"));
+  assert.match(md, /<h1>Unit 7: title<\/h1>/);
+  assert.match(md, /<h2>Goal<\/h2>/);
+  assert.match(md, /<b>bold<\/b>/);
+  assert.match(md, /<code>inline code<\/code>/);
+  assert.match(md, /<a href="https:\/\/x.dev\/d" target="_blank">a link<\/a>/);
+  assert.match(md, /checkbox" disabled/);
+  assert.match(md, /checkbox" checked disabled/);
+  assert.match(md, /<ol><li>ordered<\/li><\/ol>/);
+  assert.match(md, /<th>col A<\/th>/);
+  assert.match(md, /<td>1<\/td>/);
+  assert.match(md, /<blockquote>a quote<\/blockquote>/);
+  assert.ok(!md.includes("<script>"), "raw html must be escaped");
+  assert.ok(!md.includes("<img"), "raw html must be escaped");
 });

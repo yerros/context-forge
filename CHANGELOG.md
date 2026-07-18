@@ -3,6 +3,16 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.33.1] — 2026-07-18
+
+### Changed
+- **Spec drawer renders markdown** instead of raw text: headings, lists,
+  checkboxes, tables, fenced code blocks, inline code, bold/italic, links,
+  quotes, hr — via a tiny built-in renderer (zero deps; content HTML-escaped
+  before transforming, so specs can never inject markup). Styled to match the
+  dashboard; raw-`**`-soup is gone. Renderer covered by headless assertions
+  (structure + escaping).
+
 ## [0.33.0] — 2026-07-18
 
 ### Changed (the dashboard is a realtime mirror, and the office behaves like an office)

@@ -52,8 +52,27 @@
     background:var(--panel);border-left:1px solid var(--line);transition:right .2s;display:flex;flex-direction:column}
   #drawer.open{right:0}
   #drawer header{display:flex;gap:10px;align-items:center}
-  #drawer pre{flex:1;overflow:auto;margin:0;padding:14px;font-size:12px;line-height:1.5;
-    white-space:pre-wrap;color:var(--text)}
+  #drawer .md{flex:1;overflow:auto;margin:0;padding:6px 18px 20px;font-size:13px;
+    line-height:1.6;color:var(--text)}
+  .md h1{font-size:16px;margin:14px 0 8px;color:#fff}
+  .md h2{font-size:14px;margin:16px 0 6px;color:var(--cyan);border-bottom:1px solid var(--line);padding-bottom:4px}
+  .md h3{font-size:13px;margin:12px 0 4px;color:var(--accent)}
+  .md p{margin:6px 0}
+  .md ul,.md ol{margin:6px 0;padding-left:22px}
+  .md li{margin:3px 0}
+  .md code{background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+    padding:0 4px;font-size:12px;color:#9fd0ff}
+  .md pre{background:#11151c;border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;overflow-x:auto;font-size:12px;line-height:1.5;margin:8px 0}
+  .md pre code{background:none;border:none;padding:0;color:#dbe2ee}
+  .md blockquote{border-left:3px solid var(--accent);margin:8px 0;padding:2px 12px;color:var(--dim)}
+  .md hr{border:none;border-top:1px solid var(--line);margin:12px 0}
+  .md b{color:#fff}
+  .md table{border-collapse:collapse;margin:8px 0;font-size:12px}
+  .md th,.md td{border:1px solid var(--line);padding:4px 9px;text-align:left}
+  .md th{background:var(--panel2);color:var(--dim)}
+  .md input[type=checkbox]{accent-color:var(--green);margin-right:6px}
+  .md a{color:var(--cyan)}
   #drawer .x{margin-left:auto;cursor:pointer;background:var(--panel2);border:1px solid var(--line);
     border-radius:6px;color:var(--text);padding:2px 10px}
   #office{display:block;width:100%;image-rendering:pixelated;background:#7d828c}
@@ -116,7 +135,7 @@
   <header><h1 id="drawer-title" style="font-size:14px">spec</h1>
     <span id="drawer-tag" class="badge"></span>
     <button class="x" onclick="closeDrawer()">✕ esc</button></header>
-  <pre id="drawer-body">…</pre>
+  <div id="drawer-body" class="md">…</div>
 </div>
 
 <script>
@@ -212,6 +231,56 @@ window.boardFilter = boardFilter;
 const AGENT_LABEL = (id) => id.replace(/^forge-/, "").replace(/^(.)/, (c) => c.toUpperCase());
 const fmtDate = (ms) => ms ? new Date(ms).toLocaleDateString(undefined, { month:"short", day:"numeric" }) : "";
 
+// Tiny markdown renderer — zero deps, HTML-escaped first (safe), covers what
+// spec files actually use: headings, lists, checkboxes, tables, code fences,
+// inline code, bold/italic, links, quotes, hr.
+function renderMd(src) {
+  const inline = (s) => s
+    .replace(/`([^`]+)`/g, (_, c) => `<code>${c}</code>`)
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s).,;:!?]|$)/g, "$1<i>$2</i>")
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, `<a href="$2" target="_blank">$1</a>`);
+  const out = [];
+  const parts = esc(src).split(/^```[^\n]*$/m);
+  parts.forEach((part, pi) => {
+    if (pi % 2 === 1) { out.push(`<pre><code>${part.replace(/^\n|\n$/g, "")}</code></pre>`); return; }
+    const lines = part.split("\n");
+    let list = null, table = [], para = [];
+    const flushP = () => { if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; } };
+    const flushL = () => { if (list) { out.push(`<${list.t}>` + list.items.map(i => `<li>${i}</li>`).join("") + `</${list.t}>`); list = null; } };
+    const flushT = () => {
+      if (table.length < 2) { table.forEach(r => para.push(r.raw)); table = []; return; }
+      const rows = table.filter(r => !/^\s*\|?[\s|:-]+\|?\s*$/.test(r.raw));
+      out.push("<table>" + rows.map((r, i) =>
+        "<tr>" + r.cells.map(c => `<t${i ? "d" : "h"}>${inline(c)}</t${i ? "d" : "h"}>`).join("") + "</tr>").join("") + "</table>");
+      table = [];
+    };
+    for (const raw of lines) {
+      const line = raw.replace(/\r$/, "");
+      const h = line.match(/^(#{1,4})\s+(.+)$/);
+      const li = line.match(/^\s*(?:[-*]|(\d+)[.)])\s+(.+)$/);
+      const tb = line.match(/^\s*\|(.+)\|\s*$/);
+      if (h) { flushP(); flushL(); flushT(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); }
+      else if (/^\s*(---+|\*\*\*+)\s*$/.test(line)) { flushP(); flushL(); flushT(); out.push("<hr>"); }
+      else if (line.match(/^\s*&gt;\s?/)) { flushP(); flushL(); flushT();
+        out.push(`<blockquote>${inline(line.replace(/^\s*&gt;\s?/, ""))}</blockquote>`); }
+      else if (tb) { flushP(); flushL(); table.push({ raw: line, cells: tb[1].split("|").map(c => c.trim()) }); }
+      else if (li) { flushP(); flushT();
+        const t = li[1] ? "ol" : "ul";
+        if (!list || list.t !== t) { flushL(); list = { t, items: [] }; }
+        let item = li[2]
+          .replace(/^\[ \]\s*/, `<input type="checkbox" disabled> `)
+          .replace(/^\[x\]\s*/i, `<input type="checkbox" checked disabled> `);
+        list.items.push(inline(item));
+      }
+      else if (!line.trim()) { flushP(); flushL(); flushT(); }
+      else para.push(line.trim());
+    }
+    flushP(); flushL(); flushT();
+  });
+  return out.join("\n");
+}
+
 async function openSpec(unit) {
   const d = $("drawer");
   $("drawer-title").textContent = "unit " + unit;
@@ -222,7 +291,7 @@ async function openSpec(unit) {
     if (s && s.content) {
       $("drawer-title").textContent = `unit ${String(s.unit).padStart(2,"0")}: ${s.name}`;
       $("drawer-tag").textContent = s.archived ? "archived" : "active spec";
-      $("drawer-body").textContent = s.content;
+      $("drawer-body").innerHTML = renderMd(s.content);
     } else {
       $("drawer-tag").textContent = "";
       $("drawer-body").textContent = "(no spec file found for this unit — it may predate spec archiving)";
