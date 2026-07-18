@@ -155,15 +155,15 @@ conclusions do.
 
 | Agent | Model | Role |
 | ----- | ----- | ---- |
-| `forge-architect` ("DevTeam") | **opus** | Decomposes features into units and writes the specs; deep ADR analysis. Runs rarely; its output steers every downstream token. |
-| `forge-reviewer` ("Giuseppe") | **sonnet** | Adversarial, read-only diff-vs-spec review: scope creep, invariant violations, missing tests, silent breakage, overengineering, orthogonal edits. Verdict: `RECOMMEND PASS/FAIL`. |
-| `forge-aligner` ("Tatti") | **sonnet** | Consistency checker: compares sibling features across eight dimensions (naming, layout, error handling, validation, data access, state, tests, implementation style) against the registered exemplar. |
-| `forge-scout` ("Tim") | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence. |
-| `forge-archivist` ("Tooba") | **haiku** | Mechanical bookkeeping: tracker rotation, spec archival, build-plan tidying, digest refresh, budget measurement. No judgment calls. |
-| `forge-tester` ("Karen") | **sonnet** | `forge-review`'s **tests** lens: behavioral coverage of the diff, untested edge/error paths, hollow or flaky tests. Read-only. |
-| `forge-failure-hunter` ("Pat") | **sonnet** | `forge-review`'s **errors** lens: swallowed catches, dangerous fallbacks, broken error propagation — failures that never surface. Read-only. |
-| `forge-typer` ("Adam") | **sonnet** | `forge-review`'s **types** lens: encapsulation, invariants expressed in the type, illegal states left representable. Read-only. |
-| `forge-commenter` ("Eleonor") | **sonnet** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
+| `forge-architect` | **opus** | Decomposes features into units and writes the specs; deep ADR analysis. Runs rarely; its output steers every downstream token. |
+| `forge-reviewer` | **sonnet** | Adversarial, read-only diff-vs-spec review: scope creep, invariant violations, missing tests, silent breakage, overengineering, orthogonal edits. Verdict: `RECOMMEND PASS/FAIL`. |
+| `forge-aligner` | **sonnet** | Consistency checker: compares sibling features across eight dimensions (naming, layout, error handling, validation, data access, state, tests, implementation style) against the registered exemplar. |
+| `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence. |
+| `forge-archivist` | **haiku** | Mechanical bookkeeping: tracker rotation, spec archival, build-plan tidying, digest refresh, budget measurement. No judgment calls. |
+| `forge-tester` | **sonnet** | `forge-review`'s **tests** lens: behavioral coverage of the diff, untested edge/error paths, hollow or flaky tests. Read-only. |
+| `forge-failure-hunter` | **sonnet** | `forge-review`'s **errors** lens: swallowed catches, dangerous fallbacks, broken error propagation — failures that never surface. Read-only. |
+| `forge-typer` | **sonnet** | `forge-review`'s **types** lens: encapsulation, invariants expressed in the type, illegal states left representable. Read-only. |
+| `forge-commenter` | **sonnet** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
 
 `forge-build` deliberately has no pinned agent — intelligence is paid up front in the
 spec, execution runs in your session's model (with an opus recommendation for units
