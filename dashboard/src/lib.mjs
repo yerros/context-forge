@@ -190,6 +190,22 @@ export function readFeed(n = 200, file = path.join(os.homedir(), ".claude", "for
   return events.reverse(); // newest first
 }
 
+/* ---------------- archived specs = ground truth for "done" ----------------- */
+// The plugin's close-unit procedure moves a finished unit's spec into
+// specs/archived/ — filenames are therefore a reliable completed-units source
+// even when the tracker's Completed section is prose or rotated away.
+export function readArchivedUnits(ctxDir) {
+  const dir = path.join(ctxDir, "specs", "archived");
+  if (!fs.existsSync(dir)) return [];
+  const units = [];
+  for (const f of fs.readdirSync(dir)) {
+    const m = f.match(/^0*(\d{1,3})-(.+)\.md$/);
+    if (m && Number(m[1]) > 0)   // unit 00 = the build plan, not a unit
+      units.push({ unit: Number(m[1]), name: m[2].replace(/-/g, " ") });
+  }
+  return units.sort((a, b) => b.unit - a.unit);
+}
+
 /* ---------------- whole-project state -------------------------------------- */
 
 export function getState(root) {
@@ -206,6 +222,7 @@ export function getState(root) {
     digestPresent: fs.existsSync(path.join(ctxDir, "context-digest.md")),
     tracker,
     plan,
+    archivedUnits: readArchivedUnits(ctxDir),
     claims: readClaims(common),
     locks: readLocks(common),
     sessions: readSessions(),
@@ -223,7 +240,10 @@ export function stateSignature(root, statusDir, metricsFile) {
   const add = (p) => { try { const s = fs.statSync(p); parts.push(p + ":" + s.mtimeMs + ":" + s.size); } catch { /* absent */ } };
   add(path.join(ctxDir, "progress-tracker.md"));
   add(path.join(ctxDir, "specs", "00-build-plan.md"));
+  add(path.join(ctxDir, "progress-archive.md"));
   add(path.join(ctxDir, ".last-session.md"));
+  const archDir = path.join(ctxDir, "specs", "archived");
+  if (fs.existsSync(archDir)) parts.push("arch:" + fs.readdirSync(archDir).join(","));
   for (const sub of ["forge-claims", "forge-locks"]) {
     const d = common && path.join(common, sub);
     if (d && fs.existsSync(d)) for (const f of fs.readdirSync(d)) add(path.join(d, f));

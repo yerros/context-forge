@@ -40,6 +40,7 @@ const SAMPLE_STATE = {
     nextUp: ["unit 13: next"], completed: ["unit 11: done"], notes: ["note"], openQuestions: [],
   },
   plan: { pending: [{ text: "13 next", unit: 13, high: true }], completed: [] },
+  archivedUnits: [{ unit: 11, name: "done thing" }],
   claims: [{ unit: "12", mode: "build" }], locks: [{ name: "tracker", ageMin: 2, stale: false }],
   sessions: [
     { session: "s1", skillState: "active", skill: "forge-build",

@@ -154,6 +154,20 @@ test("readFeed: newest first, corrupt lines skipped, window respected", () => {
   assert.equal(readFeed(10, path.join(tmp(), "missing.ndjson")).length, 0);
 });
 
+/* ---------------- archived units ------------------------------------------- */
+
+test("readArchivedUnits: filenames become completed units, newest first", async () => {
+  const { readArchivedUnits } = await import("../src/lib.mjs");
+  const ctx = tmp();
+  fs.mkdirSync(path.join(ctx, "specs", "archived"), { recursive: true });
+  for (const f of ["03-login-form.md", "12-media-banner.md", "notes.txt", "00-build-plan.md"])
+    fs.writeFileSync(path.join(ctx, "specs", "archived", f), "x");
+  const units = readArchivedUnits(ctx);
+  assert.deepEqual(units.map(u => u.unit), [12, 3]);
+  assert.equal(units[0].name, "media banner");
+  assert.equal(readArchivedUnits(tmp()).length, 0);
+});
+
 /* ---------------- getState end-to-end -------------------------------------- */
 
 test("getState assembles a full project snapshot", () => {
@@ -171,4 +185,5 @@ test("getState assembles a full project snapshot", () => {
   assert.equal(st.plan.pending.length, 1);
   assert.equal(st.project, path.basename(root));
   assert.ok(Array.isArray(st.claims) && Array.isArray(st.locks));
+  assert.ok(Array.isArray(st.archivedUnits));
 });

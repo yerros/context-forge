@@ -142,31 +142,61 @@ function renderHeader(s) {
   $("updated").textContent = new Date(s.generatedAt).toLocaleTimeString();
 }
 
+const stripMd = (t) => t.replace(/\*\*|__|`/g, "");
+const unitOf = (t) => { const m = String(t).match(/(?:unit\s*)?0*(\d{1,3})\b/i); return m ? Number(m[1]) : null; };
+
 function renderBoard(s) {
   const claims = Object.fromEntries((s.claims||[]).map(c => [String(Number(c.unit)), c]));
-  const unitOf = (t) => { const m = t.match(/(?:unit\s*)?0*(\d{1,3})\b/i); return m ? m[1] : null; };
+  const archived = s.archivedUnits || [];
+  const archivedSet = new Set(archived.map(a => a.unit));
 
-  const next = [...s.tracker.nextUp];
-  for (const p of (s.plan.pending||[]))
-    if (!next.some(t => unitOf(t) === String(p.unit))) next.push(p.text + (p.high ? " [complexity: high]" : ""));
+  // NEXT UP — tracker + build plan, minus anything whose spec is already
+  // archived (an archived spec = the unit closed; a stale build-plan line
+  // must not resurrect it).
+  const next = s.tracker.nextUp.filter(t => !archivedSet.has(unitOf(t)));
+  for (const p of (s.plan.pending||[])) {
+    if (archivedSet.has(p.unit)) continue;
+    if (!next.some(t => unitOf(t) === p.unit))
+      next.push(p.text + (p.high ? " [complexity: high]" : ""));
+  }
 
-  fill("c-next","n-next", next.map(t => card(t,"next",claims,unitOf)));
-  fill("c-wip","n-wip", s.tracker.inProgress.map(i => {
-    let extra = i.attempts.length ? `<span class="tag att">${i.attempts.length} failed attempt${i.attempts.length>1?"s":""}</span>` : "";
-    return card(i.text,"wip",claims,unitOf,extra);
-  }));
-  fill("c-done","n-done", s.tracker.completed.slice(0,12).map(t => card(t,"done",claims,unitOf)));
+  // IN PROGRESS — tracker entries plus live claims that the tracker doesn't
+  // mention yet (someone is building it right now in another session).
+  const wip = s.tracker.inProgress.map(i => {
+    const extra = i.attempts.length ? `<span class="tag att">${i.attempts.length} failed attempt${i.attempts.length>1?"s":""}</span>` : "";
+    return card(i.text, "wip", claims, extra);
+  });
+  for (const c of (s.claims||[])) {
+    const n = Number(c.unit);
+    if (!s.tracker.inProgress.some(i => unitOf(i.text) === n))
+      wip.push(card(`unit ${n} — claimed${c.mode==="build" ? " (in-place build)" : c.branch ? ` on ${c.branch}` : ""}`, "wip", claims));
+  }
+
+  // COMPLETED — tracker bullets first, then archived specs (ground truth from
+  // specs/archived/) that the tracker no longer lists.
+  const doneTexts = s.tracker.completed.slice(0, 12).map(t => card(t, "done", claims));
+  const mentioned = new Set(s.tracker.completed.map(unitOf).filter(x => x != null));
+  for (const a of archived) {
+    if (doneTexts.length >= 14) break;
+    if (!mentioned.has(a.unit))
+      doneTexts.push(card(`unit ${String(a.unit).padStart(2,"0")}: ${a.name}`, "done", claims,
+        `<span class="tag claim">archived spec</span>`));
+  }
+
+  fill("c-next","n-next", next.map(t => card(t, "next", claims)));
+  fill("c-wip","n-wip", wip);
+  fill("c-done","n-done", doneTexts);
 
   const locks = (s.locks||[]).map(l => `lock <b>${esc(l.name)}</b> (${l.ageMin}m${l.stale?" · STALE":""})`);
   const claimTxt = (s.claims||[]).map(c => `claim unit <b>${esc(c.unit)}</b>${c.mode==="build"?" (in-place)":""}`);
   $("locks").innerHTML = locks.concat(claimTxt).join(" · ") || "no locks, no claims";
 }
 
-function card(text, cls, claims, unitOf, extra="") {
+function card(text, cls, claims, extra="") {
   const u = unitOf(text);
   const high = /\[complexity:\s*high\]/i.test(text);
-  const claim = u && claims[String(Number(u))];
-  return `<div class="card ${cls}">${esc(text.replace(/\[complexity:\s*high\]/i,"").trim())}` +
+  const claim = u != null && claims[String(u)];
+  return `<div class="card ${cls}">${esc(stripMd(text.replace(/\[complexity:\s*high\]/i,"")).trim())}` +
     (high ? `<span class="tag high">high</span>` : "") +
     (claim ? `<span class="tag claim">claimed</span>` : "") + extra + `</div>`;
 }
@@ -243,9 +273,72 @@ const office = (() => {
     [294,240,16,16],[450,240,16,16],[4,240,16,16],  // dartboard/plants
   ];
 
-  const bodies = ROSTER.map(r => ({ ...r, x:0, y:0, tx:0, ty:0, wanderAt:0, seat:null }));
+  /* ---- walk grid + A* pathfinding (nobody walks through a desk) ---- */
+  const CELL = 10, GW = Math.floor(W/CELL), GH = Math.floor(H/CELL);
+  const walkable = [];
+  for (let gy=0; gy<GH; gy++) { walkable[gy] = [];
+    for (let gx=0; gx<GW; gx++) {
+      const x = gx*CELL + CELL/2, y = gy*CELL + CELL/2;
+      walkable[gy][gx] = y > 52 && !inObstacle(x, y, 2);
+    } }
+  const cellOf = (x,y) => [Math.min(GW-1, Math.max(0, x/CELL|0)), Math.min(GH-1, Math.max(0, y/CELL|0))];
+  function nearestWalkable(gx, gy) {
+    if (walkable[gy]?.[gx]) return [gx, gy];
+    for (let r=1; r<=6; r++)
+      for (let dy=-r; dy<=r; dy++) for (let dx=-r; dx<=r; dx++) {
+        const nx=gx+dx, ny=gy+dy;
+        if (walkable[ny]?.[nx]) return [nx, ny];
+      }
+    return [gx, gy];
+  }
+  function astar(sx, sy, ex, ey) {
+    [sx,sy] = nearestWalkable(sx,sy); [ex,ey] = nearestWalkable(ex,ey);
+    const key = (x,y) => y*GW+x;
+    const open = [[0, sx, sy]], came = new Map(), g = new Map([[key(sx,sy), 0]]);
+    const h = (x,y) => Math.abs(x-ex)+Math.abs(y-ey);
+    const seen = new Set();
+    while (open.length) {
+      open.sort((a,b) => a[0]-b[0]);
+      const [, x, y] = open.shift();
+      if (x===ex && y===ey) {
+        const path = []; let k = key(x,y);
+        let cx = x, cy = y;
+        while (came.has(k)) { path.push([cx*CELL+CELL/2, cy*CELL+CELL/2]);
+          [cx, cy] = came.get(k); k = key(cx, cy); }
+        return path.reverse();
+      }
+      const kk = key(x,y);
+      if (seen.has(kk)) continue; seen.add(kk);
+      for (const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+        const nx=x+dx, ny=y+dy;
+        if (!walkable[ny]?.[nx]) continue;
+        if (dx && dy && !(walkable[y]?.[nx] && walkable[ny]?.[x])) continue; // no corner cutting
+        const ng = g.get(kk) + (dx&&dy ? 1.4 : 1);
+        const nk = key(nx,ny);
+        if (ng < (g.get(nk) ?? Infinity)) {
+          g.set(nk, ng); came.set(nk, [x,y]);
+          open.push([ng + h(nx,ny), nx, ny]);
+        }
+      }
+      if (seen.size > 1800) break;   // safety valve
+    }
+    return [];
+  }
+
+  const bodies = ROSTER.map(r => ({ ...r, x:0, y:0, tx:0, ty:0, wanderAt:0, seat:null,
+    path: [], goalKey: "", dirX: 0, dirY: 1 }));
   bodies.forEach(b => { const p = freePoint(); b.x=p.x; b.y=p.y; b.tx=p.x; b.ty=p.y; });
   const pet = { x:250, y:300, tx:250, ty:300, wanderAt:0 };
+
+  // Set a destination; recompute the walking path only when it changed.
+  function setGoal(b, x, y) {
+    const key = (x|0) + ":" + (y|0);
+    if (b.goalKey === key) return;
+    b.goalKey = key; b.tx = x; b.ty = y;
+    const [sx,sy] = cellOf(b.x, b.y), [ex,ey] = cellOf(x, y);
+    b.path = astar(sx, sy, ex, ey);
+    b.path.push([x, y]);               // exact final hop (may enter a seat)
+  }
 
   /* ---- live state with linger (short-lived agents stay visible) ---- */
   const LINGER = 8000;
@@ -331,7 +424,9 @@ const office = (() => {
   function drawPet(t){
     const b = pet;
     if (t > b.wanderAt){ const p = freePoint(); b.tx=p.x; b.ty=Math.max(p.y,260); b.wanderAt=t+rnd(3000,8000); }
-    b.x += (b.tx-b.x)*0.03; b.y += (b.ty-b.y)*0.03;
+    const nx = b.x + (b.tx-b.x)*0.03, ny = b.y + (b.ty-b.y)*0.03;
+    if (inObstacle(nx, ny, 2)) { b.tx = b.x; b.ty = b.y; b.wanderAt = t; } // blocked: repick
+    else { b.x = nx; b.y = ny; }
     const x=b.x|0, y=b.y|0, hop=Math.abs(Math.sin(t/300))*1.5;
     px(x-5,y-3-hop,10,6,"#d0483e"); px(x-3,y-5-hop,6,3,"#d0483e");
     px(x-2,y-5-hop,1,1,"#1b1e23"); px(x+1,y-5-hop,1,1,"#1b1e23");
@@ -355,8 +450,16 @@ const office = (() => {
     px(x-8,y-17,2,7,b.shirt); px(x+6,y-17,2,7,b.shirt);
     px(x-8,y-10,2,2,SKIN); px(x+6,y-10,2,2,SKIN);
     px(x-5,y-28,10,10,SKIN);
-    px(x-5,y-29,10,4,b.hair); px(x-6,y-27,2,4,b.hair); px(x+4,y-27,2,4,b.hair);
-    px(x-3,y-23,2,2,"#1b1e23"); px(x+2,y-23,2,2,"#1b1e23");
+    // facing: walking away = back of the head; sideways = eyes shift; else front
+    const up = moving && b.dirY < -0.55;
+    const sideways = moving && Math.abs(b.dirX) > 0.6 ? Math.sign(b.dirX) : 0;
+    if (up) {
+      px(x-5,y-29,10,8,b.hair); px(x-6,y-26,2,5,b.hair); px(x+4,y-26,2,5,b.hair);
+    } else {
+      px(x-5,y-29,10,4,b.hair); px(x-6,y-27,2,4,b.hair); px(x+4,y-27,2,4,b.hair);
+      const eo = sideways*2;
+      px(x-3+eo,y-23,2,2,"#1b1e23"); px(x+2+eo,y-23,2,2,"#1b1e23");
+    }
     drawTag(b, x, y-40);
     if (!moving) {                                   // dozing: floating z z z
       const ph = Math.floor(t/600)%3;
@@ -425,26 +528,31 @@ const office = (() => {
       if (working && meeting && b.id!=="claude") {
         const group = workers.filter(x => x.id!=="claude");
         const i = group.indexOf(b), side = i%2 ? -1:1, slot = Math.floor(i/2);
-        b.tx = MEET.x - 38 + slot*25; b.ty = MEET.y + (side<0 ? -24 : 30);
+        setGoal(b, MEET.x - 38 + slot*25, MEET.y + (side<0 ? -24 : 30));
         if (near(b)) b.seat = "meet";
       } else if (working) {
         const d = DESKS[b.desk];
-        b.tx = d.x + (d.wide ? -14 : 0); b.ty = d.y + 30;
+        setGoal(b, d.x + (d.wide ? -14 : 0), d.y + 30);
         if (near(b)) b.seat = "desk";
       } else if (t > b.wanderAt) {
         const p = freePoint();
-        b.tx = p.x; b.ty = p.y;
-        b.wanderAt = t + rnd(3000, 9000);
+        setGoal(b, p.x, p.y);
+        b.wanderAt = t + rnd(3200, 9500);   // then pause & doze at arrival
       }
       step(b);
     }
-    // gentle separation so wandering characters never stack
+    // gentle separation so wandering characters never stack — but never let a
+    // push shove someone inside furniture
     for (let i=0;i<bodies.length;i++) for (let j=i+1;j<bodies.length;j++){
       const a=bodies[i], c=bodies[j];
       if (a.seat || c.seat) continue;
       const dx=c.x-a.x, dy=c.y-a.y, d=Math.hypot(dx,dy);
       if (d>0 && d<14){ const push=(14-d)/2, nx=dx/d, ny=dy/d;
-        a.x-=nx*push*.5; a.y-=ny*push*.5; c.x+=nx*push*.5; c.y+=ny*push*.5; }
+        for (const [bd, sgn] of [[a,-1],[c,1]]) {
+          const px2 = bd.x + nx*push*.5*sgn, py2 = bd.y + ny*push*.5*sgn;
+          if (!inObstacle(px2, py2, 1)) { bd.x = px2; bd.y = py2; }
+        }
+      }
     }
 
     ctx.clearRect(0,0,W,H);
@@ -469,11 +577,19 @@ const office = (() => {
   }
 
   function near(b){ return Math.hypot(b.tx-b.x, b.ty-b.y) < 3; }
+  // Follow the A* waypoints at constant human speed; record facing direction.
   function step(b){
-    const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy);
-    if (d < 0.8) { b.x=b.tx; b.y=b.ty; return; }
-    const sp = Math.min(1.1, Math.max(0.35, d*0.08));
+    let target = b.path.length ? b.path[0] : [b.tx, b.ty];
+    let dx = target[0]-b.x, dy = target[1]-b.y, d = Math.hypot(dx,dy);
+    while (b.path.length && d < 2) {
+      b.path.shift();
+      target = b.path.length ? b.path[0] : [b.tx, b.ty];
+      dx = target[0]-b.x; dy = target[1]-b.y; d = Math.hypot(dx,dy);
+    }
+    if (d < 0.8) { b.x = target[0]; b.y = target[1]; return; }
+    const sp = 0.85;
     b.x += dx/d*sp; b.y += dy/d*sp;
+    b.dirX = dx/d; b.dirY = dy/d;
   }
 
   requestAnimationFrame(tick);

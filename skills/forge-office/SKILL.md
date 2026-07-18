@@ -8,7 +8,7 @@ description: >
   from the progress tracker, live agent office, activity feed) for the current
   project, and can enable autostart so it runs with every session.
 metadata:
-  version: "0.30.1"
+  version: "0.31.0"
 ---
 
 # forge-office

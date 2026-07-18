@@ -3,6 +3,28 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.31.0] — 2026-07-18
+
+### Changed (dashboard: a truthful board and humans that walk like humans)
+- **The kanban now mirrors the project's real context, not just one file.**
+  `specs/archived/` is read as the ground truth for done work (the close-unit
+  procedure moves every finished spec there — verified live: 109 units on the
+  reference project): Completed shows tracker bullets first, then archived
+  specs the tracker no longer lists (tagged "archived spec", `00-build-plan`
+  excluded); Next Up drops any unit whose spec is already archived (stale
+  build-plan lines can't resurrect shipped work); In Progress adds live claims
+  the tracker doesn't mention yet ("unit 07 — claimed on feat/07-x"). Markdown
+  artifacts (`**`, backticks) stripped from card text.
+- **Realtime covers everything the board shows** — the change signature now
+  includes `progress-archive.md` and the `specs/archived/` listing, so closing
+  a unit updates the board within the 1.5 s poll → SSE push.
+- **A\* pathfinding on a 10 px walk grid** — characters route AROUND desks,
+  tables, the kitchen, and the ping-pong table (no corner cutting, seat cells
+  reachable only as the exact final hop). Constant walking speed, facing-aware
+  sprite (back of the head when walking away, eye shift when sideways),
+  separation pushes clamped to walkable cells, and the pet re-picks its path
+  when blocked. Nobody phases through furniture anymore.
+
 ## [0.30.1] — 2026-07-18
 
 ### Changed (the office is now a real simulation of the CLI session)
