@@ -242,6 +242,13 @@ the files from their answers.
    `context/lessons.md` (empty apart from its format header). It's the project's
    memory for corrections and diagnoses; `forge-build` / `forge-debug` read it at
    load time and `forge-lesson` manages it.
+7. **Stamp the schema version.** Run
+   `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/migrate-schema.sh"` —
+   it writes `context/.schema-version` (one integer for the whole context dir;
+   commit it with the rest). On future plugin upgrades the same script migrates
+   the format stepwise; `detect.sh` reports `schema: pre-schema` for projects
+   that predate it, and the Adopt & reconcile flow should offer the migration
+   then (`--dry-run` first to preview).
 
 ### Per-file quality bars
 

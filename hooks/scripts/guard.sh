@@ -34,7 +34,7 @@ deny() {
 case "$fp" in
   node_modules/*|*/node_modules/*|.git/*|*/.git/*)
     deny "context-forge: this path is inside a vendor/.git directory and should not be edited by hand." ;;
-  *.lock|*-lock.json|*-lock.yaml|package-lock.json|pnpm-lock.yaml|yarn.lock|Cargo.lock|poetry.lock|composer.lock)
+  *.lock|*-lock.json|*-lock.yaml)   # covers package-lock.json, pnpm-lock.yaml, yarn.lock, Cargo.lock, poetry.lock, composer.lock, …
     deny "context-forge: lock files are generated and should not be hand-edited; change the manifest and re-resolve instead." ;;
 esac
 

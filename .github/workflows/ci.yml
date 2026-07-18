@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: shellcheck (all scripts)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck every .sh in the repo
+        run: |
+          set -eu
+          files=$(git ls-files '*.sh')
+          echo "$files"
+          # shellcheck disable directives inside the scripts are respected.
+          shellcheck --severity=warning $files
+
+  validate:
+    name: claude plugin validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate plugin manifest, skills, agents, hooks
+        run: claude plugin validate .
+      - name: Manifest versions must match
+        run: |
+          set -eu
+          plugin=$(jq -r .version .claude-plugin/plugin.json)
+          market=$(jq -r '.plugins[0].version // empty' .claude-plugin/marketplace.json)
+          echo "plugin.json=$plugin marketplace.json=$market"
+          [ -z "$market" ] || [ "$plugin" = "$market" ] || {
+            echo "::error::version drift between plugin.json and marketplace.json"; exit 1; }
+
+  test:
+    name: bats (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS included on purpose: BSD stat/date/touch differ from GNU,
+        # and the hooks must stay portable.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats
+        run: |
+          git clone --depth 1 https://github.com/bats-core/bats-core.git "$RUNNER_TEMP/bats-core"
+          echo "$RUNNER_TEMP/bats-core/bin" >> "$GITHUB_PATH"
+      - name: Run the suite
+        run: bats tests/
+
+  fixture-matrix:
+    name: smoke (${{ matrix.fixture }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture: [brownfield-empty, modules, no-git]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run every deterministic script against the fixture
+        run: bash tests/fixtures/smoke.sh "${{ matrix.fixture }}"

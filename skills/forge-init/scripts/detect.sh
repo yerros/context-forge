@@ -82,6 +82,13 @@ if find . -maxdepth 2 \( -name package.json -o -name requirements.txt -o -name p
   code="yes"
 fi
 
+# --- schema version (single marker for the whole context dir) ---
+schema="pre-schema"
+if [ -f "$CTX/.schema-version" ]; then
+  sv=$(tr -cd '0-9' < "$CTX/.schema-version")
+  [ -n "$sv" ] && schema="$sv" || schema="invalid"
+fi
+
 # --- verdict ---
 # SETUP  : no context dir and no six files  -> fresh install
 # ADOPT  : all six present and mostly filled -> recognize & reconcile gaps
@@ -106,6 +113,7 @@ say "entry_point: $ENTRY"
 say "entry_links_context: $entry_links_context"
 say "unfilled_placeholders_total: $placeholder_total"
 say "placeholders_by_file:$placeholder_detail"
+say "schema: $schema"
 say "digest: $digest"
 say "lessons: $lessons"
 say "decisions_md: $decisions"

@@ -66,6 +66,23 @@ It refuses if the worktree still has uncommitted changes. Then, on main,
 `/forge-resume` reconciles: pulls the merges, refreshes the digest State and the
 retrieval index once for everything that landed.
 
+## Same-checkout parallelism (forge-lock.sh)
+
+Worktrees isolate *directories*; when several engineers instead share one branch
+history (separate clones, same tracker file), the risk moves to **shared context
+files**. `scripts/forge-lock.sh` extends the same claim mechanism for that case:
+
+- `forge-lock.sh claim <NN> [note]` — claim a unit for an **in-place** build (no
+  worktree). Same atomic claims dir, so it conflicts correctly with worktree
+  claims in either direction; `release <NN>` frees it (refuses worktree-owned
+  claims — those go through `done`).
+- `forge-lock.sh lock tracker --wait 30` / `unlock tracker` — a portable
+  mkdir-based mutex (works on stock macOS — no `flock`) to wrap tracker edits
+  during close-unit when claims show someone else is active. Held locks name
+  their holder (host/pid/user); stale ones (>15 m) are flagged and can be taken
+  over with `--steal`.
+- `forge-lock.sh status` — all locks and claims, with ages.
+
 ## Rules
 
 - One unit per worktree; never claim a unit whose dependencies aren't Completed.

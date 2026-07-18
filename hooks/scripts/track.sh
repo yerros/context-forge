@@ -60,4 +60,12 @@ fi
   fi
 } > "$CTX/.last-session.md"
 
+# Opt-in local metrics (no-op unless ~/.claude/forge-metrics/enabled exists).
+m="$(dirname "$0")/metrics.sh"
+if [ -f "$m" ]; then
+  n=$(printf '%s\n' "$changed" | wc -l | tr -d ' ')
+  over=0; [ -n "$budget_report" ] && over=1
+  bash "$m" record stop_with_changes "changed_files=$n" "over_budget=$over" 2>/dev/null
+fi
+
 exit 0

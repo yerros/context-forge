@@ -87,6 +87,21 @@ steps change:
 - Everything else (spec archive, build-plan line move, lessons, patterns) proceeds
   normally — those are also own-lines edits.
 
+## Multi-engineer mode (shared checkout, no worktree)
+
+When `$(git rev-parse --git-common-dir)/forge-claims/` contains claims from OTHER
+units while this build closes (someone else is building in parallel — check with
+`forge-lock.sh status`), guard the shared-file steps:
+
+- Before step 1, take the tracker mutex:
+  `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-worktree/scripts/forge-lock.sh" lock tracker --wait 30`
+  and release it right after step 2 (`unlock tracker`). The lock is a portable
+  mkdir mutex — if it reports HELD, another close is mid-write; the `--wait`
+  handles the normal case, and only a `[STALE]` flag justifies `--steal`.
+- An in-place build (no worktree) should have claimed its unit up front with
+  `forge-lock.sh claim <NN>` and must `release <NN>` after this procedure.
+- With no other active claims, skip the lock — single-engineer flow is unchanged.
+
 ## Shipping
 
 Shipping is `forge-pr`'s job — branch `feat/NN-feature-name`, conventional commit,

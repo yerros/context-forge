@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.25.3-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.26.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -143,7 +143,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-resume` | Restores context tier by tier at session start (digest + tracker first, full files per task) and briefs you on where things stand. |
 | `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers doc updates. |
 | `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses with approval, rotates history, (re)generates the digest. |
-| `forge-worktree` | Parallel builds across terminals: one unit = one git worktree = one branch. Dependency-gates the unit, claims it atomically (visible to every terminal), creates the worktree, and hands you the commands for the new terminal. `list` / `done` manage claims. |
+| `forge-worktree` | Parallel builds across terminals: one unit = one git worktree = one branch. Dependency-gates the unit, claims it atomically (visible to every terminal), creates the worktree, and hands you the commands for the new terminal. `list` / `done` manage claims. Bundles `forge-lock.sh` — portable mkdir-based locks + in-place unit claims for multi-engineer setups without worktrees. |
 | `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, git-history-preserving move, entry-point rewrite, `.gitignore` guard. |
 
 ## Agents
@@ -181,6 +181,13 @@ that don't use the plugin:
 | `PreToolUse` | Deterministic guard: denies edits to generated/lock/vendor files and any glob in `protected-paths`. Also records which skill is in use (for the status line). |
 | `UserPromptExpansion` | Records `/forge-*` slash-command usage for the status line indicator. |
 | `Stop` | If code changed without the tracker being updated, writes `.last-session.md` with the changed files and any context files over their token budget. Marks the skill indicator idle. |
+
+**Local metrics (optional, opt-in):** the hooks can also record anonymous-to-nobody
+NDJSON events (skill invocations, stop-with-changes) to
+`~/.claude/forge-metrics/events.ndjson` — strictly local, nothing ever leaves the
+machine. Enable with `touch ~/.claude/forge-metrics/enabled`; aggregate with
+`hooks/scripts/forge-stats.sh [days]` (counts per skill/event/project plus a
+debug-per-build "pressure" ratio for data-driven iteration on your own workflow).
 
 **Status line (optional):** a ready-made status line ships at
 `statusline/statusline.sh` — skill indicator (`⚒ forge-fix` while running,
@@ -274,11 +281,27 @@ context-forge/
 ├── agents/                  # 9 model-pinned subagents
 ├── hooks/                   # hooks.json + zero-token shell scripts
 ├── statusline/              # reference status line with skill indicator
+├── tests/                   # bats suite for every shell script + CI fixtures
+├── .github/workflows/       # CI: shellcheck, plugin validate, bats (ubuntu+macos), fixture matrix
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
 └── README.md
 ```
+
+## Testing
+
+Every deterministic script is covered by a [bats-core](https://github.com/bats-core/bats-core)
+suite — hooks (including corrupt/empty/pre-digest context files), the worktree
+claim lifecycle, locks, schema migration, and metrics:
+
+```bash
+bats tests/                              # the whole suite
+bash tests/fixtures/smoke.sh modules     # one CI fixture: brownfield-empty | modules | no-git
+```
+
+CI runs shellcheck over every script, `claude plugin validate .`, the bats suite on
+Ubuntu **and** macOS (BSD tool portability), and the fixture matrix.
 
 ## Contributing
 

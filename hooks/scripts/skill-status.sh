@@ -61,4 +61,9 @@ done
 
 [ -z "$skill" ] && exit 0
 printf 'active %s %s\n' "$skill" "$(date +%s)" > "$state"
+
+# Opt-in local metrics (no-op unless ~/.claude/forge-metrics/enabled exists).
+m="$(dirname "$0")/metrics.sh"
+[ -f "$m" ] && bash "$m" record skill_invoked "skill=$skill" 2>/dev/null
+
 exit 0
