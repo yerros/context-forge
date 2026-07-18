@@ -60,6 +60,8 @@ jobs:
           echo "$RUNNER_TEMP/bats-core/bin" >> "$GITHUB_PATH"
       - name: Run the suite
         run: bats tests/
+      - name: Dashboard tests (node --test)
+        run: node --test dashboard/tests/*.test.mjs
 
   fixture-matrix:
     name: smoke (${{ matrix.fixture }})

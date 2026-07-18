@@ -3,6 +3,34 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.30.0] — 2026-07-18
+
+### Added (forge-office: the dashboard ships inside the plugin)
+No separate repo, no separate install — the dashboard is part of the plugin and
+one command (or nothing at all, with autostart) away.
+
+- **`dashboard/`** — the forge-office web dashboard bundled at the plugin root:
+  zero-dependency Node (≥18) server + single-file pixel-art UI. Kanban parsed
+  from `progress-tracker.md` (tolerant of real-world heading variants) merged
+  with the build plan; live claims/locks from the git common dir (worktree-aware);
+  live agent presence from the agent-status state files; activity feed from the
+  local metrics. 2D office: procedurally drawn rooms (lounge/kitchen), desks,
+  meeting table, ping-pong, pet — the nine agents as walking pixel characters
+  with name tags; active agents sit at their desks, 3+ gather at the meeting
+  table, idle ones wander the lounge. Read-only (never writes to a project),
+  binds 127.0.0.1 only. 18 node tests (parser, resolvers, live-server smoke,
+  headless 30-frame UI run) wired into CI on both OSes.
+- **`forge-office`** (new, 22nd skill) + `forge-office.sh` launcher —
+  `/forge-office` starts it for the current project (idempotent, verifies the
+  server actually serves, opens the browser on macOS), `stop` / `status`
+  manage it, **`autostart on`** makes the `SessionStart` hook start it
+  automatically in every Context Forge project (silent; one URL line when it
+  starts fresh; skips non-forge directories). Port via `$FORGE_OFFICE_PORT`
+  (default 4820); state in `~/.claude/forge-office/`.
+- 6 bats cases for the launcher (idempotent start against a real served
+  request, stop/status, autostart marker, hook-mode silence rules, hooks.json
+  wiring). Skill count: 21 → 22.
+
 ## [0.29.0] — 2026-07-18
 
 ### Changed (zero-manual-step observability)
