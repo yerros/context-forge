@@ -3,6 +3,24 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.33.0] — 2026-07-18
+
+### Changed (the dashboard is a realtime mirror, and the office behaves like an office)
+- **Live header.** The headline badge now shows what Claude Code is doing RIGHT
+  NOW ("⚒ review — Reviewer, Typer, Tester"), cyan while active; the tracker
+  phase (markdown-stripped, truncated) only shows when nothing is running —
+  history never masquerades as the present again.
+- **No more work-flapping.** Presence is now snapshot membership: a character
+  works for exactly as long as the state file lists its agent — not a
+  time-based linger that expired between SSE refreshes and made working agents
+  stand up and sit back down. The 3 s linger only covers the walk-off.
+- **Office-like idle.** Idle characters sit at their own desks (dim monitor,
+  still arms, occasional doze) like real employees, and every ~35–95 s take a
+  short break — coffee at the kitchen, water cooler, vending machine, couch,
+  or ping-pong (☕ 🥤 🏓 bubbles) — then return to their desk. The constant
+  aimless wandering is gone; monitors light up only under real typing.
+- **Layout**: Session notes moved to the right column under The Office.
+
 ## [0.32.1] — 2026-07-18
 
 ### Fixed (found by watching the live dashboard during a real forge-review run)

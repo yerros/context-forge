@@ -97,16 +97,16 @@
       <h2>Activity feed <span style="float:right;color:var(--dim);text-transform:none" id="feedhint"></span></h2>
       <ul id="feed"></ul>
     </section>
-    <section>
-      <h2>Session notes</h2>
-      <ul id="notes" style="list-style:none;margin:0;padding:8px 14px;font-size:12px;color:var(--dim)"></ul>
-    </section>
   </div>
 
   <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
     <section>
       <h2>The office</h2>
       <canvas id="office" width="960" height="680"></canvas>
+    </section>
+    <section>
+      <h2>Session notes</h2>
+      <ul id="notes" style="list-style:none;margin:0;padding:8px 14px;font-size:12px;color:var(--dim)"></ul>
     </section>
   </div>
 </main>
@@ -181,11 +181,23 @@ function esc(x){const d=document.createElement("div");d.textContent=x;return d.i
 
 function renderHeader(s) {
   $("proj").textContent = s.project;
-  $("phase").textContent = s.tracker.phase || "";
-  $("phase").style.display = s.tracker.phase ? "" : "none";
+  // The headline badge is LIVE: what Claude Code is doing right now. The
+  // tracker phase is history — it only shows while nothing is running.
+  const liveAgents = [...new Set((s.sessions||[]).flatMap(x => (x.agents||[]).map(a => a.agent)))];
+  const liveSkills = (s.sessions||[]).filter(freshSkill).map(x => x.skill);
+  const ph = $("phase");
+  if (liveAgents.length || liveSkills.length) {
+    const what = ((liveAgents.length ? feedSkillNow() : null) || liveSkills[0] || "working").replace(/^forge-/, "");
+    const who = liveAgents.length ? liveAgents.map(AGENT_LABEL).join(", ") : "main session";
+    ph.textContent = `⚒ ${what} — ${who}`;
+    ph.style.color = "var(--cyan)"; ph.style.borderColor = "var(--cyan)";
+  } else {
+    ph.textContent = stripMd(s.tracker.phase || "").slice(0, 80) || "";
+    ph.style.color = ""; ph.style.borderColor = "";
+  }
+  ph.style.display = ph.textContent ? "" : "none";
   $("schema").textContent = "schema " + s.schema;
-  const skills = (s.sessions||[]).filter(freshSkill).map(x => x.skill);
-  $("skillnow").textContent = skills.length ? "⚒ " + skills.join(", ") : "idle";
+  $("skillnow").textContent = liveSkills.length ? "⚒ " + liveSkills.map(k=>k.replace(/^forge-/,"")).join(", ") : "idle";
   $("updated").textContent = new Date(s.generatedAt).toLocaleTimeString();
 }
 
@@ -452,8 +464,19 @@ const office = (() => {
     return [];
   }
 
+  // Break spots: where office people actually go — coffee, water, a quick
+  // round of ping-pong — for a short while, then back to their desk.
+  const BREAK_SPOTS = [
+    { x: 398, y: 82,  what: "☕" },   // kitchen counter
+    { x: 392, y: 102, what: "🥤" },  // water cooler
+    { x: 452, y: 122, what: "🍫" },  // vending machine
+    { x: 102, y: 88,  what: "☕" },   // couch corner
+    { x: 205, y: 262, what: "🏓" },  // ping-pong left
+    { x: 295, y: 262, what: "🏓" },  // ping-pong right
+  ];
   const bodies = ROSTER.map(r => ({ ...r, x:0, y:0, tx:0, ty:0, wanderAt:0, seat:null,
-    path: [], goalKey: "", dirX: 0, dirY: 1 }));
+    typing:false, resting:false, breakUntil:0, nextBreakAt: 8000 + Math.random()*40000,
+    breakSpot:null, path: [], goalKey: "", dirX: 0, dirY: 1 }));
   bodies.forEach(b => { const p = freePoint(); b.x=p.x; b.y=p.y; b.tx=p.x; b.ty=p.y; });
   const pet = { x:250, y:300, tx:250, ty:300, wanderAt:0 };
 
@@ -488,18 +511,20 @@ const office = (() => {
     guests.set(id, g);
     return g;
   }
+  let currentSet = new Set();          // agents in the LATEST state snapshot
   function setLive({ agents, skill, skillIsActive }) {
     const now = Date.now();
+    currentSet = new Set(agents);
     for (const a of agents) { lastSeen.set(a, now); if (!KNOWN.has(a)) guestFor(a); }
     if (skill) { skillNow = skill; skillSeen = now; }
     skillActive = !!skillIsActive;
   }
+  // Presence = membership in the current snapshot — an agent works for as long
+  // as the state file lists it (NO time-based expiry, so no flapping between
+  // refreshes). The short linger only covers the walk-off after it vanishes.
   function isWorking(id) {
-    const now = Date.now();
-    // Claude mirrors the CLI skill state exactly (sticky-active), linger only
-    // smooths the gap right after the skill goes idle.
-    if (id === "claude") return skillActive || (!!skillNow && now - skillSeen < LINGER);
-    return (lastSeen.get(id) || 0) > now - LINGER;
+    if (id === "claude") return skillActive || (!!skillNow && Date.now() - skillSeen < LINGER);
+    return currentSet.has(id) || (lastSeen.get(id) || 0) > Date.now() - 3000;
   }
 
   /* ---- helpers ---- */
@@ -608,30 +633,35 @@ const office = (() => {
       px(x-3+eo,y-23,2,2,"#1b1e23"); px(x+2+eo,y-23,2,2,"#1b1e23");
     }
     drawTag(b, x, y-40);
-    if (!moving) {                                   // dozing: floating z z z
-      const ph = Math.floor(t/600)%3;
-      for (let i=0;i<=ph;i++) text("z", x+9+i*4, y-30-i*5, "rgba(219,226,238,.55)", 6+i);
+    if (b.resting && b.breakSpot) {                  // on a break: ☕ 🥤 🏓
+      text(b.breakSpot.what, x+12, y-28, "#e8d5b0", 9);
     }
   }
 
-  // Seated at a desk, back to the viewer, typing at the monitor.
+  // Seated at a desk, back to the viewer. typing=true → animated arms on the
+  // keyboard + work bubble; typing=false → relaxed idle (arms still, an
+  // occasional doze "z"), like someone at their desk between tasks.
   function drawSeated(b, t) {
     const x=b.x|0, y=b.y|0;                          // y = seat baseline
     px(x-6,y-2,12,5,"#2b2f38"); px(x-7,y-1,2,6,"#20242c"); px(x+5,y-1,2,6,"#20242c"); // chair
     px(x-6,y-16,12,12,b.shirt); px(x-6,y-16,12,2,shade(b.shirt,26));                  // back
-    const k = Math.floor(t/140)%2;                    // typing arms
+    const k = b.typing ? Math.floor(t/140)%2 : 0;
     px(x-8,y-14,2,6+(k?1:0),b.shirt); px(x+6,y-14,2,6+(k?0:1),b.shirt);
     px(x-8,y-8+(k?1:0),2,2,SKIN);     px(x+6,y-8+(k?0:1),2,2,SKIN);
     px(x-5,y-26,10,10,SKIN);                          // head from behind
     px(x-5,y-27,10,7,b.hair); px(x-6,y-24,2,6,b.hair); px(x+4,y-24,2,6,b.hair);
     drawTag(b, x, y-38);
-    const label = b.id==="claude" && skillNow ? skillNow.replace(/^forge-/,"") : null;
-    const dots = ".".repeat(1+Math.floor(t/420)%3);
-    if (label) {                                      // Claude names the skill
-      const w = label.length*5+14;
-      px(x+10, y-34, w, 9, "#20242c"); text(label+dots, x+10+w/2, y-27, "#9fd0ff", 7);
-    } else {
-      text(dots, x+11, y-28, "#fff", 9);
+    if (b.typing) {
+      const label = b.id==="claude" && skillNow ? skillNow.replace(/^forge-/,"") : null;
+      const dots = ".".repeat(1+Math.floor(t/420)%3);
+      if (label) {                                    // Claude names the skill
+        const w = label.length*5+14;
+        px(x+10, y-34, w, 9, "#20242c"); text(label+dots, x+10+w/2, y-27, "#9fd0ff", 7);
+      } else {
+        text(dots, x+11, y-28, "#fff", 9);
+      }
+    } else if (Math.floor(t/1300 + b.dx) % 5 === 0) { // idle at desk: rare doze
+      text("z", x+10, y-32, "rgba(219,226,238,.5)", 7);
     }
   }
 
@@ -679,19 +709,36 @@ const office = (() => {
 
     for (const b of all) {
       const working = isWorking(b.id);
-      b.seat = null;
+      b.seat = null; b.typing = false; b.resting = false;
       if (working && tableGroup.includes(b)) {
         const i = tableGroup.indexOf(b), side = i%2 ? -1:1, slot = Math.floor(i/2);
         setGoal(b, MEET.x - 38 + slot*25, MEET.y + (side<0 ? -24 : 30));
-        if (near(b)) b.seat = "meet";
+        if (near(b)) { b.seat = "meet"; b.typing = true; }
+        b.breakUntil = 0;
       } else if (working && !b.guest) {
         const d = DESKS[b.desk];
         setGoal(b, d.x + (d.wide ? -14 : 0), d.y + 30);
-        if (near(b)) b.seat = "desk";
-      } else if (t > b.wanderAt) {
-        const p = freePoint();
-        setGoal(b, p.x, p.y);
-        b.wanderAt = t + rnd(3200, 9500);   // then pause & doze at arrival
+        if (near(b)) { b.seat = "desk"; b.typing = true; }
+        b.breakUntil = 0;
+      } else if (b.guest) {
+        // visiting agent not working anymore — wanders briefly until removed
+        if (t > b.wanderAt) { const p = freePoint(); setGoal(b, p.x, p.y); b.wanderAt = t + rnd(3000, 8000); }
+      } else if (t < b.breakUntil && b.breakSpot) {
+        // short office break: coffee, water, ping-pong — then back to the desk
+        setGoal(b, b.breakSpot.x, b.breakSpot.y);
+        if (near(b)) b.resting = true;
+      } else {
+        // idle default = AT YOUR DESK, like a real office (monitor dim, no
+        // typing); occasionally take a short break
+        if (t > b.nextBreakAt) {
+          b.breakSpot = BREAK_SPOTS[Math.floor(Math.random()*BREAK_SPOTS.length)];
+          b.breakUntil = t + rnd(6000, 13000);
+          b.nextBreakAt = t + rnd(35000, 95000);
+        } else {
+          const d = DESKS[b.desk];
+          setGoal(b, d.x + (d.wide ? -14 : 0), d.y + 30);
+          if (near(b)) b.seat = "desk";       // seated, not typing
+        }
       }
       step(b);
     }
@@ -717,7 +764,9 @@ const office = (() => {
     const items = [];
     for (const key of Object.keys(DESKS)) {
       const d = DESKS[key];
-      const working = bodies.some(b => b.desk===key && b.seat==="desk");
+      // monitor lights up only when its owner is actually TYPING (idle
+      // sitters keep a dim screen — the room's light mirrors real work)
+      const working = bodies.some(b => b.desk===key && b.seat==="desk" && b.typing);
       items.push({ y: d.y+17, draw: () => drawDeskF(d, working, t) });
     }
     for (const b of all) {
