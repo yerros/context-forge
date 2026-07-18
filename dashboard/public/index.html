@@ -124,16 +124,36 @@
 const $ = (id) => document.getElementById(id);
 let state = null;
 
+let lastFeed = [];
+
 async function refresh() {
   try {
     const [s, f] = await Promise.all([
       fetch("/api/state").then(r => r.json()),
       fetch("/api/feed?n=120").then(r => r.json()),
     ]);
-    state = s;
+    state = s; lastFeed = f;
     renderHeader(s); renderBoard(s); renderFeed(f); renderNotes(s);
     office.setLive(liveNow(s));
   } catch (e) { /* transient — SSE reconnect will retrigger */ }
+}
+
+// A skill marked "active" for hours is a stale session file, not live work.
+const SKILL_TTL = 7200;
+const freshSkill = (x) => x.skillState === "active" && x.skill &&
+  (!x.skillSince || Date.now()/1000 - x.skillSince < SKILL_TTL);
+
+// The skill that actually launched the currently-running agents: the most
+// recent skill_invoked in the feed (excluding forge-office itself, <15 min).
+function feedSkillNow() {
+  const cutoff = Date.now() - 15 * 60000;
+  for (const e of lastFeed) {
+    if (e.event !== "skill_invoked" || !e.skill || e.skill === "forge-office") continue;
+    const t = Date.parse(e.ts || "");
+    if (!Number.isNaN(t) && t < cutoff) break;   // feed is newest-first
+    return e.skill;
+  }
+  return null;
 }
 
 function liveNow(s) {
@@ -141,7 +161,7 @@ function liveNow(s) {
   let skill = null;
   for (const sess of s.sessions || []) {
     for (const a of sess.agents || []) agents.add(a.agent);
-    if (sess.skillState === "active" && sess.skill) skill = sess.skill;
+    if (freshSkill(sess)) skill = sess.skill;
   }
   return { agents, skill, skillIsActive: skill != null };
 }
@@ -164,7 +184,7 @@ function renderHeader(s) {
   $("phase").textContent = s.tracker.phase || "";
   $("phase").style.display = s.tracker.phase ? "" : "none";
   $("schema").textContent = "schema " + s.schema;
-  const skills = (s.sessions||[]).filter(x => x.skillState === "active").map(x => x.skill);
+  const skills = (s.sessions||[]).filter(freshSkill).map(x => x.skill);
   $("skillnow").textContent = skills.length ? "⚒ " + skills.join(", ") : "idle";
   $("updated").textContent = new Date(s.generatedAt).toLocaleTimeString();
 }
@@ -229,11 +249,15 @@ function renderBoard(s) {
       wip.push(card(`unit ${n} — claimed${c.mode==="build" ? " (in-place build)" : ""}`, "wip", claims, br));
     }
   }
-  const liveSkills = (s.sessions||[]).filter(x => x.skillState === "active" && x.skill).map(x => x.skill);
+  const liveSkills = (s.sessions||[]).filter(freshSkill).map(x => x.skill);
   const liveAgents = [...new Set((s.sessions||[]).flatMap(x => (x.agents||[]).map(a => a.agent)))];
   if (liveSkills.length || liveAgents.length) {
     const who = liveAgents.length ? liveAgents.map(AGENT_LABEL).join(", ") : "main session";
-    const what = liveSkills.length ? liveSkills.map(k => k.replace(/^forge-/,"")).join(", ") : "agents";
+    // When agents are running, the honest label is the skill that launched
+    // them (from the feed) — an "active" flag from another session may be a
+    // different, older workflow.
+    const launcher = liveAgents.length ? feedSkillNow() : null;
+    const what = (launcher || liveSkills[0] || "agents").replace(/^forge-/,"");
     wip.unshift(`<div class="card wip live">⚒ ${esc(what)} — ${esc(who)} working now` +
       `<span class="tag claim">live</span></div>`);
   }

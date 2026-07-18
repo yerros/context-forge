@@ -3,6 +3,26 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.32.1] — 2026-07-18
+
+### Fixed (found by watching the live dashboard during a real forge-review run)
+- **Guest characters.** Non-forge subagents (external review agents etc.) had
+  no character — the live card named them while the office looked idle. Any
+  unknown agent now gets a visiting character (deterministic color from its
+  name, shortened label) that walks in, works at the meeting table, and leaves
+  when truly done.
+- **Claude's seat mirrors the CLI.** The main-session character now sits at
+  the command desk exactly while a skill is sticky-active (linger only smooths
+  the tail), instead of standing up after a fixed 16 s.
+- **Honest live-card label.** With agents running, the label is the skill that
+  actually launched them (most recent `skill_invoked` in the feed, <15 min) —
+  an "active" flag from another/stale session no longer mislabels the work
+  (observed: "worktree" shown during a forge-review run). Skill "active"
+  older than 2 h is treated as stale everywhere (header, live card, seat).
+- Verified end-to-end against a live run: 5 lenses spawned 23:03:22–40,
+  stops recorded at real completions (60 s–2 m 09 s later), live card shrank
+  agent-by-agent, meeting formed and dissolved, finished agents walked off.
+
 ## [0.32.0] — 2026-07-18
 
 ### Added (kanban v2 — the board is live, deep, and navigable)
