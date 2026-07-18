@@ -3,6 +3,25 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.29.0] — 2026-07-18
+
+### Changed (zero-manual-step observability)
+- **Precise agent stop tracking.** `agent-status.sh stop` moved from `SubagentStop`
+  (which never says which agent finished — 0.28.0 used a LIFO guess) to
+  **`PostToolUse` matcher `Task|Agent`**, whose payload carries the same
+  `tool_input.subagent_type` as the start event: stop now removes exactly the
+  named agent (oldest instance for duplicates), with the LIFO pop retained only
+  as a fallback for name-less payloads. The 0.28.0 approximation is gone.
+- **Local metrics are ON by default** (opt-out: `touch
+  ~/.claude/forge-metrics/disabled`). Rationale: the data never leaves the
+  machine and records only event names, skill/agent names, and the project
+  basename — while requiring a manual opt-in meant nobody had the data (or a
+  working forge-office feed) in practice. Still NOT telemetry; still silent;
+  still one file-existence check when disabled. The old `enabled` marker is
+  ignored.
+- Tests updated/extended (precise stop, duplicate instances, fallback pop,
+  default-on + opt-out); suite now 100 cases.
+
 ## [0.28.0] — 2026-07-18
 
 ### Added (agent-lifecycle events — the plugin becomes observable)

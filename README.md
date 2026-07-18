@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.28.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.29.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -182,12 +182,14 @@ that don't use the plugin:
 | `UserPromptExpansion` | Records `/forge-*` slash-command usage for the status line indicator. |
 | `Stop` | If code changed without the tracker being updated, writes `.last-session.md` with the changed files and any context files over their token budget. Marks the skill indicator idle. |
 
-**Local metrics (optional, opt-in):** the hooks can also record anonymous-to-nobody
-NDJSON events (skill invocations, stop-with-changes) to
+**Local metrics (on by default, opt-out):** the hooks record NDJSON events (skill
+invocations, agent start/stop, stop-with-changes) to
 `~/.claude/forge-metrics/events.ndjson` — strictly local, nothing ever leaves the
-machine. Enable with `touch ~/.claude/forge-metrics/enabled`; aggregate with
+machine, and only event names, skill/agent names, and the project basename are
+stored. Opt out with `touch ~/.claude/forge-metrics/disabled`. Aggregate with
 `hooks/scripts/forge-stats.sh [days]` (counts per skill/event/project plus a
-debug-per-build "pressure" ratio for data-driven iteration on your own workflow).
+debug-per-build "pressure" ratio); the same feed powers the forge-office
+dashboard's activity view.
 
 **Status line (optional):** a ready-made status line ships at
 `statusline/statusline.sh` — skill indicator (`⚒ forge-fix` while running,

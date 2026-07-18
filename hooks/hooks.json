@@ -49,9 +49,9 @@
         ]
       }
     ],
-    "SubagentStop": [
+    "PostToolUse": [
       {
-        "matcher": "",
+        "matcher": "Task|Agent",
         "hooks": [
           {
             "type": "command",

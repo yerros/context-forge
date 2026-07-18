@@ -11,8 +11,8 @@ case "$days" in *[!0-9]*) echo "usage: forge-stats.sh [days]" >&2; exit 1 ;; esa
 
 f="${HOME}/.claude/forge-metrics/events.ndjson"
 if [ ! -f "$f" ]; then
-  echo "no metrics recorded yet"
-  echo "enable with: mkdir -p ~/.claude/forge-metrics && touch ~/.claude/forge-metrics/enabled"
+  echo "no metrics recorded yet (they record automatically as you work)"
+  echo "to opt out: touch ~/.claude/forge-metrics/disabled"
   exit 0
 fi
 

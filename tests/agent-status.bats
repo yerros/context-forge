@@ -34,13 +34,28 @@ start_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"suba
   [ "$(tail -1 "$STATE_DIR/s3.agents" | cut -d' ' -f1)" = "forge-tester" ]
 }
 
-@test "agent-status: stop pops the newest agent (LIFO)" {
+@test "agent-status: stop removes exactly the named agent (not LIFO)" {
   bash "$AGENT_STATUS" start <<< "$(start_json s4 forge-reviewer)"
   bash "$AGENT_STATUS" start <<< "$(start_json s4 forge-tester)"
-  run bash "$AGENT_STATUS" stop <<< '{"session_id":"s4"}'
+  run bash "$AGENT_STATUS" stop <<< "$(start_json s4 forge-reviewer)"
   [ "$status" -eq 0 ]
   [ "$(wc -l < "$STATE_DIR/s4.agents" | tr -d ' ')" -eq 1 ]
-  [ "$(cut -d' ' -f1 "$STATE_DIR/s4.agents")" = "forge-reviewer" ]
+  [ "$(cut -d' ' -f1 "$STATE_DIR/s4.agents")" = "forge-tester" ]
+}
+
+@test "agent-status: duplicate agent names — stop removes only one instance" {
+  bash "$AGENT_STATUS" start <<< "$(start_json s4b forge-scout)"
+  bash "$AGENT_STATUS" start <<< "$(start_json s4b forge-scout)"
+  bash "$AGENT_STATUS" stop  <<< "$(start_json s4b forge-scout)"
+  [ "$(wc -l < "$STATE_DIR/s4b.agents" | tr -d ' ')" -eq 1 ]
+}
+
+@test "agent-status: stop without a name falls back to popping the newest" {
+  bash "$AGENT_STATUS" start <<< "$(start_json s4c forge-reviewer)"
+  bash "$AGENT_STATUS" start <<< "$(start_json s4c forge-tester)"
+  run bash "$AGENT_STATUS" stop <<< '{"session_id":"s4c"}'
+  [ "$status" -eq 0 ]
+  [ "$(cut -d' ' -f1 "$STATE_DIR/s4c.agents")" = "forge-reviewer" ]
 }
 
 @test "agent-status: stop on empty state is a silent no-op" {
@@ -68,19 +83,19 @@ start_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"suba
   [ ! -f "$STATE_DIR/s7.agents" ]
 }
 
-@test "agent-status: emits metrics events when metrics are enabled" {
-  mkdir -p "$HOME/.claude/forge-metrics"; touch "$HOME/.claude/forge-metrics/enabled"
+@test "agent-status: emits metrics events with the agent name" {
   bash "$AGENT_STATUS" start <<< "$(start_json s8 forge-typer)"
-  bash "$AGENT_STATUS" stop  <<< '{"session_id":"s8"}'
+  bash "$AGENT_STATUS" stop  <<< "$(start_json s8 forge-typer)"
   jq -es '[.[] | .event] | index("agent_started") != null and index("agent_stopped") != null' \
     < "$HOME/.claude/forge-metrics/events.ndjson" >/dev/null
-  jq -es '.[0].agent == "forge-typer"' < "$HOME/.claude/forge-metrics/events.ndjson" >/dev/null
+  jq -es 'all(.[]; .agent == "forge-typer")' < "$HOME/.claude/forge-metrics/events.ndjson" >/dev/null
 }
 
-@test "agent-status: hooks.json wires start (Task) and stop (SubagentStop)" {
+@test "agent-status: hooks.json wires start (PreToolUse Task) and stop (PostToolUse Task)" {
   run jq -r '.hooks.PreToolUse[] | select(.matcher | test("Task")) | .hooks[0].command' \
     "$PLUGIN_ROOT/hooks/hooks.json"
   [[ "$output" == *'agent-status.sh" start'* ]]
-  run jq -r '.hooks.SubagentStop[0].hooks[0].command' "$PLUGIN_ROOT/hooks/hooks.json"
+  run jq -r '.hooks.PostToolUse[] | select(.matcher | test("Task")) | .hooks[0].command' \
+    "$PLUGIN_ROOT/hooks/hooks.json"
   [[ "$output" == *'agent-status.sh" stop'* ]]
 }

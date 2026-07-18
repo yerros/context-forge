@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
-# metrics.sh — OPT-IN local metrics recorder. This is NOT telemetry: nothing
-# ever leaves the machine. Events append as NDJSON to
+# metrics.sh — local metrics recorder, ON by default. This is NOT telemetry:
+# nothing ever leaves the machine. Events append as NDJSON to
 # ~/.claude/forge-metrics/events.ndjson so you can see, over time, how often
 # skills run, how often builds hit forge-debug, and iterate on real data.
 #
-# Enable:   mkdir -p ~/.claude/forge-metrics && touch ~/.claude/forge-metrics/enabled
-# Disable:  rm ~/.claude/forge-metrics/enabled
-# Inspect:  hooks/scripts/forge-stats.sh [days]
+# Disable:     touch ~/.claude/forge-metrics/disabled
+# Re-enable:   rm ~/.claude/forge-metrics/disabled
+# Inspect:     hooks/scripts/forge-stats.sh [days]
 #
 # usage: metrics.sh record <event> [key=value ...]
 #
-# Costs nothing when disabled (one file-existence check). Writes nothing to
-# stdout (hook stdout can be injected as context) and always exits 0.
+# Costs one file-existence check when disabled. Writes nothing to stdout
+# (hook stdout can be injected as context) and always exits 0.
+# (The pre-0.29 opt-in marker "enabled" is ignored; only "disabled" matters.)
 
 set -u
 
 dir="${HOME}/.claude/forge-metrics"
-[ -f "$dir/enabled" ] || exit 0
+[ -f "$dir/disabled" ] && exit 0
+mkdir -p "$dir" 2>/dev/null || exit 0
 [ "${1:-}" = "record" ] || exit 0
 event=${2:-}
 [ -n "$event" ] || exit 0

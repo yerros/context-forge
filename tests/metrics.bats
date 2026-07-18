@@ -11,12 +11,19 @@ setup() {
   MDIR="$HOME/.claude/forge-metrics"
 }
 
-enable_metrics() { mkdir -p "$MDIR"; touch "$MDIR/enabled"; }
+enable_metrics() { mkdir -p "$MDIR"; }   # v0.29+: on by default; helper just preps the dir
 
-@test "metrics: disabled by default — records nothing" {
+@test "metrics: ON by default — records without any setup" {
   run bash "$METRICS" record skill_invoked skill=forge-build
   [ "$status" -eq 0 ]
   [ -z "$output" ]
+  [ -f "$MDIR/events.ndjson" ]
+}
+
+@test "metrics: opt-out via the disabled marker" {
+  mkdir -p "$MDIR"; touch "$MDIR/disabled"
+  run bash "$METRICS" record skill_invoked skill=forge-build
+  [ "$status" -eq 0 ]
   [ ! -f "$MDIR/events.ndjson" ]
 }
 
