@@ -3,6 +3,28 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.27.0] — 2026-07-18
+
+### Changed (schema migration is now automatic where it's safe to be)
+Fixes 0.26.0's adoption gap: expecting every user to manually run migrate-schema.sh
+after upgrading was never realistic. The rule that resolves the tension with "moving
+the project's memory must never happen as a side effect" (0.18.2): **additive-only
+steps run unattended; content-rewriting steps never do.**
+
+- **`migrate-schema.sh --auto`** — SessionStart mode: applies migrations listed in
+  `AUTO_SAFE_STEPS` (additive-only — new files/markers, existing content never
+  rewritten; 0→1 qualifies since it's just the marker) silently and never fails or
+  nags: non-forge dirs, half-set-up projects (forge-init's job), corrupt markers,
+  and already-current projects all exit 0 with no output. On action it emits exactly
+  one line ("schema stamped … commit it") so the session is told what happened;
+  a future non-auto-safe step emits a one-line notice telling the user to run the
+  migration deliberately (`--dry-run` first) instead of touching anything.
+- **`SessionStart` hook** gained a second command entry running `--auto` — existing
+  projects get stamped on their next session with zero manual steps. Manual-mode
+  behavior (loud, refusing, idempotent) is unchanged.
+- 6 new bats cases for `--auto` (15 schema tests total), including a jq check that
+  hooks.json actually wires it; README + forge-init docs updated.
+
 ## [0.26.0] — 2026-07-18
 
 ### Added (the plugin gets its own engineering discipline: tests, CI, locks, schema, metrics)

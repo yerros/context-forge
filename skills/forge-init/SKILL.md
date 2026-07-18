@@ -245,10 +245,12 @@ the files from their answers.
 7. **Stamp the schema version.** Run
    `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/migrate-schema.sh"` —
    it writes `context/.schema-version` (one integer for the whole context dir;
-   commit it with the rest). On future plugin upgrades the same script migrates
-   the format stepwise; `detect.sh` reports `schema: pre-schema` for projects
-   that predate it, and the Adopt & reconcile flow should offer the migration
-   then (`--dry-run` first to preview).
+   commit it with the rest). Existing projects need no manual step: the
+   `SessionStart` hook runs the same script with `--auto`, which applies
+   **additive-only** migrations silently (pre-schema → stamped) and only posts a
+   notice when a future content-rewriting migration needs a deliberate run.
+   `detect.sh` reports the `schema:` line either way; if Adopt & reconcile sees a
+   migration notice, offer to run it (`--dry-run` first to preview).
 
 ### Per-file quality bars
 

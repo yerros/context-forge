@@ -5,6 +5,8 @@
 #
 #   migrate-schema.sh            # migrate to the current schema
 #   migrate-schema.sh --dry-run  # show what would change, write nothing
+#   migrate-schema.sh --auto     # SessionStart mode: apply AUTO-SAFE migrations
+#                                # silently, never fail, never block a session
 #
 # One version number for the whole context dir — the files migrate together, so
 # per-file tags would only add token cost and a new drift source. The marker is
@@ -13,18 +15,34 @@
 #   pre-schema (no marker)  everything up to plugin 0.25.x
 #   1                       marker introduced; layout otherwise identical
 #
-# Rules (same discipline as migrate-to-forge.sh): idempotent, refuses when the
-# project state is ambiguous, never auto-commits.
+# AUTO-SAFE = additive-only: creates new files/markers, never rewrites existing
+# content. Only such steps run under --auto (the SessionStart hook); a future
+# content-rewriting migration will instead inject a one-line notice so the user
+# runs the migration deliberately. Manual rules stay the same as
+# migrate-to-forge.sh: idempotent, refuses ambiguity, never auto-commits.
 
 set -eu
 
 CURRENT_SCHEMA=1
+AUTO_SAFE_STEPS=" 0:1 "   # space-delimited "from:to" pairs that may run unattended
 
-dry=0
-[ "${1:-}" = "--dry-run" ] && dry=1
+dry=0; auto=0
+for a in "$@"; do
+  case "$a" in
+    --dry-run) dry=1 ;;
+    --auto)    auto=1 ;;
+    *) printf 'migrate-schema: unknown option %s\n' "$a" >&2; exit 1 ;;
+  esac
+done
 
-say() { printf '%s\n' "$*"; }
-die() { printf 'migrate-schema: %s\n' "$*" >&2; exit 1; }
+say() { [ "$auto" = 1 ] && return 0; printf '%s\n' "$*"; }
+notice() { printf '%s\n' "$*"; }   # the one thing --auto may emit (hook-injected)
+die() {
+  # In auto mode nothing may fail or nag a session that isn't ready — forge-init
+  # owns incomplete projects. Manual mode keeps loud, refusing behavior.
+  [ "$auto" = 1 ] && exit 0
+  printf 'migrate-schema: %s\n' "$*" >&2; exit 1
+}
 act() { # $1 = description; rest = command (skipped under --dry-run)
   desc=$1; shift
   if [ "$dry" = 1 ]; then
@@ -79,12 +97,23 @@ migrate_0_to_1() {
 v=$from
 while [ "$v" -lt "$CURRENT_SCHEMA" ]; do
   next=$((v + 1))
+  if [ "$auto" = 1 ]; then
+    case "$AUTO_SAFE_STEPS" in
+      *" $v:$next "*) ;;   # additive-only step — safe unattended
+      *)
+        notice "[Context Forge] context schema is $v; schema $next needs a deliberate migration — run: migrate-schema.sh --dry-run, then migrate-schema.sh"
+        exit 0
+        ;;
+    esac
+  fi
   "migrate_${v}_to_${next}"
   v=$next
 done
 
 if [ "$dry" = 1 ]; then
   say "dry-run complete — nothing was written"
+elif [ "$auto" = 1 ]; then
+  notice "[Context Forge] context schema stamped: $CTX/.schema-version = $CURRENT_SCHEMA (auto, additive-only) — commit it with your context files."
 else
   say "done — commit $marker together with your context files"
 fi

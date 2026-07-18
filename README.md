@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.26.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.27.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -177,7 +177,7 @@ that don't use the plugin:
 
 | Hook | What it does |
 | ---- | ------------ |
-| `SessionStart` | Injects the compact context digest (~600 tokens) with tiered-loading instructions; falls back to the full tracker in projects that predate the digest. |
+| `SessionStart` | Injects the compact context digest (~600 tokens) with tiered-loading instructions; falls back to the full tracker in projects that predate the digest. Also auto-applies **additive-only** schema migrations (`migrate-schema.sh --auto`) — pre-schema projects get their `.schema-version` stamped silently; content-rewriting migrations only ever surface a notice and wait for you. |
 | `PreToolUse` | Deterministic guard: denies edits to generated/lock/vendor files and any glob in `protected-paths`. Also records which skill is in use (for the status line). |
 | `UserPromptExpansion` | Records `/forge-*` slash-command usage for the status line indicator. |
 | `Stop` | If code changed without the tracker being updated, writes `.last-session.md` with the changed files and any context files over their token budget. Marks the skill indicator idle. |

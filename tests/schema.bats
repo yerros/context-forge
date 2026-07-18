@@ -83,3 +83,51 @@ setup() { setup_project; }
   run bash "$DETECT"
   [[ "$output" == *'schema: 1'* ]]
 }
+
+# --- --auto (the SessionStart mode): silent, additive-only, never fails ---
+
+@test "schema --auto: non-forge project -> silent no-op, exit 0" {
+  run MIGRATE --auto
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ ! -e context/.schema-version ]
+}
+
+@test "schema --auto: pre-schema project is stamped with a one-line notice" {
+  mk_core context
+  run MIGRATE --auto
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" -eq 1 ]
+  [[ "$output" == *'schema stamped'* ]]
+  [ "$(cat context/.schema-version)" = "1" ]
+}
+
+@test "schema --auto: already-current project -> completely silent" {
+  mk_core context
+  MIGRATE
+  run MIGRATE --auto
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "schema --auto: half-set-up project -> silent, no stamp (forge-init's job)" {
+  mkdir -p context
+  printf '# only one file\n' > context/project-overview.md
+  run MIGRATE --auto
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  [ ! -e context/.schema-version ]
+}
+
+@test "schema --auto: corrupt marker -> silent, never blocks a session" {
+  mk_core context
+  printf 'banana\n' > context/.schema-version
+  run MIGRATE --auto
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "schema --auto: hooks.json actually wires it into SessionStart" {
+  run jq -r '.hooks.SessionStart[0].hooks[1].command' "$PLUGIN_ROOT/hooks/hooks.json"
+  [[ "$output" == *'migrate-schema.sh" --auto'* ]]
+}
