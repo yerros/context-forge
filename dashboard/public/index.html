@@ -105,15 +105,18 @@ async function refresh() {
     ]);
     state = s;
     renderHeader(s); renderBoard(s); renderFeed(f); renderNotes(s);
-    office.setActive(activeAgents(s));
+    office.setLive(liveNow(s));
   } catch (e) { /* transient — SSE reconnect will retrigger */ }
 }
 
-function activeAgents(s) {
-  const set = new Map();
-  for (const sess of s.sessions || [])
-    for (const a of sess.agents || []) set.set(a.agent, a.since);
-  return set;
+function liveNow(s) {
+  const agents = new Set();
+  let skill = null;
+  for (const sess of s.sessions || []) {
+    for (const a of sess.agents || []) agents.add(a.agent);
+    if (sess.skillState === "active" && sess.skill) skill = sess.skill;
+  }
+  return { agents, skill };
 }
 
 function connect() {
@@ -190,264 +193,291 @@ function renderFeed(events) {
 }
 
 /* ================================================================== OFFICE
-   Pixel-art scene, procedurally drawn (no image assets).
-   Logical resolution 480x340, scaled 2x, crisp pixels.                    */
+   A real office simulation of the Claude CLI session:
+   - a subagent runs (Task tool)   -> its character walks to its desk, SITS
+     with its back to us, and types: monitor lights up with code lines,
+     arms alternate on the keyboard, a work bubble pulses
+   - the main session runs a skill -> "Claude" works at the command desk and
+     the bubble names the skill (e.g. "align…")
+   - idle                          -> characters roam the whole office and
+     doze ("z z z") wherever they stop
+   - 3+ agents at once             -> stand-up around the meeting table
+   Presence lingers a few seconds after the last event so short-lived agents
+   are still visible. Everything is procedural; logical 480x340 @2x.       */
 
 const ROSTER = [
-  { id:"forge-architect",      label:"Arch",    shirt:"#e8c531", hair:"#7a4a21", desk:"boss"  },
+  { id:"claude",               label:"Claude",  shirt:"#2fb3bd", hair:"#2b2b33", desk:"boss" },
+  { id:"forge-architect",      label:"Arch",    shirt:"#e8c531", hair:"#7a4a21", desk:"A1" },
   { id:"forge-reviewer",       label:"Review",  shirt:"#d43d3d", hair:"#26221e", desk:"L0" },
   { id:"forge-tester",         label:"Test",    shirt:"#2ea043", hair:"#e8c531", desk:"L1" },
   { id:"forge-aligner",        label:"Align",   shirt:"#d29922", hair:"#6b3f1d", desk:"L2" },
   { id:"forge-failure-hunter", label:"Hunter",  shirt:"#b34038", hair:"#1f1b18", desk:"L3" },
   { id:"forge-typer",          label:"Typer",   shirt:"#3b6fd4", hair:"#3a2c1c", desk:"R0" },
   { id:"forge-commenter",      label:"Comment", shirt:"#9a5bd4", hair:"#c9762a", desk:"R1" },
-  { id:"forge-scout",          label:"Scout",   shirt:"#2fb3bd", hair:"#4a3620", desk:"R2" },
+  { id:"forge-scout",          label:"Scout",   shirt:"#39c5cf", hair:"#4a3620", desk:"R2" },
   { id:"forge-archivist",      label:"Archive", shirt:"#8b96a8", hair:"#6d6d6d", desk:"R3" },
 ];
 
 const office = (() => {
   const cv = $("office"), ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
-  const S = 2;                       // device pixels per logical pixel
-  const W = 480, H = 340;
+  const S = 2, W = 480, H = 340;
   ctx.scale(S, S);
 
   /* ---- layout ---- */
-  const DESK_POS = {
-    boss: { x: 240, y: 96 },
-    L0: { x: 78,  y: 152 }, L1: { x: 148, y: 152 },
-    L2: { x: 78,  y: 216 }, L3: { x: 148, y: 216 },
-    R0: { x: 342, y: 152 }, R1: { x: 412, y: 152 },
-    R2: { x: 342, y: 216 }, R3: { x: 412, y: 216 },
+  const DESKS = {
+    boss:{ x:262, y:96, wide:true, top:"#3a7d8c" },   // Claude's command desk
+    A1:  { x:150, y:96,  top:"#b7a23a" },             // architect
+    L0:  { x:66,  y:158 }, L1:{ x:140, y:158 }, L2:{ x:66, y:222 }, L3:{ x:140, y:222 },
+    R0:  { x:346, y:158 }, R1:{ x:420, y:158 }, R2:{ x:346, y:222 }, R3:{ x:420, y:222 },
   };
-  const MEET   = { x: 245, y: 188 };
-  const LOUNGE = { x: 105, y: 292, rx: 70, ry: 22 };
-  const bodies = ROSTER.map(r => ({
-    ...r, ...spawn(), tx: 0, ty: 0, wanderAt: 0, facing: 1,
-  }));
-  function spawn(){ return { x: LOUNGE.x + rnd(-50,50), y: LOUNGE.y + rnd(-16,16) }; }
-  const pet = { x: 250, y: 300, tx: 250, ty: 300, wanderAt: 0 };
+  const MEET = { x:245, y:196 };
+  // rectangles characters must not wander into (x,y,w,h)
+  const OBSTACLES = [
+    [0,0,480,52],                                   // wall band
+    [16,52,46,46],[66,52,80,30],[218,54,20,18],     // bookshelf, couch, plant
+    [376,48,90,26],[442,66,32,48],[384,68,18,28],   // kitchen, vending, cooler
+    ...Object.values(DESKS).map(d => [d.x-(d.wide?42:28), d.y-16, d.wide?84:56, 52]),
+    [MEET.x-56,MEET.y-32,112,64],                   // meeting table
+    [214,244,72,38],                                // ping-pong
+    [294,240,16,16],[450,240,16,16],[4,240,16,16],  // dartboard/plants
+  ];
 
-  let activeSet = new Map();
-  function setActive(m){ activeSet = m; }
+  const bodies = ROSTER.map(r => ({ ...r, x:0, y:0, tx:0, ty:0, wanderAt:0, seat:null }));
+  bodies.forEach(b => { const p = freePoint(); b.x=p.x; b.y=p.y; b.tx=p.x; b.ty=p.y; });
+  const pet = { x:250, y:300, tx:250, ty:300, wanderAt:0 };
 
-  /* ---- pixel helpers ---- */
-  function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(x|0, y|0, w, h); }
-  function text(str, x, y, c, size=8, bold=true, align="center") {
-    ctx.fillStyle = c; ctx.textAlign = align;
-    ctx.font = `${bold?"bold ":""}${size}px monospace`;
-    ctx.fillText(str, x, y);
+  /* ---- live state with linger (short-lived agents stay visible) ---- */
+  const LINGER = 8000;
+  const lastSeen = new Map();
+  let skillNow = null, skillSeen = 0;
+
+  function setLive({ agents, skill }) {
+    const now = Date.now();
+    for (const a of agents) lastSeen.set(a, now);
+    if (skill) { skillNow = skill; skillSeen = now; }
+  }
+  function isWorking(id) {
+    const now = Date.now();
+    if (id === "claude") return !!skillNow && now - skillSeen < LINGER * 2;
+    return (lastSeen.get(id) || 0) > now - LINGER;
+  }
+
+  /* ---- helpers ---- */
+  function px(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,w,h); }
+  function text(str,x,y,c,size=8,bold=true){ ctx.fillStyle=c; ctx.textAlign="center";
+    ctx.font=`${bold?"bold ":""}${size}px monospace`; ctx.fillText(str,x,y); }
+  function shade(hex,amt){ const n=parseInt(hex.slice(1),16);
+    const r=Math.min(255,Math.max(0,(n>>16)+amt)), g=Math.min(255,Math.max(0,((n>>8)&255)+amt)),
+    b=Math.min(255,Math.max(0,(n&255)+amt)); return `rgb(${r},${g},${b})`; }
+  function rnd(a,b){ return a+Math.random()*(b-a); }
+  function inObstacle(x,y,pad=4){
+    return OBSTACLES.some(([ox,oy,ow,oh]) => x>ox-pad && x<ox+ow+pad && y>oy-pad && y<oy+oh+pad);
+  }
+  function freePoint(){
+    for (let i=0;i<24;i++){ const x=rnd(18,462), y=rnd(104,326);
+      if (!inObstacle(x,y)) return {x,y}; }
+    return { x:240, y:305 };
   }
 
   /* ---- furniture ---- */
-  function drawDesk(x, y, wide=false, topColor="#8a6a4a") {
-    const w = wide ? 76 : 48, h = 17;
-    px(x-w/2, y, w, h, topColor);                       // top
-    px(x-w/2, y, w, 2, shade(topColor, 24));            // top edge highlight
-    px(x-w/2, y+h, w, 3, shade(topColor, -40));         // front shadow
-    px(x-w/2+2, y+h+3, 4, 4, "#4c3a28"); px(x+w/2-6, y+h+3, 4, 4, "#4c3a28"); // legs
-    // monitor(s)
-    const mons = wide ? [x-22, x+4] : [x-9];
+  function drawDeskF(d, working, t) {
+    const w = d.wide?84:56, h=17, top=d.top||"#8a6a4a";
+    const x=d.x, y=d.y;
+    px(x-w/2, y, w, h, top);
+    px(x-w/2, y, w, 2, shade(top,24));
+    px(x-w/2, y+h, w, 3, shade(top,-40));
+    px(x-w/2+2, y+h+3, 4, 4, "#4c3a28"); px(x+w/2-6, y+h+3, 4, 4, "#4c3a28");
+    const mons = d.wide ? [x-24, x+6] : [x-9];
     for (const mx of mons) {
-      px(mx, y-11, 18, 12, "#20242c");
-      px(mx+1, y-10, 16, 9, "#2f6fd9");
-      px(mx+2, y-9, 7, 2, "#7db4ff");
-      px(mx+7, y+1, 4, 3, "#20242c");
-    }
-  }
-  function drawMeetingTable(x, y) {
-    px(x-52, y-16, 104, 32, "#7a5c40");
-    px(x-52, y-16, 104, 2, "#96754f");
-    px(x-52, y+16, 104, 3, "#57402a");
-    px(x-8, y-6, 16, 9, "#2f6fd9");                    // shared screen
-    for (const cx of [-38,-14,10,34]) { px(x+cx, y-26, 9, 7, "#3d4553"); px(x+cx, y+22, 9, 7, "#3d4553"); }
-  }
-  function drawPingPong(x, y) {
-    px(x-32, y-14, 64, 28, "#1e7e34");
-    px(x-32, y-14, 64, 2, "#2ba24a");
-    px(x-1, y-14, 2, 28, "#e8e8e8");
-    px(x-32, y-1, 64, 2, "#e8e8e8");
-    px(x-32, y+14, 64, 3, "#14571f");
-  }
-  function drawCouch(x, y, w=64) {
-    px(x, y, w, 15, "#23262c"); px(x, y-5, w, 6, "#2c3038");
-    px(x-3, y-5, 4, 20, "#1b1e23"); px(x+w-1, y-5, 4, 20, "#1b1e23");
-  }
-  function drawBookshelf(x, y) {
-    px(x, y, 34, 42, "#6a4e30"); px(x+1, y+1, 32, 40, "#553d24");
-    for (let r=0; r<3; r++) {
-      let bx = x+3;
-      for (const c of ["#d0483e","#3b6fd4","#2ea043","#d29922","#9a5bd4","#39c5cf"]) {
-        px(bx, y+4+r*13, 4, 9, c); bx += 5;
+      px(mx, y-11, 18, 13, "#20242c");
+      px(mx+1, y-10, 16, 10, working ? "#2f6fd9" : "#171b22");
+      if (working) {                                 // scrolling "code" lines
+        const ph = Math.floor(t/240)%3;
+        for (let l=0; l<3; l++)
+          px(mx+2, y-8+l*3, 4+((l+ph)%3)*4, 2, l===ph ? "#9fd0ff" : "#5b93e8");
       }
+      px(mx+7, y+2, 4, 2, "#20242c");
     }
+    px(x-8, y+h-4, 16, 3, "#2b2f38");                // keyboard
   }
-  function drawVending(x, y) {
-    px(x, y, 26, 40, "#c03030"); px(x+2, y+2, 15, 28, "#1b2530");
-    for (let r=0;r<4;r++) for (let c=0;c<3;c++) px(x+4+c*4, y+4+r*6, 3, 4, ["#e8c531","#39c5cf","#e06ad4"][c]);
-    px(x+19, y+4, 5, 12, "#8c1f1f");
+  function drawMeetingTable(x,y,meeting){
+    px(x-52,y-16,104,32,"#7a5c40"); px(x-52,y-16,104,2,"#96754f"); px(x-52,y+16,104,3,"#57402a");
+    px(x-8,y-6,16,9, meeting ? "#2f6fd9" : "#20242c");
+    for (const cx of [-38,-14,10,34]){ px(x+cx,y-26,9,7,"#3d4553"); px(x+cx,y+22,9,7,"#3d4553"); }
   }
-  function drawCabinet(x, y) {
-    px(x, y, 16, 22, "#9aa2ad"); px(x+2, y+2, 12, 8, "#7d8590"); px(x+2, y+12, 12, 8, "#7d8590");
-    px(x+6, y+5, 4, 2, "#5d646e"); px(x+6, y+15, 4, 2, "#5d646e");
-  }
-  function drawPlant(x, y) {
-    px(x+2, y+8, 8, 7, "#a5502e"); px(x+3, y+8, 6, 2, "#c26439");
-    px(x+4, y, 4, 8, "#2ea043"); px(x+1, y+2, 4, 5, "#1f7a33"); px(x+7, y+2, 4, 5, "#1f7a33");
-  }
-  function drawWindow(x, y) {
-    px(x, y, 30, 24, "#3d4757"); px(x+2, y+2, 26, 20, "#141d33");
-    px(x+14, y+2, 2, 20, "#3d4757"); px(x+2, y+11, 26, 2, "#3d4757");
-    px(x+6, y+5, 2, 2, "#cfd8ea"); px(x+21, y+15, 2, 2, "#cfd8ea"); px(x+11, y+16, 1, 1, "#8fa0c0");
-  }
-  function drawWaterCooler(x, y) {
-    px(x+2, y, 8, 8, "#bcd6f2"); px(x, y+8, 12, 16, "#e8ecf2"); px(x+3, y+12, 6, 3, "#39c5cf");
-  }
-  function drawKitchen(x, y) {
-    px(x, y, 78, 16, "#e4e7ec"); px(x, y+16, 78, 3, "#b9bec8");
-    px(x+6, y+3, 16, 9, "#8f97a3");                     // sink
-    px(x+30, y+3, 12, 9, "#20242c"); px(x+32, y+5, 8, 5, "#39c5cf"); // microwave
-  }
-  function drawDartboard(x, y) {
-    px(x-1, y-1, 12, 12, "#3a2c1c"); px(x+1, y+1, 8, 8, "#d0483e");
-    px(x+3, y+3, 4, 4, "#e8e8e8"); px(x+4, y+4, 2, 2, "#1b1e23");
-  }
-  function drawPet(t) {
+  function drawPingPong(x,y){ px(x-32,y-14,64,28,"#1e7e34"); px(x-32,y-14,64,2,"#2ba24a");
+    px(x-1,y-14,2,28,"#e8e8e8"); px(x-32,y-1,64,2,"#e8e8e8"); px(x-32,y+14,64,3,"#14571f"); }
+  function drawCouch(x,y,w=64){ px(x,y,w,15,"#23262c"); px(x,y-5,w,6,"#2c3038");
+    px(x-3,y-5,4,20,"#1b1e23"); px(x+w-1,y-5,4,20,"#1b1e23"); }
+  function drawBookshelf(x,y){ px(x,y,34,42,"#6a4e30"); px(x+1,y+1,32,40,"#553d24");
+    for (let r=0;r<3;r++){ let bx=x+3;
+      for (const c of ["#d0483e","#3b6fd4","#2ea043","#d29922","#9a5bd4","#39c5cf"]){ px(bx,y+4+r*13,4,9,c); bx+=5; } } }
+  function drawVending(x,y){ px(x,y,26,40,"#c03030"); px(x+2,y+2,15,28,"#1b2530");
+    for (let r=0;r<4;r++) for (let c=0;c<3;c++) px(x+4+c*4,y+4+r*6,3,4,["#e8c531","#39c5cf","#e06ad4"][c]);
+    px(x+19,y+4,5,12,"#8c1f1f"); }
+  function drawCabinet(x,y){ px(x,y,16,22,"#9aa2ad"); px(x+2,y+2,12,8,"#7d8590");
+    px(x+2,y+12,12,8,"#7d8590"); px(x+6,y+5,4,2,"#5d646e"); px(x+6,y+15,4,2,"#5d646e"); }
+  function drawPlant(x,y){ px(x+2,y+8,8,7,"#a5502e"); px(x+3,y+8,6,2,"#c26439");
+    px(x+4,y,4,8,"#2ea043"); px(x+1,y+2,4,5,"#1f7a33"); px(x+7,y+2,4,5,"#1f7a33"); }
+  function drawWindow(x,y){ px(x,y,30,24,"#3d4757"); px(x+2,y+2,26,20,"#141d33");
+    px(x+14,y+2,2,20,"#3d4757"); px(x+2,y+11,26,2,"#3d4757");
+    px(x+6,y+5,2,2,"#cfd8ea"); px(x+21,y+15,2,2,"#cfd8ea"); px(x+11,y+16,1,1,"#8fa0c0"); }
+  function drawWaterCooler(x,y){ px(x+2,y,8,8,"#bcd6f2"); px(x,y+8,12,16,"#e8ecf2"); px(x+3,y+12,6,3,"#39c5cf"); }
+  function drawKitchen(x,y){ px(x,y,78,16,"#e4e7ec"); px(x,y+16,78,3,"#b9bec8");
+    px(x+6,y+3,16,9,"#8f97a3"); px(x+30,y+3,12,9,"#20242c"); px(x+32,y+5,8,5,"#39c5cf"); }
+  function drawDartboard(x,y){ px(x-1,y-1,12,12,"#3a2c1c"); px(x+1,y+1,8,8,"#d0483e");
+    px(x+3,y+3,4,4,"#e8e8e8"); px(x+4,y+4,2,2,"#1b1e23"); }
+  function drawPet(t){
     const b = pet;
-    if (t > b.wanderAt) { b.tx = 210 + rnd(0,110); b.ty = 285 + rnd(0,25); b.wanderAt = t + rnd(3000,8000); }
+    if (t > b.wanderAt){ const p = freePoint(); b.tx=p.x; b.ty=Math.max(p.y,260); b.wanderAt=t+rnd(3000,8000); }
     b.x += (b.tx-b.x)*0.03; b.y += (b.ty-b.y)*0.03;
-    const x = b.x|0, y = b.y|0, hop = Math.abs(Math.sin(t/300))*1.5;
-    px(x-5, y-3-hop, 10, 6, "#d0483e");                 // body
-    px(x-3, y-5-hop, 6, 3, "#d0483e");
-    px(x-2, y-5-hop, 1, 1, "#1b1e23"); px(x+1, y-5-hop, 1, 1, "#1b1e23"); // eyes
-    px(x-8, y-4-hop, 3, 3, "#b53a31"); px(x+5, y-4-hop, 3, 3, "#b53a31"); // claws
-    px(x-5, y+3-hop, 2, 2, "#8c2b24"); px(x+3, y+3-hop, 2, 2, "#8c2b24"); // legs
-    text("Forgy", x, y+12, "#e8d5b0", 6);
+    const x=b.x|0, y=b.y|0, hop=Math.abs(Math.sin(t/300))*1.5;
+    px(x-5,y-3-hop,10,6,"#d0483e"); px(x-3,y-5-hop,6,3,"#d0483e");
+    px(x-2,y-5-hop,1,1,"#1b1e23"); px(x+1,y-5-hop,1,1,"#1b1e23");
+    px(x-8,y-4-hop,3,3,"#b53a31"); px(x+5,y-4-hop,3,3,"#b53a31");
+    px(x-5,y+3-hop,2,2,"#8c2b24"); px(x+3,y+3-hop,2,2,"#8c2b24");
+    text("Forgy",x,y+12,"#e8d5b0",6);
   }
 
-  /* ---- character ---- */
+  /* ---- characters ---- */
   const SKIN = "#e8b98c";
-  function drawChar(b, t) {
-    const isActive = activeSet.has(b.id);
-    const moving = Math.hypot(b.tx-b.x, b.ty-b.y) > 2;
-    const frame = moving ? (Math.floor(t/160)%2) : 0;
-    const x = b.x|0, y = b.y|0;                         // y = feet baseline
-    const bob = isActive && !moving ? (Math.floor(t/400)%2) : 0;
 
-    // shadow
-    px(x-6, y-1, 12, 2, "rgba(0,0,0,.25)");
-    // legs (pants)
-    const pants = "#31415e";
-    if (moving) {
-      px(x-4, y-8+(frame?1:0), 3, 8-(frame?1:0), pants);
-      px(x+1, y-8+(frame?0:1), 3, 8-(frame?0:1), pants);
-    } else { px(x-4, y-8, 3, 8, pants); px(x+1, y-8, 3, 8, pants); }
-    px(x-5, y-2, 4, 2, "#1b1e23"); px(x+1, y-2, 4, 2, "#1b1e23"); // shoes
-    // torso
-    px(x-6, y-18+bob, 12, 10, b.shirt);
-    px(x-6, y-18+bob, 12, 2, shade(b.shirt, 26));
-    // arms
-    px(x-8, y-17+bob, 2, 7, b.shirt); px(x+6, y-17+bob, 2, 7, b.shirt);
-    px(x-8, y-10+bob, 2, 2, SKIN); px(x+6, y-10+bob, 2, 2, SKIN);
-    // head
-    px(x-5, y-28+bob, 10, 10, SKIN);
-    // hair
-    px(x-5, y-29+bob, 10, 4, b.hair); px(x-6, y-27+bob, 2, 4, b.hair); px(x+4, y-27+bob, 2, 4, b.hair);
-    // eyes
-    px(x-3, y-23+bob, 2, 2, "#1b1e23"); px(x+2, y-23+bob, 2, 2, "#1b1e23");
-    // name tag
-    const w = b.label.length*5+8;
-    px(x-w/2, y-40+bob, w, 9, b.shirt);
-    px(x-w/2, y-40+bob, w, 1, shade(b.shirt, 30));
-    text(b.label, x, y-33+bob, "#fff", 7);
-    // status badges
-    if (isActive) {
-      ctx.beginPath(); ctx.arc(x+w/2+5, y-36+bob, 4.5, 0, Math.PI*2); ctx.fillStyle="#20242c"; ctx.fill();
-      text("⚙", x+w/2+5, y-33+bob, "#cfd8ea", 7, false);
-      const dots = ".".repeat(1+Math.floor(t/420)%3);
-      text(dots, x+10, y-24+bob, "#fff", 9);
+  function drawStanding(b, t, moving) {
+    const x=b.x|0, y=b.y|0;
+    const frame = moving ? (Math.floor(t/150)%2) : 0;
+    px(x-6,y-1,12,2,"rgba(0,0,0,.25)");
+    const pants="#31415e";
+    if (moving){ px(x-4,y-8+(frame?1:0),3,8-(frame?1:0),pants); px(x+1,y-8+(frame?0:1),3,8-(frame?0:1),pants); }
+    else { px(x-4,y-8,3,8,pants); px(x+1,y-8,3,8,pants); }
+    px(x-5,y-2,4,2,"#1b1e23"); px(x+1,y-2,4,2,"#1b1e23");
+    px(x-6,y-18,12,10,b.shirt); px(x-6,y-18,12,2,shade(b.shirt,26));
+    px(x-8,y-17,2,7,b.shirt); px(x+6,y-17,2,7,b.shirt);
+    px(x-8,y-10,2,2,SKIN); px(x+6,y-10,2,2,SKIN);
+    px(x-5,y-28,10,10,SKIN);
+    px(x-5,y-29,10,4,b.hair); px(x-6,y-27,2,4,b.hair); px(x+4,y-27,2,4,b.hair);
+    px(x-3,y-23,2,2,"#1b1e23"); px(x+2,y-23,2,2,"#1b1e23");
+    drawTag(b, x, y-40);
+    if (!moving) {                                   // dozing: floating z z z
+      const ph = Math.floor(t/600)%3;
+      for (let i=0;i<=ph;i++) text("z", x+9+i*4, y-30-i*5, "rgba(219,226,238,.55)", 6+i);
     }
+  }
+
+  // Seated at a desk, back to the viewer, typing at the monitor.
+  function drawSeated(b, t) {
+    const x=b.x|0, y=b.y|0;                          // y = seat baseline
+    px(x-6,y-2,12,5,"#2b2f38"); px(x-7,y-1,2,6,"#20242c"); px(x+5,y-1,2,6,"#20242c"); // chair
+    px(x-6,y-16,12,12,b.shirt); px(x-6,y-16,12,2,shade(b.shirt,26));                  // back
+    const k = Math.floor(t/140)%2;                    // typing arms
+    px(x-8,y-14,2,6+(k?1:0),b.shirt); px(x+6,y-14,2,6+(k?0:1),b.shirt);
+    px(x-8,y-8+(k?1:0),2,2,SKIN);     px(x+6,y-8+(k?0:1),2,2,SKIN);
+    px(x-5,y-26,10,10,SKIN);                          // head from behind
+    px(x-5,y-27,10,7,b.hair); px(x-6,y-24,2,6,b.hair); px(x+4,y-24,2,6,b.hair);
+    drawTag(b, x, y-38);
+    const label = b.id==="claude" && skillNow ? skillNow.replace(/^forge-/,"") : null;
+    const dots = ".".repeat(1+Math.floor(t/420)%3);
+    if (label) {                                      // Claude names the skill
+      const w = label.length*5+14;
+      px(x+10, y-34, w, 9, "#20242c"); text(label+dots, x+10+w/2, y-27, "#9fd0ff", 7);
+    } else {
+      text(dots, x+11, y-28, "#fff", 9);
+    }
+  }
+
+  function drawTag(b, x, ty) {
+    const w = b.label.length*5+8;
+    px(x-w/2, ty, w, 9, b.shirt); px(x-w/2, ty, w, 1, shade(b.shirt,30));
+    text(b.label, x, ty+7, "#fff", 7);
   }
 
   /* ---- scene ---- */
   function drawScene(t, meeting) {
-    // floor checker
     for (let ty=0; ty<H; ty+=20) for (let tx=0; tx<W; tx+=20)
-      px(tx, ty, 20, 20, ((tx+ty)/20)%2 ? "#8f939b" : "#9b9fa7");
-    // zones tint
-    px(24, 130, 180, 120, "rgba(53,99,201,.06)");
-    px(300, 130, 156, 120, "rgba(210,105,30,.07)");
-    // wall
-    px(0, 0, W, 46, "#333d4d"); px(0, 44, W, 3, "#232b38"); px(0, 0, W, 3, "#28303e");
-    drawWindow(16, 9); drawWindow(180, 9); drawWindow(300, 9);
-    text("LOUNGE", 92, 22, "#39c5cf", 12);
-    text("KITCHEN", 424, 22, "#f85149", 12);
-    ctx.beginPath(); ctx.arc(250, 16, 7, 0, Math.PI*2); ctx.fillStyle="#e8ecf2"; ctx.fill();
+      px(tx,ty,20,20,((tx+ty)/20)%2 ? "#8f939b" : "#9b9fa7");
+    px(24,132,180,116,"rgba(53,99,201,.06)");
+    px(300,132,156,116,"rgba(210,105,30,.07)");
+    px(0,0,W,46,"#333d4d"); px(0,44,W,3,"#232b38"); px(0,0,W,3,"#28303e");
+    drawWindow(16,9); drawWindow(180,9); drawWindow(300,9);
+    text("LOUNGE",92,22,"#39c5cf",12); text("KITCHEN",424,22,"#f85149",12);
+    ctx.beginPath(); ctx.arc(250,16,7,0,Math.PI*2); ctx.fillStyle="#e8ecf2"; ctx.fill();
     ctx.strokeStyle="#20242c"; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(250,16); ctx.lineTo(250,11); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(250,16); ctx.lineTo(254 - 8*((t/60000)%1>.5), 16); ctx.stroke();
-    // top furniture
-    drawBookshelf(24, 52); drawCouch(70, 62);
-    drawKitchen(380, 50); drawVending(446, 70); drawWaterCooler(388, 72);
-    // section bars
-    px(24, 118, 180, 8, "#3563c9"); px(24, 118, 180, 2, "#5a86e0");
-    drawCabinet(28, 100); drawCabinet(186, 100);
-    px(300, 118, 156, 8, "#cf6a1e"); px(300, 118, 156, 2, "#e88b45");
-    drawCabinet(304, 100); drawCabinet(438, 100);
-    // desks
-    drawDesk(DESK_POS.boss.x, DESK_POS.boss.y, true, "#b7a23a");
-    for (const k of ["L0","L1","L2","L3","R0","R1","R2","R3"]) drawDesk(DESK_POS[k].x, DESK_POS[k].y);
-    // center
-    drawMeetingTable(MEET.x, MEET.y + 14);
-    drawPingPong(250, 262);
-    drawDartboard(300, 246); drawPlant(456, 246); drawPlant(10, 246); drawPlant(222, 60);
-    // lounge rug
-    px(LOUNGE.x-58, LOUNGE.y-16, 116, 34, "rgba(57,197,207,.08)");
-    text("lounge ☕", LOUNGE.x, LOUNGE.y - 22, "#5d6875", 7);
-    if (meeting) text("review in session…", MEET.x, MEET.y + 52, "#e8d5b0", 8);
+    drawBookshelf(24,52); drawCouch(70,62);
+    drawKitchen(380,50); drawVending(446,70); drawWaterCooler(388,72);
+    px(24,120,180,8,"#3563c9"); px(24,120,180,2,"#5a86e0");
+    drawCabinet(28,100); drawCabinet(186,100);
+    px(300,120,156,8,"#cf6a1e"); px(300,120,156,2,"#e88b45");
+    drawCabinet(304,100); drawCabinet(438,100);
+    drawPingPong(250,262);
+    drawDartboard(300,246); drawPlant(456,246); drawPlant(10,246); drawPlant(222,60);
+    if (meeting) text("review in session…", MEET.x, MEET.y+56, "#e8d5b0", 8);
   }
 
   /* ---- loop ---- */
   function tick(t) {
-    const actives = bodies.filter(b => activeSet.has(b.id));
-    const meeting = actives.length >= 3;
+    const workers = bodies.filter(b => isWorking(b.id));
+    const meeting = workers.filter(b => b.id!=="claude").length >= 3;
 
     for (const b of bodies) {
-      const isActive = activeSet.has(b.id);
-      if (isActive && meeting && b.desk !== "boss") {
-        const i = actives.indexOf(b);
-        const side = i % 2 ? -1 : 1, slot = Math.floor(i/2);
-        b.tx = MEET.x - 38 + slot*24 + 4; b.ty = MEET.y + (side<0 ? -12 : 42);
-      } else if (isActive) {
-        const d = DESK_POS[b.desk] || DESK_POS.boss;
-        b.tx = d.x + (b.desk==="boss" ? 12 : 0); b.ty = d.y - 2;
+      const working = isWorking(b.id);
+      b.seat = null;
+      if (working && meeting && b.id!=="claude") {
+        const group = workers.filter(x => x.id!=="claude");
+        const i = group.indexOf(b), side = i%2 ? -1:1, slot = Math.floor(i/2);
+        b.tx = MEET.x - 38 + slot*25; b.ty = MEET.y + (side<0 ? -24 : 30);
+        if (near(b)) b.seat = "meet";
+      } else if (working) {
+        const d = DESKS[b.desk];
+        b.tx = d.x + (d.wide ? -14 : 0); b.ty = d.y + 30;
+        if (near(b)) b.seat = "desk";
       } else if (t > b.wanderAt) {
-        const a = Math.random()*Math.PI*2;
-        b.tx = LOUNGE.x + Math.cos(a)*LOUNGE.rx*Math.random();
-        b.ty = LOUNGE.y + Math.sin(a)*LOUNGE.ry*Math.random();
-        b.wanderAt = t + rnd(2600, 8000);
+        const p = freePoint();
+        b.tx = p.x; b.ty = p.y;
+        b.wanderAt = t + rnd(3000, 9000);
       }
-      b.x += (b.tx-b.x)*0.05; b.y += (b.ty-b.y)*0.05;
+      step(b);
+    }
+    // gentle separation so wandering characters never stack
+    for (let i=0;i<bodies.length;i++) for (let j=i+1;j<bodies.length;j++){
+      const a=bodies[i], c=bodies[j];
+      if (a.seat || c.seat) continue;
+      const dx=c.x-a.x, dy=c.y-a.y, d=Math.hypot(dx,dy);
+      if (d>0 && d<14){ const push=(14-d)/2, nx=dx/d, ny=dy/d;
+        a.x-=nx*push*.5; a.y-=ny*push*.5; c.x+=nx*push*.5; c.y+=ny*push*.5; }
     }
 
-    ctx.clearRect(0, 0, W, H);
+    ctx.clearRect(0,0,W,H);
     drawScene(t, meeting);
-    for (const b of [...bodies].sort((a,z) => a.y - z.y)) drawChar(b, t);
+    drawMeetingTable(MEET.x, MEET.y, meeting);
+
+    // painter's order: desks and characters interleaved by y
+    const items = [];
+    for (const key of Object.keys(DESKS)) {
+      const d = DESKS[key];
+      const working = bodies.some(b => b.desk===key && b.seat==="desk");
+      items.push({ y: d.y+17, draw: () => drawDeskF(d, working, t) });
+    }
+    for (const b of bodies) {
+      const moving = Math.hypot(b.tx-b.x, b.ty-b.y) > 2;
+      items.push({ y: b.y, draw: () =>
+        b.seat ? drawSeated(b, t) : drawStanding(b, t, moving) });
+    }
+    items.sort((a,z) => a.y - z.y).forEach(it => it.draw());
     drawPet(t);
     requestAnimationFrame(tick);
   }
 
-  function shade(hex, amt) {
-    const n = parseInt(hex.slice(1), 16);
-    const r = Math.min(255, Math.max(0, (n>>16)+amt));
-    const g = Math.min(255, Math.max(0, ((n>>8)&255)+amt));
-    const b = Math.min(255, Math.max(0, (n&255)+amt));
-    return `rgb(${r},${g},${b})`;
+  function near(b){ return Math.hypot(b.tx-b.x, b.ty-b.y) < 3; }
+  function step(b){
+    const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy);
+    if (d < 0.8) { b.x=b.tx; b.y=b.ty; return; }
+    const sp = Math.min(1.1, Math.max(0.35, d*0.08));
+    b.x += dx/d*sp; b.y += dy/d*sp;
   }
-  function rnd(a,b){ return a + Math.random()*(b-a); }
 
   requestAnimationFrame(tick);
-  return { setActive };
+  return { setLive };
 })();
 
 refresh();

@@ -3,6 +3,27 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.30.1] — 2026-07-18
+
+### Changed (the office is now a real simulation of the CLI session)
+Feedback-driven rework of the dashboard's office view — state must read as work:
+
+- **Working = seated & typing.** An active character walks to its desk and sits
+  with its back to the viewer: chair drawn, arms alternating on the keyboard,
+  monitor lit with scrolling code lines (dark when the desk is empty), pulsing
+  work bubble. Painter's-order rendering keeps desks/characters layered right.
+- **"Claude" (10th character)** — the main CLI session itself, at a distinct
+  command desk: whenever a forge skill is active in any session, Claude sits and
+  the bubble names it ("align…", "build…"). Subagents remain the other nine.
+- **Idle = free roam + doze.** Idle characters wander the whole office
+  (obstacle-aware waypoints — desks, tables, kitchen, ping-pong are no-go
+  zones), with a soft separation force so they never stack, and float "z z z"
+  when they stop. The lounge huddle is gone.
+- **Presence linger** — events are momentary, so presence persists ~8 s after
+  the last sighting (Claude 16 s): short-lived agents (a haiku scout) visibly
+  arrive, sit, type, and leave instead of flickering. 3+ concurrent agents
+  still convene at the meeting table ("review in session").
+
 ## [0.30.0] — 2026-07-18
 
 ### Added (forge-office: the dashboard ships inside the plugin)
