@@ -143,7 +143,7 @@ function liveNow(s) {
     for (const a of sess.agents || []) agents.add(a.agent);
     if (sess.skillState === "active" && sess.skill) skill = sess.skill;
   }
-  return { agents, skill };
+  return { agents, skill, skillIsActive: skill != null };
 }
 
 function connect() {
@@ -446,16 +446,35 @@ const office = (() => {
   /* ---- live state with linger (short-lived agents stay visible) ---- */
   const LINGER = 8000;
   const lastSeen = new Map();
-  let skillNow = null, skillSeen = 0;
+  const guests = new Map();            // non-forge agents get visiting characters
+  let skillNow = null, skillSeen = 0, skillActive = false;
 
-  function setLive({ agents, skill }) {
+  const KNOWN = new Set(ROSTER.map(r => r.id));
+  function guestFor(id) {
+    if (guests.has(id)) return guests.get(id);
+    // deterministic color from the agent name
+    let h = 0; for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const shirt = `hsl(${h % 360} 55% 52%)`;
+    const label = id.replace(/^forge-/, "").split("-").slice(0, 2)
+      .map(w => w[0].toUpperCase() + w.slice(1, 5)).join("").slice(0, 10);
+    const p = freePoint();
+    const g = { id, label, shirt, hair: "#2b2b33", guest: true, hsl: true,
+      x: p.x, y: 330, tx: p.x, ty: p.y, wanderAt: 0, seat: null,
+      path: [], goalKey: "", dirX: 0, dirY: 1 };
+    guests.set(id, g);
+    return g;
+  }
+  function setLive({ agents, skill, skillIsActive }) {
     const now = Date.now();
-    for (const a of agents) lastSeen.set(a, now);
+    for (const a of agents) { lastSeen.set(a, now); if (!KNOWN.has(a)) guestFor(a); }
     if (skill) { skillNow = skill; skillSeen = now; }
+    skillActive = !!skillIsActive;
   }
   function isWorking(id) {
     const now = Date.now();
-    if (id === "claude") return !!skillNow && now - skillSeen < LINGER * 2;
+    // Claude mirrors the CLI skill state exactly (sticky-active), linger only
+    // smooths the gap right after the skill goes idle.
+    if (id === "claude") return skillActive || (!!skillNow && now - skillSeen < LINGER);
     return (lastSeen.get(id) || 0) > now - LINGER;
   }
 
@@ -463,7 +482,8 @@ const office = (() => {
   function px(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,w,h); }
   function text(str,x,y,c,size=8,bold=true){ ctx.fillStyle=c; ctx.textAlign="center";
     ctx.font=`${bold?"bold ":""}${size}px monospace`; ctx.fillText(str,x,y); }
-  function shade(hex,amt){ const n=parseInt(hex.slice(1),16);
+  function shade(hex,amt){ if (hex[0] !== "#") return hex;   // hsl guests: flat tone
+    const n=parseInt(hex.slice(1),16);
     const r=Math.min(255,Math.max(0,(n>>16)+amt)), g=Math.min(255,Math.max(0,((n>>8)&255)+amt)),
     b=Math.min(255,Math.max(0,(n&255)+amt)); return `rgb(${r},${g},${b})`; }
   function rnd(a,b){ return a+Math.random()*(b-a); }
@@ -622,18 +642,25 @@ const office = (() => {
 
   /* ---- loop ---- */
   function tick(t) {
+    // visiting agents (non-forge) leave the office once truly done
+    for (const [id, g] of guests) if (!isWorking(id)) guests.delete(id);
+    const all = bodies.concat([...guests.values()]);
+
     const workers = bodies.filter(b => isWorking(b.id));
     const meeting = workers.filter(b => b.id!=="claude").length >= 3;
+    // everyone who sits around the meeting table: forge agents in meeting
+    // mode + all working guests (visitors work at the table, like consultants)
+    const tableGroup = (meeting ? workers.filter(x => x.id!=="claude") : [])
+      .concat([...guests.values()].filter(g => isWorking(g.id)));
 
-    for (const b of bodies) {
+    for (const b of all) {
       const working = isWorking(b.id);
       b.seat = null;
-      if (working && meeting && b.id!=="claude") {
-        const group = workers.filter(x => x.id!=="claude");
-        const i = group.indexOf(b), side = i%2 ? -1:1, slot = Math.floor(i/2);
+      if (working && tableGroup.includes(b)) {
+        const i = tableGroup.indexOf(b), side = i%2 ? -1:1, slot = Math.floor(i/2);
         setGoal(b, MEET.x - 38 + slot*25, MEET.y + (side<0 ? -24 : 30));
         if (near(b)) b.seat = "meet";
-      } else if (working) {
+      } else if (working && !b.guest) {
         const d = DESKS[b.desk];
         setGoal(b, d.x + (d.wide ? -14 : 0), d.y + 30);
         if (near(b)) b.seat = "desk";
@@ -646,8 +673,8 @@ const office = (() => {
     }
     // gentle separation so wandering characters never stack — but never let a
     // push shove someone inside furniture
-    for (let i=0;i<bodies.length;i++) for (let j=i+1;j<bodies.length;j++){
-      const a=bodies[i], c=bodies[j];
+    for (let i=0;i<all.length;i++) for (let j=i+1;j<all.length;j++){
+      const a=all[i], c=all[j];
       if (a.seat || c.seat) continue;
       const dx=c.x-a.x, dy=c.y-a.y, d=Math.hypot(dx,dy);
       if (d>0 && d<14){ const push=(14-d)/2, nx=dx/d, ny=dy/d;
@@ -659,8 +686,8 @@ const office = (() => {
     }
 
     ctx.clearRect(0,0,W,H);
-    drawScene(t, meeting);
-    drawMeetingTable(MEET.x, MEET.y, meeting);
+    drawScene(t, tableGroup.length > 0);
+    drawMeetingTable(MEET.x, MEET.y, tableGroup.length > 0);
 
     // painter's order: desks and characters interleaved by y
     const items = [];
@@ -669,7 +696,7 @@ const office = (() => {
       const working = bodies.some(b => b.desk===key && b.seat==="desk");
       items.push({ y: d.y+17, draw: () => drawDeskF(d, working, t) });
     }
-    for (const b of bodies) {
+    for (const b of all) {
       const moving = Math.hypot(b.tx-b.x, b.ty-b.y) > 2;
       items.push({ y: b.y, draw: () =>
         b.seat ? drawSeated(b, t) : drawStanding(b, t, moving) });

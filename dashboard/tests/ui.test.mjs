@@ -47,7 +47,7 @@ const SAMPLE_STATE = {
   sessions: [
     { session: "s1", skillState: "active", skill: "forge-build",
       agents: [{ agent: "forge-reviewer", since: 1 }, { agent: "forge-tester", since: 2 },
-               { agent: "forge-typer", since: 3 }] },
+               { agent: "forge-typer", since: 3 }, { agent: "silent-failure-hunter", since: 4 }] },
   ],
 };
 const SAMPLE_FEED = [{ ts: "2026-07-18T10:00:00", event: "skill_invoked", project: "demo", skill: "forge-build" }];
