@@ -79,6 +79,12 @@ export function parseTracker(md) {
     if (bucket === "inProgress") out.inProgress.push({ text, attempts: [] });
     else out[bucket].push(text);
   }
+  // Real trackers often carry the live unit in the Current Phase line itself
+  // ("**In Progress: Unit 111** — …") instead of a bullet under a section.
+  if (!out.inProgress.length && /in\s*progress\s*[:—-]/i.test(out.phase)) {
+    const text = out.phase.replace(/^\**\s*in\s*progress\s*[:—-]\s*/i, "").replace(/\*\*/g, "").trim();
+    if (text) out.inProgress.push({ text, attempts: [] });
+  }
   return out;
 }
 
@@ -194,8 +200,7 @@ export function readFeed(n = 200, file = path.join(os.homedir(), ".claude", "for
 // The plugin's close-unit procedure moves a finished unit's spec into
 // specs/archived/ — filenames are therefore a reliable completed-units source
 // even when the tracker's Completed section is prose or rotated away.
-export function readArchivedUnits(ctxDir) {
-  const dir = path.join(ctxDir, "specs", "archived");
+function readSpecDir(dir) {
   if (!fs.existsSync(dir)) return [];
   const units = [];
   for (const f of fs.readdirSync(dir)) {
@@ -203,7 +208,17 @@ export function readArchivedUnits(ctxDir) {
     if (m && Number(m[1]) > 0)   // unit 00 = the build plan, not a unit
       units.push({ unit: Number(m[1]), name: m[2].replace(/-/g, " ") });
   }
-  return units.sort((a, b) => b.unit - a.unit);
+  return units;
+}
+
+export function readArchivedUnits(ctxDir) {
+  return readSpecDir(path.join(ctxDir, "specs", "archived")).sort((a, b) => b.unit - a.unit);
+}
+
+// Specs still in specs/ (not archived) = planned or in-flight units — the
+// truthful "Next Up" source even before the build plan mentions them.
+export function readActiveSpecs(ctxDir) {
+  return readSpecDir(path.join(ctxDir, "specs")).sort((a, b) => a.unit - b.unit);
 }
 
 /* ---------------- whole-project state -------------------------------------- */
@@ -223,6 +238,7 @@ export function getState(root) {
     tracker,
     plan,
     archivedUnits: readArchivedUnits(ctxDir),
+    activeSpecs: readActiveSpecs(ctxDir),
     claims: readClaims(common),
     locks: readLocks(common),
     sessions: readSessions(),
@@ -244,6 +260,8 @@ export function stateSignature(root, statusDir, metricsFile) {
   add(path.join(ctxDir, ".last-session.md"));
   const archDir = path.join(ctxDir, "specs", "archived");
   if (fs.existsSync(archDir)) parts.push("arch:" + fs.readdirSync(archDir).join(","));
+  const specDir = path.join(ctxDir, "specs");
+  if (fs.existsSync(specDir)) parts.push("specs:" + fs.readdirSync(specDir).join(","));
   for (const sub of ["forge-claims", "forge-locks"]) {
     const d = common && path.join(common, sub);
     if (d && fs.existsSync(d)) for (const f of fs.readdirSync(d)) add(path.join(d, f));

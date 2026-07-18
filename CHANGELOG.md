@@ -3,6 +3,23 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.31.1] — 2026-07-18
+
+### Changed (dashboard: live WIP/Next Up truth + board pagination)
+- **In Progress reads the phase line too.** Real trackers carry the live unit
+  as `**In Progress: Unit 111** — …` in Current Phase rather than a section
+  bullet — that now becomes a WIP card (an explicit In Progress section still
+  wins). Live claims continue to appear as WIP.
+- **Next Up reads `specs/`.** An unarchived spec file is the ground truth that
+  a unit is planned — `forge-spec` writes the spec before the build plan grows
+  a line. Active specs (tagged "spec ready") lead the column, then tracker
+  Next Up, then build-plan lines; anything archived or currently in progress
+  is excluded. The specs listing joined the realtime change signature, so the
+  board moves within ~1.5 s of `forge-spec`/close-unit touching the dir.
+- **Pagination: 5 cards per column** with ‹ n/m › pagers (counts stay in the
+  column header) — 110 archived units no longer produce an endless Completed
+  scroll.
+
 ## [0.31.0] — 2026-07-18
 
 ### Changed (dashboard: a truthful board and humans that walk like humans)

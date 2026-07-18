@@ -154,6 +154,23 @@ test("readFeed: newest first, corrupt lines skipped, window respected", () => {
   assert.equal(readFeed(10, path.join(tmp(), "missing.ndjson")).length, 0);
 });
 
+test("parseTracker: phase-line 'In Progress: Unit NNN' becomes a WIP entry", () => {
+  const t = parseTracker(
+    "## Current Phase\n\n**In Progress: Unit 111** — align \`updateData\` typing across 5 handlers\n\n## In Progress\n\n(none)\n"
+  );
+  assert.equal(t.inProgress.length, 1);
+  assert.match(t.inProgress[0].text, /Unit 111/);
+  assert.ok(!t.inProgress[0].text.includes("**"));
+});
+
+test("parseTracker: explicit In Progress section wins over the phase line", () => {
+  const t = parseTracker(
+    "## Current Phase\n\nIn Progress: Unit 9 (stale)\n\n## In Progress\n\n- unit 10: the real one\n"
+  );
+  assert.equal(t.inProgress.length, 1);
+  assert.equal(t.inProgress[0].text, "unit 10: the real one");
+});
+
 /* ---------------- archived units ------------------------------------------- */
 
 test("readArchivedUnits: filenames become completed units, newest first", async () => {
@@ -166,6 +183,18 @@ test("readArchivedUnits: filenames become completed units, newest first", async 
   assert.deepEqual(units.map(u => u.unit), [12, 3]);
   assert.equal(units[0].name, "media banner");
   assert.equal(readArchivedUnits(tmp()).length, 0);
+});
+
+test("readActiveSpecs: pending specs in specs/, build plan excluded, ascending", async () => {
+  const { readActiveSpecs } = await import("../src/lib.mjs");
+  const ctx = tmp();
+  fs.mkdirSync(path.join(ctx, "specs", "archived"), { recursive: true });
+  for (const f of ["111-alignment.md", "05-early.md", "00-build-plan.md"])
+    fs.writeFileSync(path.join(ctx, "specs", f), "x");
+  fs.writeFileSync(path.join(ctx, "specs", "archived", "04-done.md"), "x");
+  const units = readActiveSpecs(ctx);
+  assert.deepEqual(units.map(u => u.unit), [5, 111]);   // archived/ not included
+  assert.equal(units[1].name, "alignment");
 });
 
 /* ---------------- getState end-to-end -------------------------------------- */

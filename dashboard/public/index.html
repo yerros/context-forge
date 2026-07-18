@@ -40,6 +40,10 @@
   .tag.claim{background:#14283d;color:var(--cyan)}
   .tag.att{background:#3a1618;color:var(--red)}
   .empty{color:var(--dim);font-size:12px;font-style:italic;padding:4px 2px}
+  .pager{display:flex;align-items:center;gap:8px;justify-content:center;padding:2px 0;color:var(--dim);font-size:11px}
+  .pager button{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+    color:var(--text);cursor:pointer;font-size:12px;line-height:1;padding:2px 8px}
+  .pager button:disabled{opacity:.35;cursor:default}
   #office{display:block;width:100%;image-rendering:pixelated;background:#7d828c}
   #feed{list-style:none;margin:0;padding:6px 0;max-height:300px;overflow-y:auto}
   #feed li{display:flex;gap:10px;padding:4px 14px;font-size:12px;border-bottom:1px solid #1a2030}
@@ -145,47 +149,70 @@ function renderHeader(s) {
 const stripMd = (t) => t.replace(/\*\*|__|`/g, "");
 const unitOf = (t) => { const m = String(t).match(/(?:unit\s*)?0*(\d{1,3})\b/i); return m ? Number(m[1]) : null; };
 
+const PAGE_SIZE = 5;
+const boardPage = { next: 0, wip: 0, done: 0 };
+function pageNav(key, delta, total) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  boardPage[key] = Math.min(pages - 1, Math.max(0, boardPage[key] + delta));
+  if (state) renderBoard(state);
+}
+window.pageNav = pageNav;
+
 function renderBoard(s) {
   const claims = Object.fromEntries((s.claims||[]).map(c => [String(Number(c.unit)), c]));
   const archived = s.archivedUnits || [];
   const archivedSet = new Set(archived.map(a => a.unit));
 
-  // NEXT UP — tracker + build plan, minus anything whose spec is already
-  // archived (an archived spec = the unit closed; a stale build-plan line
-  // must not resurrect it).
-  const next = s.tracker.nextUp.filter(t => !archivedSet.has(unitOf(t)));
-  for (const p of (s.plan.pending||[])) {
-    if (archivedSet.has(p.unit)) continue;
-    if (!next.some(t => unitOf(t) === p.unit))
-      next.push(p.text + (p.high ? " [complexity: high]" : ""));
-  }
-
-  // IN PROGRESS — tracker entries plus live claims that the tracker doesn't
-  // mention yet (someone is building it right now in another session).
+  // IN PROGRESS — tracker entries (incl. the phase-line form), plus live
+  // claims the tracker doesn't mention yet.
+  const wipUnits = new Set(s.tracker.inProgress.map(i => unitOf(i.text)).filter(x => x != null));
   const wip = s.tracker.inProgress.map(i => {
     const extra = i.attempts.length ? `<span class="tag att">${i.attempts.length} failed attempt${i.attempts.length>1?"s":""}</span>` : "";
     return card(i.text, "wip", claims, extra);
   });
   for (const c of (s.claims||[])) {
     const n = Number(c.unit);
-    if (!s.tracker.inProgress.some(i => unitOf(i.text) === n))
+    if (!wipUnits.has(n)) {
+      wipUnits.add(n);
       wip.push(card(`unit ${n} — claimed${c.mode==="build" ? " (in-place build)" : c.branch ? ` on ${c.branch}` : ""}`, "wip", claims));
+    }
   }
 
-  // COMPLETED — tracker bullets first, then archived specs (ground truth from
-  // specs/archived/) that the tracker no longer lists.
-  const doneTexts = s.tracker.completed.slice(0, 12).map(t => card(t, "done", claims));
+  // NEXT UP — active specs in specs/ are the ground truth (a spec exists =
+  // the unit is planned), then tracker Next Up + build plan lines; anything
+  // archived or currently in progress is excluded.
+  const next = [];
+  const nextUnits = new Set();
+  for (const a of (s.activeSpecs||[])) {
+    if (archivedSet.has(a.unit) || wipUnits.has(a.unit)) continue;
+    nextUnits.add(a.unit);
+    next.push(card(`unit ${String(a.unit).padStart(2,"0")}: ${a.name}`, "next", claims,
+      `<span class="tag claim">spec ready</span>`));
+  }
+  for (const t of s.tracker.nextUp) {
+    const u = unitOf(t);
+    if (archivedSet.has(u) || wipUnits.has(u) || (u != null && nextUnits.has(u))) continue;
+    if (u != null) nextUnits.add(u);
+    next.push(card(t, "next", claims));
+  }
+  for (const p of (s.plan.pending||[])) {
+    if (archivedSet.has(p.unit) || wipUnits.has(p.unit) || nextUnits.has(p.unit)) continue;
+    if (p.unit != null) nextUnits.add(p.unit);
+    next.push(card(p.text + (p.high ? " [complexity: high]" : ""), "next", claims));
+  }
+
+  // COMPLETED — tracker bullets first, then archived specs (ground truth).
+  const done = s.tracker.completed.map(t => card(t, "done", claims));
   const mentioned = new Set(s.tracker.completed.map(unitOf).filter(x => x != null));
   for (const a of archived) {
-    if (doneTexts.length >= 14) break;
     if (!mentioned.has(a.unit))
-      doneTexts.push(card(`unit ${String(a.unit).padStart(2,"0")}: ${a.name}`, "done", claims,
+      done.push(card(`unit ${String(a.unit).padStart(2,"0")}: ${a.name}`, "done", claims,
         `<span class="tag claim">archived spec</span>`));
   }
 
-  fill("c-next","n-next", next.map(t => card(t, "next", claims)));
-  fill("c-wip","n-wip", wip);
-  fill("c-done","n-done", doneTexts);
+  fill("c-next","n-next", next, "next");
+  fill("c-wip","n-wip", wip, "wip");
+  fill("c-done","n-done", done, "done");
 
   const locks = (s.locks||[]).map(l => `lock <b>${esc(l.name)}</b> (${l.ageMin}m${l.stale?" · STALE":""})`);
   const claimTxt = (s.claims||[]).map(c => `claim unit <b>${esc(c.unit)}</b>${c.mode==="build"?" (in-place)":""}`);
@@ -201,9 +228,21 @@ function card(text, cls, claims, extra="") {
     (claim ? `<span class="tag claim">claimed</span>` : "") + extra + `</div>`;
 }
 
-function fill(cid, nid, cards) {
-  $(cid).innerHTML = cards.join("") || `<div class="empty">(none)</div>`;
-  $(nid).textContent = cards.length ? `· ${cards.length}` : "";
+function fill(cid, nid, cards, pageKey) {
+  const total = cards.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (boardPage[pageKey] > pages - 1) boardPage[pageKey] = pages - 1;
+  const page = boardPage[pageKey];
+  const slice = cards.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  let html = slice.join("") || `<div class="empty">(none)</div>`;
+  if (pages > 1) {
+    html += `<div class="pager">` +
+      `<button ${page===0?"disabled":""} onclick="pageNav('${pageKey}',-1,${total})">‹</button>` +
+      `<span>${page+1}/${pages}</span>` +
+      `<button ${page===pages-1?"disabled":""} onclick="pageNav('${pageKey}',1,${total})">›</button></div>`;
+  }
+  $(cid).innerHTML = html;
+  $(nid).textContent = total ? `· ${total}` : "";
 }
 
 function renderNotes(s) {

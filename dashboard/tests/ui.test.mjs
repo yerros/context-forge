@@ -41,6 +41,7 @@ const SAMPLE_STATE = {
   },
   plan: { pending: [{ text: "13 next", unit: 13, high: true }], completed: [] },
   archivedUnits: [{ unit: 11, name: "done thing" }],
+  activeSpecs: [{ unit: 12, name: "thing" }, { unit: 13, name: "next" }],
   claims: [{ unit: "12", mode: "build" }], locks: [{ name: "tracker", ageMin: 2, stale: false }],
   sessions: [
     { session: "s1", skillState: "active", skill: "forge-build",
