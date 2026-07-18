@@ -3,6 +3,16 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.35.1] — 2026-07-19
+
+### Changed
+- **Human-readable activity feed.** Raw `event key=value` rows become sentences:
+  "**Architect** started working", "**Architect** finished · worked 4m 32s"
+  (duration computed by pairing the stop with its start in the feed), "Skill
+  **review** invoked", "Session ended — 9 files changed · context over budget".
+  Timestamps are relative ("3m ago", "2h ago"; absolute on hover), unknown
+  events keep a prettified raw fallback.
+
 ## [0.35.0] — 2026-07-18
 
 ### Changed (forge-brainstorm becomes a senior IT consultant)

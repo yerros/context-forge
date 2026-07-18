@@ -168,10 +168,11 @@
   #feed .fdot{width:7px;height:7px;border-radius:50%;flex:none;align-self:center;background:var(--text-faint)}
   #feed .fdot.skill_invoked{background:var(--accent)} #feed .fdot.agent_started{background:var(--ok)}
   #feed .fdot.agent_stopped{background:var(--danger)} #feed .fdot.stop_with_changes{background:var(--warn)}
-  #feed .t{color:var(--text-faint);white-space:nowrap;font-family:var(--font-mono);font-size:10.5px}
-  #feed .ev{color:var(--text);font-weight:500}
-  #feed .pj{color:var(--text-faint)}
-  #feed .ex{color:var(--text-dim);font-family:var(--font-mono);font-size:11px}
+  #feed .t{color:var(--text-faint);white-space:nowrap;font-family:var(--font-mono);font-size:10.5px;
+    min-width:74px;text-align:right;cursor:default}
+  #feed .ev{color:var(--text-dim);font-weight:400}
+  #feed .ev b{color:var(--text);font-weight:600}
+  #feed .ex{color:var(--text-faint);font-size:11px}
   ::-webkit-scrollbar{width:9px;height:9px} ::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:8px}
   ::-webkit-scrollbar-track{background:transparent}
 
@@ -601,15 +602,64 @@ function renderNotes(s) {
     `<li class="empty">(no session notes)</li>`;
 }
 
+// Relative, human time: "just now", "3m ago", "2h ago", else "Jul 18 · 23:58".
+function relTime(ts) {
+  const t = Date.parse(ts || "");
+  if (Number.isNaN(t)) return ts || "";
+  const s = Math.floor((Date.now() - t) / 1000);
+  if (s < 45) return "just now";
+  if (s < 3600) return `${Math.floor(s/60)}m ago`;
+  if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+  return new Date(t).toLocaleDateString(undefined,{month:"short",day:"numeric"}) +
+    " · " + new Date(t).toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"});
+}
+function fmtDur(ms) {
+  const s = Math.round(ms/1000);
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s/60)}m ${String(s%60).padStart(2,"0")}s`;
+}
+
+// Turn a raw metrics event into a human sentence. `older` = events after this
+// one in the (newest-first) list, used to pair a stop with its start.
+function humanizeEvent(e, older) {
+  const agent = e.agent ? AGENT_LABEL(e.agent) : null;
+  switch (e.event) {
+    case "agent_started":
+      return `<b>${esc(agent||"An agent")}</b> started working`;
+    case "agent_stopped": {
+      let dur = "";
+      const start = older.find(o => o.event === "agent_started" && o.agent === e.agent);
+      if (start) {
+        const d = Date.parse(e.ts) - Date.parse(start.ts);
+        if (d > 0 && d < 6*3600e3) dur = ` <span class="ex">· worked ${fmtDur(d)}</span>`;
+      }
+      return `<b>${esc(agent||"An agent")}</b> finished${dur}`;
+    }
+    case "skill_invoked":
+      return `Skill <b>${esc(String(e.skill||"").replace(/^forge-/,""))}</b> invoked`;
+    case "stop_with_changes": {
+      const n = Number(e.changed_files) || 0;
+      const files = n === 1 ? "1 file changed" : `${n} files changed`;
+      const over = String(e.over_budget) === "1"
+        ? ` <span class="ex">· context over budget</span>` : "";
+      return `Session ended — ${files}${over}`;
+    }
+    default: {
+      const extras = Object.entries(e).filter(([k]) => !["ts","event","project"].includes(k))
+        .map(([k,v]) => `${k}=${v}`).join(" ");
+      return `${esc(String(e.event||"").replace(/_/g," "))} <span class="ex">${esc(extras)}</span>`;
+    }
+  }
+}
+
 function renderFeed(events) {
   $("feedhint").textContent = events.length ? "" : "waiting for events (plugin ≥0.29 records automatically)";
-  $("feed").innerHTML = events.map(e => {
-    const extras = Object.entries(e).filter(([k]) => !["ts","event","project"].includes(k))
-      .map(([k,v]) => `${k}=${v}`).join(" ");
+  $("feed").innerHTML = events.map((e, i) => {
     const cls = String(e.event||"").replace(/[^a-z_]/g,"");
-    return `<li><span class="fdot ${cls}"></span><span class="t">${esc((e.ts||"").replace("T"," "))}</span>` +
-      `<span class="ev">${esc(String(e.event||"").replace(/_/g," "))}</span><span class="pj">${esc(e.project||"")}</span>` +
-      `<span class="ex">${esc(extras)}</span></li>`;
+    const abs = (e.ts||"").replace("T"," ");
+    return `<li><span class="fdot ${cls}"></span>` +
+      `<span class="t" title="${esc(abs)}">${esc(relTime(e.ts))}</span>` +
+      `<span class="ev">${humanizeEvent(e, events.slice(i+1))}</span></li>`;
   }).join("");
 }
 
