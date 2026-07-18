@@ -3,6 +3,28 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.31.2] — 2026-07-18
+
+### Fixed (background agents were invisible in the office)
+Root cause: for **backgrounded** subagents the Task tool returns at SPAWN, so
+0.29's `PostToolUse` stop removed the agent the instant it started — a 52-second
+review lens never appeared as working. Neither hook alone can be right:
+`PostToolUse` knows WHO but (for background runs) not WHEN; `SubagentStop`
+knows WHEN but not WHO.
+
+- **Two-signal stop protocol.** Every subagent instance produces exactly two
+  stop signals — `PostToolUse` (named) and `SubagentStop` (unnamed) — in
+  mode-dependent order (foreground: SubagentStop→Post at the same moment;
+  background: Post at spawn → SubagentStop at the true end). The FIRST signal
+  only marks the state entry (`P` suffix); the SECOND removes it. In both
+  orders, removal lands on real completion, and the office shows the agent
+  seated and typing for its entire actual runtime.
+- `SubagentStop` hook re-registered alongside `PostToolUse`; `agent_stopped`
+  metrics now emit only at true completion; prune rewritten (awk, line-preserving
+  — the old `read a t` loop silently dropped marked entries).
+- Bats scenarios for both orders, three parallel background lenses (the exact
+  forge-review case), mixed names, and marker-aware metrics.
+
 ## [0.31.1] — 2026-07-18
 
 ### Changed (dashboard: live WIP/Next Up truth + board pagination)
