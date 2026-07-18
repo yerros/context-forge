@@ -3,6 +3,37 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.35.0] — 2026-07-18
+
+### Changed (forge-brainstorm becomes a senior IT consultant)
+The skill no longer just facilitates divergence — it consults. Persona: fifteen
+years of production systems; bills for judgment, not options.
+
+- **New step 0 "Consult first"**: interrogate the problem behind the request
+  (pain, frequency, cost today), find the binding constraint (budget, team size,
+  operational maturity, regulation), and classify the decision as a one-way or
+  two-way door — which sets the thinking depth for everything after.
+- **Diverge upgraded**: buy/SaaS/OSS must be considered before build (build is
+  the most expensive option in the room), and every option gets an **industry
+  reference point** — how real teams solve this today, or the admission that
+  nobody does (novelty vs known dead end).
+- **Stress-test doubled**: alongside the project checks (scope, invariants,
+  lessons, effort), an industry checklist applied selectively — total cost of
+  ownership, boring technology, YAGNI/speculative generality (≥2 consumers or
+  build scoped), OWASP/security & data-regulation exposure, operability (failure
+  story, 12-factor, who gets paged), scale honesty (10× not 1000×), team
+  reality (match solution sophistication to operational maturity), and exit
+  cost for vendors.
+- **Converge is now opinionated**: one primary recommendation stated plainly
+  ("if this were my project…"), honest trade-offs plus the cheapest way to find
+  out you're wrong, a runner-up with its flip condition, and explicit
+  "what NOT to do". "It depends" is a non-answer by rule.
+- **Routing enriched**: ADR handoffs carry the industry reference points and
+  rejected options as the alternatives-considered section.
+- New rules: no cargo cult in either direction; contested practices are labeled
+  contested; judgment labeled as judgment; respectful pushback over agreeable
+  drift.
+
 ## [0.34.1] — 2026-07-18
 
 ### Fixed (background agents were still dying 5 s after spawn)

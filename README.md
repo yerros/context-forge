@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.34.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.35.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -125,7 +125,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | Command | What it does |
 | ------- | ------------ |
 | `forge-init` | Reads project state first, then sets up fresh or **adopts & reconciles** an existing setup (fills gaps only, never overwrites). Stack-aware; brownfield analysis from real evidence, confirmed before writing. |
-| `forge-brainstorm` | Grounded ideation: diverges into options, stress-tests each against scope, invariants, and lessons, converges, and routes the outcome — build it, log it as a decision, or park it in `ideas.md`. Planning only. |
+| `forge-brainstorm` | Senior-IT-consultant ideation: interrogates the problem first (pain, binding constraint, one-way vs two-way door), diverges with industry reference points (buy/SaaS/OSS before build), stress-tests against the project AND real-world standards (TCO, boring tech, YAGNI, OWASP, operability, team reality), then converges on an opinionated recommendation — never "it depends". Routes the outcome; planning only. |
 | `forge-prompt` | Sharpens a rough request into a precise, context-aligned prompt or spec — goal, scope, constraints, acceptance — without changing your intent. |
 | `forge-spec` | Builds the ordered build plan and writes a six-section spec per unit (goal, design, implementation, dependencies, tests, verification), delegated to the opus architect. |
 | `forge-feature` | Adds a feature to a working project: updates scope, inserts correctly-ordered units into the build plan, generates specs — without breaking existing work. |
