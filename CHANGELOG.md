@@ -3,6 +3,27 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.28.0] — 2026-07-18
+
+### Added (agent-lifecycle events — the plugin becomes observable)
+Groundwork for the forge-office dashboard (external repo): live visibility into
+which subagents are running, with zero model tokens and no behavior change.
+
+- **`agent-status.sh`** (new hook script) — `start` on `PreToolUse` matcher
+  `Task|Agent` records the spawning subagent (defensive `subagent_type` key
+  extraction, plugin prefix stripped, path-safe session ids) into
+  `~/.claude/forge-status/<session_id>.agents` (one `"<agent> <epoch>"` line per
+  active agent, stack order). `stop` on the new `SubagentStop` hook pops the
+  newest entry — the event doesn't say which agent finished, so LIFO is the
+  documented approximation, with a 2 h prune as the safety net for crashed
+  sessions. Same contract as skill-status.sh: silent stdout, always exit 0.
+- When local metrics are enabled, both transitions also emit
+  `agent_started` / `agent_stopped` events (with the agent name) through
+  metrics.sh — the office view's history feed.
+- 9 new bats cases (stacking, LIFO pop, pruning, unsafe ids, metrics emission,
+  hooks.json wiring). Hook count: the plugin now registers `SubagentStop` for
+  the first time.
+
 ## [0.27.0] — 2026-07-18
 
 ### Changed (schema migration is now automatic where it's safe to be)
