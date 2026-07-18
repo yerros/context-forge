@@ -42,6 +42,7 @@ const SAMPLE_STATE = {
   plan: { pending: [{ text: "13 next", unit: 13, high: true }], completed: [] },
   archivedUnits: [{ unit: 11, name: "done thing" }],
   activeSpecs: [{ unit: 12, name: "thing" }, { unit: 13, name: "next" }],
+  repoUrl: "https://github.com/x/y",
   claims: [{ unit: "12", mode: "build" }], locks: [{ name: "tracker", ageMin: 2, stale: false }],
   sessions: [
     { session: "s1", skillState: "active", skill: "forge-build",
@@ -55,7 +56,7 @@ test("inline UI script runs headlessly: refresh + 30 animation frames, no errors
   const ops = [];
   const frames = [];
   const ctxGlobal = {
-    document: { getElementById: () => makeEl(ops), createElement: () => makeEl(ops) },
+    document: { getElementById: () => makeEl(ops), createElement: () => makeEl(ops), addEventListener: () => {} },
     fetch: async (url) => ({
       json: async () => (String(url).includes("feed") ? SAMPLE_FEED : SAMPLE_STATE),
     }),

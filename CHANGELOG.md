@@ -3,6 +3,22 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.32.0] — 2026-07-18
+
+### Added (kanban v2 — the board is live, deep, and navigable)
+- **LIVE card.** Whenever the CLI is actually doing something — an active skill
+  and/or running subagents — In Progress leads with a pulsing live card
+  ("⚒ review — Reviewer, Typer, Hunter working now"), even when no unit is
+  tracked: live work is not always unit work, and the board should never say
+  "(none)" while three agents are visibly busy in the office next to it.
+- **Click a card → spec drawer.** Every unit card opens a slide-in drawer with
+  the unit's full spec (`/api/spec?unit=N` — active spec first, archived
+  fallback, integer-validated; Esc closes). The board is now the index into
+  the project's entire spec history.
+- **Dates on Completed** (spec archive mtime), **branch links on claim cards**
+  (origin remote normalized ssh→https via the new `repoUrl`), and a **filter
+  box** that searches all three columns across 110+ units before pagination.
+
 ## [0.31.2] — 2026-07-18
 
 ### Fixed (background agents were invisible in the office)

@@ -205,10 +205,40 @@ function readSpecDir(dir) {
   const units = [];
   for (const f of fs.readdirSync(dir)) {
     const m = f.match(/^0*(\d{1,3})-(.+)\.md$/);
-    if (m && Number(m[1]) > 0)   // unit 00 = the build plan, not a unit
-      units.push({ unit: Number(m[1]), name: m[2].replace(/-/g, " ") });
+    if (m && Number(m[1]) > 0) {  // unit 00 = the build plan, not a unit
+      let mtime = 0;
+      try { mtime = fs.statSync(path.join(dir, f)).mtimeMs; } catch { /* raced */ }
+      units.push({ unit: Number(m[1]), name: m[2].replace(/-/g, " "), file: f, mtime });
+    }
   }
   return units;
+}
+
+// Full spec content for the card drawer — active spec first, then archived.
+export function getSpec(root, unit) {
+  const n = Number(unit);
+  if (!Number.isInteger(n) || n <= 0) return null;
+  const ctxDir = path.join(root, resolveContextDir(root));
+  for (const [dir, archived] of [
+    [path.join(ctxDir, "specs"), false],
+    [path.join(ctxDir, "specs", "archived"), true],
+  ]) {
+    const hit = readSpecDir(dir).find((u) => u.unit === n);
+    if (hit) return { unit: n, name: hit.name, archived, content: safeRead(path.join(dir, hit.file)) };
+  }
+  return null;
+}
+
+// origin remote -> https link base (for branch/PR links on cards).
+export function repoUrl(commonDir) {
+  if (!commonDir) return null;
+  const cfg = safeRead(path.join(commonDir, "config"));
+  const m = cfg.match(/\[remote "origin"\][^[]*?url\s*=\s*(\S+)/);
+  if (!m) return null;
+  let u = m[1].replace(/\.git$/, "");
+  const ssh = u.match(/^(?:ssh:\/\/)?git@([^:/]+)[:/](.+)$/);
+  if (ssh) u = `https://${ssh[1]}/${ssh[2]}`;
+  return /^https?:\/\//.test(u) ? u : null;
 }
 
 export function readArchivedUnits(ctxDir) {
@@ -242,6 +272,7 @@ export function getState(root) {
     claims: readClaims(common),
     locks: readLocks(common),
     sessions: readSessions(),
+    repoUrl: repoUrl(common),
     lastSession: safeRead(path.join(ctxDir, ".last-session.md")),
     generatedAt: new Date().toISOString(),
   };

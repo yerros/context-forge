@@ -46,6 +46,15 @@ test("GET /api/state returns the parsed project snapshot", async () => {
   assert.equal(s.plan.pending.length, 1);
 });
 
+test("GET /api/spec serves a unit's spec content", async () => {
+  fs.writeFileSync(path.join(root, "context", "specs", "01-hello.md"), "# Spec 01\ncontent");
+  const s = await (await fetch(BASE + "/api/spec?unit=1")).json();
+  assert.equal(s.unit, 1);
+  assert.match(s.content, /Spec 01/);
+  const miss = await (await fetch(BASE + "/api/spec?unit=42")).json();
+  assert.equal(miss.error, "not found");
+});
+
 test("GET /api/feed returns an array (empty is fine)", async () => {
   const r = await fetch(BASE + "/api/feed?n=5");
   assert.equal(r.status, 200);

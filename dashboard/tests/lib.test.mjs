@@ -197,6 +197,36 @@ test("readActiveSpecs: pending specs in specs/, build plan excluded, ascending",
   assert.equal(units[1].name, "alignment");
 });
 
+test("getSpec: active first, archived fallback, bad input rejected", async () => {
+  const { getSpec } = await import("../src/lib.mjs");
+  const root = tmp();
+  fs.mkdirSync(path.join(root, "context", "specs", "archived"), { recursive: true });
+  fs.writeFileSync(path.join(root, "context", "progress-tracker.md"), "x");
+  fs.writeFileSync(path.join(root, "context", "specs", "07-live.md"), "LIVE SPEC");
+  fs.writeFileSync(path.join(root, "context", "specs", "archived", "03-old.md"), "OLD SPEC");
+  assert.equal(getSpec(root, 7).content, "LIVE SPEC");
+  assert.equal(getSpec(root, 7).archived, false);
+  assert.equal(getSpec(root, 3).content, "OLD SPEC");
+  assert.equal(getSpec(root, 3).archived, true);
+  assert.equal(getSpec(root, 99), null);
+  assert.equal(getSpec(root, "../etc/passwd"), null);
+  assert.equal(getSpec(root, -1), null);
+});
+
+test("repoUrl: ssh and https origins normalize; absent origin -> null", async () => {
+  const { repoUrl } = await import("../src/lib.mjs");
+  const mk = (url) => {
+    const d = tmp();
+    fs.writeFileSync(path.join(d, "config"),
+      `[core]\n\tbare = false\n[remote "origin"]\n\turl = ${url}\n\tfetch = +refs/heads/*\n`);
+    return d;
+  };
+  assert.equal(repoUrl(mk("git@github.com:yerros/context-forge.git")), "https://github.com/yerros/context-forge");
+  assert.equal(repoUrl(mk("https://github.com/yerros/context-forge.git")), "https://github.com/yerros/context-forge");
+  assert.equal(repoUrl(tmp()), null);
+  assert.equal(repoUrl(null), null);
+});
+
 /* ---------------- getState end-to-end -------------------------------------- */
 
 test("getState assembles a full project snapshot", () => {

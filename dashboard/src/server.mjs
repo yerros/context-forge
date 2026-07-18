@@ -11,7 +11,7 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
-import { getState, readFeed, stateSignature } from "./lib.mjs";
+import { getState, getSpec, readFeed, stateSignature } from "./lib.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(__dirname, "..", "public");
@@ -59,6 +59,9 @@ const server = http.createServer((req, res) => {
 
   if (url.pathname === "/api/state") {
     return json(res, () => getState(root));
+  }
+  if (url.pathname === "/api/spec") {
+    return json(res, () => getSpec(root, url.searchParams.get("unit")) || { error: "not found" });
   }
   if (url.pathname === "/api/feed") {
     const n = Math.min(Number(url.searchParams.get("n")) || 200, 1000);
