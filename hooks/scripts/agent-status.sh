@@ -12,16 +12,18 @@
 #   one line per active agent: "<agent-name> <epoch>[ P]"  (oldest first;
 #   trailing P = one stop signal already seen)
 #
-# TWO-SIGNAL STOP PROTOCOL. Every subagent instance produces exactly two
-# stop-ish events, in an order that depends on how it ran:
-#   foreground:  SubagentStop (true end)  then  PostToolUse (named, same moment)
-#   background:  PostToolUse (named, AT SPAWN — the tool returns immediately)
-#                then  SubagentStop (true end, possibly minutes later)
-# So neither event alone is correct: PostToolUse knows WHO but (for background
-# agents) not WHEN; SubagentStop knows WHEN but not WHO. The protocol: the
-# FIRST signal for an instance only MARKS it (P), the SECOND removes it.
-# In both orders, removal lands on the true completion. Entries older than
-# 2 h are pruned as a crash safety net (a lost signal cannot pin a ghost).
+# STOP PROTOCOL. Signals per instance depend on how it ran:
+#   foreground:  SubagentStop (true end) then PostToolUse (named, same moment)
+#                -> two signals: first MARKS (P), second removes.
+#   background:  PostToolUse fires AT SPAWN (the tool returns "Backgrounded
+#                agent..."), and a spurious SubagentStop ECHO can fire moments
+#                later — the real SubagentStop only comes at the true end.
+# Background is detected from the PostToolUse tool_response ("backgrounded"):
+# the entry is stamped "B<epoch>". A SubagentStop within ECHO_S seconds of the
+# stamp is consumed as the spawn echo (entry becomes "B0"); the NEXT
+# SubagentStop is the true completion and removes it. Foreground keeps the
+# plain two-signal P protocol. Entries older than 2 h are pruned as a crash
+# safety net (a lost signal cannot pin a ghost).
 #
 # Also emits opt-in metrics events (agent_started / agent_stopped) via
 # metrics.sh — a no-op unless ~/.claude/forge-metrics/enabled exists.
@@ -73,25 +75,48 @@ case "$agent" in *[!A-Za-z0-9._-]*) agent="" ;; esac
 if [ "$mode" = "stop" ]; then
   prune
   [ -s "$state" ] || exit 0
+  now=$(date +%s)
+  ECHO_S=15
   if [ -n "$agent" ]; then
-    # Named signal (PostToolUse). Second signal for this name -> remove the
-    # oldest MARKED instance; first signal -> mark the oldest UNMARKED one.
-    if grep -q "^$agent [0-9]* P$" "$state"; then
+    # Named signal (PostToolUse).
+    if printf '%s' "$input" | grep -qi 'backgrounded' \
+       && grep -q "^$agent [0-9]*$" "$state"; then
+      # Background handoff: the tool returned immediately — the agent is STILL
+      # RUNNING. Stamp it B<now> so the imminent SubagentStop echo is absorbed.
+      awk -v a="$agent" -v s="B$now" \
+        '($1 == a && NF == 2 && !done) { done = 1; print $1, $2, s; next } { print }' \
+        "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
+    elif grep -q "^$agent [0-9]* P$" "$state"; then
+      # Second signal for a foreground instance -> remove the oldest marked.
       awk -v a="$agent" '($1 == a && $3 == "P" && !done) { done = 1; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
       emit agent_stopped "agent=$agent"
-    elif grep -q "^$agent " "$state"; then
+    elif grep -q "^$agent [0-9]*$" "$state"; then
+      # First signal -> mark the oldest unmarked instance.
       awk -v a="$agent" '($1 == a && NF == 2 && !done) { done = 1; print $0 " P"; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
     fi
   else
-    # Unnamed signal (SubagentStop). Second signal -> remove the oldest marked
-    # entry; first signal -> mark the NEWEST entry (the agent that just ended).
-    if grep -q " P$" "$state"; then
+    # Unnamed signal (SubagentStop).
+    # 1) Absorb a background spawn echo: a fresh B<epoch> stamp within ECHO_S.
+    fresh=$(awk -v now="$now" -v w="$ECHO_S" \
+      'substr($3,1,1)=="B" && $3!="B0" && now - substr($3,2) < w { print NR; exit }' "$state")
+    if [ -n "$fresh" ]; then
+      awk -v n="$fresh" 'NR==n { print $1, $2, "B0"; next } { print }' \
+        "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
+    # 2) True completion of a background agent (echo consumed or stamp aged).
+    elif grep -qE ' B[0-9]*$' "$state"; then
+      done_agent=$(awk 'substr($3,1,1)=="B" { print $1; exit }' "$state")
+      awk '(substr($3,1,1)=="B" && !done) { done = 1; next } { print }' \
+        "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
+      [ -n "$done_agent" ] && emit agent_stopped "agent=$done_agent"
+    # 3) Foreground: second signal removes the marked entry…
+    elif grep -q " P$" "$state"; then
       done_agent=$(awk '$3 == "P" { print $1; exit }' "$state")
       awk '($3 == "P" && !done) { done = 1; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
       [ -n "$done_agent" ] && emit agent_stopped "agent=$done_agent"
+    # 4) …or the first signal marks the newest entry.
     else
       awk 'NR==FNR { last = FNR; next } { if (FNR == last && NF == 2) print $0 " P"; else print }' \
         "$state" "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"

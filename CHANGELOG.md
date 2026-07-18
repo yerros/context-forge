@@ -3,6 +3,28 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.34.1] — 2026-07-18
+
+### Fixed (background agents were still dying 5 s after spawn)
+Live-verified failure: `agent_started 23:46:41` → `agent_stopped 23:46:46`
+while the CLI showed the backgrounded architect still running. Root cause:
+for background handoffs BOTH stop signals fire at spawn — `PostToolUse`
+returns immediately AND a spurious `SubagentStop` ECHO follows seconds later,
+so 0.31.2's two-signal protocol completed the pair instantly.
+
+- **Background detection from the tool_response.** `PostToolUse` for a
+  backgrounded Task carries "Backgrounded agent…" — the stop handler now
+  recognizes it and stamps the entry `B<epoch>` instead of counting a signal:
+  the plugin KNOWS the agent is still running.
+- **Echo absorption.** A `SubagentStop` within 15 s of a fresh `B` stamp is
+  consumed as the spawn echo (stamp → `B0`, presence intact, no metrics
+  event); the NEXT `SubagentStop` is the true completion — entry removed,
+  `agent_stopped` emitted at the real end.
+- Foreground protocol unchanged; a foreground agent whose OUTPUT merely
+  mentions "backgrounded" is not misclassified (order makes it safe — covered
+  by a regression test). 15 agent-status bats cases total, including the
+  exact observed trace.
+
 ## [0.34.0] — 2026-07-18
 
 ### Changed (dashboard visual redesign — ui-ux-pro-max pass)

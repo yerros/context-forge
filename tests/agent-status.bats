@@ -11,6 +11,7 @@ setup() {
 }
 
 start_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagent_type":"%s","prompt":"x"}}' "$1" "$2"; }
+bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagent_type":"%s"},"tool_response":{"content":"Backgrounded agent (use TaskOutput to monitor)"}}' "$1" "$2"; }
 
 @test "agent-status: start records the subagent with epoch" {
   run bash "$AGENT_STATUS" start <<< "$(start_json s1 forge-reviewer)"
@@ -68,6 +69,37 @@ start_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"suba
   bash "$AGENT_STATUS" stop <<< '{"session_id":"s4c"}'
   bash "$AGENT_STATUS" stop <<< '{"session_id":"s4c"}'
   [ ! -s "$STATE_DIR/s4c.agents" ]
+}
+
+@test "agent-status: REAL background flow — bg Post stamps B, echo SubagentStop absorbed, next SubagentStop removes" {
+  bash "$AGENT_STATUS" start <<< "$(start_json bg1 forge-architect)"
+  # PostToolUse returns immediately with a "Backgrounded agent" response
+  bash "$AGENT_STATUS" stop <<< "$(bg_json bg1 forge-architect)"
+  grep -qE '^forge-architect [0-9]+ B[0-9]+$' "$STATE_DIR/bg1.agents"
+  # the spurious SubagentStop echo (seconds after spawn) must NOT remove it
+  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg1"}'
+  grep -qE '^forge-architect [0-9]+ B0$' "$STATE_DIR/bg1.agents"
+  [ ! -f "$HOME/.claude/forge-metrics/events.ndjson" ] || ! grep -q agent_stopped "$HOME/.claude/forge-metrics/events.ndjson"
+  # minutes later, the REAL SubagentStop ends it
+  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg1"}'
+  [ ! -s "$STATE_DIR/bg1.agents" ]
+  grep -q agent_stopped "$HOME/.claude/forge-metrics/events.ndjson"
+}
+
+@test "agent-status: background with NO echo — aged stamp is removed by the true-end SubagentStop" {
+  bash "$AGENT_STATUS" start <<< "$(start_json bg2 forge-architect)"
+  bash "$AGENT_STATUS" stop <<< "$(bg_json bg2 forge-architect)"
+  # age the stamp beyond the echo window (simulates a long-running agent)
+  sed -i.bak -E 's/ B[0-9]+$/ B100/' "$STATE_DIR/bg2.agents" && rm -f "$STATE_DIR/bg2.agents.bak"
+  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg2"}'
+  [ ! -s "$STATE_DIR/bg2.agents" ]
+}
+
+@test "agent-status: foreground output mentioning 'backgrounded' is not misclassified" {
+  bash "$AGENT_STATUS" start <<< "$(start_json bg3 forge-scout)"
+  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg3"}'                      # SubagentStop first (foreground order)
+  bash "$AGENT_STATUS" stop <<< "$(bg_json bg3 forge-scout)"                # Post whose text contains "Backgrounded"
+  [ ! -s "$STATE_DIR/bg3.agents" ]                                          # removed, not stuck as B
 }
 
 @test "agent-status: mixed names — named second signal removes the right one" {
