@@ -3,6 +3,31 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.36.0] — 2026-07-19
+
+### Added (forge-reconcile — adopt out-of-band work)
+Work that bypasses the process (manual hotfixes, teammate commits, sessions that
+skipped `forge-build`) used to stay invisible to the tracker and specs — the exact
+drift the methodology exists to prevent. New skill + hook close the gap:
+
+- **`/forge-reconcile`** — detects commits with no unit/spec trail, groups them
+  into clusters, delegates diff analysis to `forge-scout` (intent, files, invariant
+  /standards check, test coverage), and — cluster by cluster, with approval —
+  adopts each as a **retroactive spec** (`specs/archived/R-YYYYMMDD-slug.md`) plus
+  tracker/build-plan entries, or dismisses it via `.reconcile-ignore`. Violations
+  are never silently absorbed: they route to a fix unit or a conscious
+  `forge-decision`. Done = detector reports CLEAN.
+- **`detect-oob.sh`** — deterministic, read-only detector. In-band = message
+  references a unit/spec, or the diff touches the context dir, or merge commit.
+  Baseline = the commit that first added the tracker (pre-adoption history never
+  flagged). Adopted commits are excluded via the `Reconciles: <shas>` line in the
+  bookkeeping commit; dismissed ones via `context/.reconcile-ignore`. Scan window
+  capped (`FORGE_RECONCILE_WINDOW`, default 200).
+- **`SessionStart` hook** — runs the detector in `--hook` mode: prints nothing
+  when clean, a ≤5-line token-free warning when out-of-band commits exist.
+- Division of labor: `forge-audit` = what the docs *say* (docs vs code);
+  `forge-reconcile` = what the process *knows* (git history vs tracker/specs).
+
 ## [0.35.1] — 2026-07-19
 
 ### Changed

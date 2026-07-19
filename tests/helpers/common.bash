@@ -11,7 +11,8 @@ TRACK="$PLUGIN_ROOT/hooks/scripts/track.sh"
 SKILL_STATUS="$PLUGIN_ROOT/hooks/scripts/skill-status.sh"
 WORKTREE="$PLUGIN_ROOT/skills/forge-worktree/scripts/forge-worktree.sh"
 DETECT="$PLUGIN_ROOT/skills/forge-init/scripts/detect.sh"
-export GUARD TRACK SKILL_STATUS WORKTREE DETECT
+DETECT_OOB="$PLUGIN_ROOT/skills/forge-reconcile/scripts/detect-oob.sh"
+export GUARD TRACK SKILL_STATUS WORKTREE DETECT DETECT_OOB
 
 # Fresh, isolated project dir for the current test.
 setup_project() {

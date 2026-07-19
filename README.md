@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.35.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.36.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -63,10 +63,11 @@ The workflow runs in four phases:
    unit tests → full suite (regression gate) → build/typecheck/lint → spec checklist.
    Same failure twice → mandatory stop-and-diagnose (`/forge-debug`), never a third
    blind fix. Ship per unit with `/forge-pr`.
-4. **Maintenance** (`/forge-audit`, `/forge-align`, `/forge-health`,
-   `/forge-compact`) — keep docs honest against the code, keep sibling features in
-   one dialect, keep aggregate quality (tests, error handling, security hygiene)
-   healthy, keep the recurring token cost under budget.
+4. **Maintenance** (`/forge-audit`, `/forge-reconcile`, `/forge-align`,
+   `/forge-health`, `/forge-compact`) — keep docs honest against the code, adopt
+   work that bypassed the process back into the spec/tracker trail, keep sibling
+   features in one dialect, keep aggregate quality (tests, error handling,
+   security hygiene) healthy, keep the recurring token cost under budget.
 
 Code discipline is enforced at every point code can be born: minimum code that
 satisfies the spec (no speculative abstractions, no unrequested configurability),
@@ -142,6 +143,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-lesson` | "Remember this / forget that": distills corrections into one-line lessons (per project) or preferences (cross-project), within budget, promoting recurring ones into real standards. |
 | `forge-resume` | Restores context tier by tier at session start (digest + tracker first, full files per task) and briefs you on where things stand. |
 | `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers doc updates. |
+| `forge-reconcile` | Adopts work done **outside** the process: detects commits with no unit/spec trail (deterministic git detector, also wired into `SessionStart` as a token-free warning), analyzes them via the scout, and — with approval — turns each cluster into a retroactive spec + tracker entry, or a conscious dismissal. |
 | `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses with approval, rotates history, (re)generates the digest. |
 | `forge-worktree` | Parallel builds across terminals: one unit = one git worktree = one branch. Dependency-gates the unit, claims it atomically (visible to every terminal), creates the worktree, and hands you the commands for the new terminal. `list` / `done` manage claims. Bundles `forge-lock.sh` — portable mkdir-based locks + in-place unit claims for multi-engineer setups without worktrees. |
 | `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, git-history-preserving move, entry-point rewrite, `.gitignore` guard. |
@@ -178,7 +180,7 @@ that don't use the plugin:
 
 | Hook | What it does |
 | ---- | ------------ |
-| `SessionStart` | Injects the compact context digest (~600 tokens) with tiered-loading instructions; falls back to the full tracker in projects that predate the digest. Also auto-applies **additive-only** schema migrations (`migrate-schema.sh --auto`) — pre-schema projects get their `.schema-version` stamped silently; content-rewriting migrations only ever surface a notice and wait for you. |
+| `SessionStart` | Injects the compact context digest (~600 tokens) with tiered-loading instructions; falls back to the full tracker in projects that predate the digest. Also auto-applies **additive-only** schema migrations (`migrate-schema.sh --auto`) — pre-schema projects get their `.schema-version` stamped silently; content-rewriting migrations only ever surface a notice and wait for you. And warns (a few lines, only when true) if commits exist outside the forge process — `detect-oob.sh --hook`; `/forge-reconcile` is the follow-up. |
 | `PreToolUse` | Deterministic guard: denies edits to generated/lock/vendor files and any glob in `protected-paths`. Also records which skill is in use (for the status line). |
 | `UserPromptExpansion` | Records `/forge-*` slash-command usage for the status line indicator. |
 | `Stop` | If code changed without the tracker being updated, writes `.last-session.md` with the changed files and any context files over their token budget. Marks the skill indicator idle. |
