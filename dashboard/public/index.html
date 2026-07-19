@@ -1200,7 +1200,10 @@ const office = (() => {
     const x = b.x|0, y = b.y|0;
     const pose = b.typing && Math.floor(t/380)%2 ? "sit_type" : "sit";
     blit(SCOL[pose], AGENT_ROW[b.id], b.x-12, b.y-28);
-    drawTag(b, x, y-36);
+    // neighbours at the meeting table alternate tag height so names never
+    // overlap when seats are 26px apart
+    const stag = b.seat === "meet" && ((b.x/26|0)%2) ? 6 : 0;
+    drawTag(b, x, y-36-stag);
     if (b.typing) {
       const dots = ".".repeat(1+Math.floor(t/420)%3);
       let label = null;
@@ -1442,8 +1445,18 @@ const office = (() => {
       const working = isWorking(b.id);
       b.seat = null; b.typing = false; b.resting = false;
       if (working && tableGroup.includes(b)) {
-        const i = tableGroup.indexOf(b), side = i%2 ? -1:1, slot = Math.floor(i/2);
-        setGoal(b, MEET.x - 38 + slot*25, MEET.y + (side<0 ? -24 : 30));
+        const i = tableGroup.indexOf(b);
+        if (USE_SPRITES) {
+          // v3: seats MATCH the drawn glass-room chairs. South-centre is
+          // Claude's own work seat, so agents get the other five chairs;
+          // overflow stands at the table ends.
+          const MEET_SEATS = [[214,216],[266,216],[214,167],[240,167],[266,167],[176,196],[304,196]];
+          const p = MEET_SEATS[Math.min(i, MEET_SEATS.length-1)];
+          setGoal(b, p[0], p[1]);
+        } else {
+          const side = i%2 ? -1:1, slot = Math.floor(i/2);
+          setGoal(b, MEET.x - 38 + slot*25, MEET.y + (side<0 ? -24 : 30));
+        }
         if (near(b)) { b.seat = "meet"; b.typing = true; }
         b.breakUntil = 0;
       } else if (working && !b.guest) {
