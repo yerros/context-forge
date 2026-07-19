@@ -71,28 +71,47 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
   [ ! -s "$STATE_DIR/s4c.agents" ]                              # ALL cleared
 }
 
-@test "agent-status: REAL background flow — bg Post stamps B, echo SubagentStop absorbed, next SubagentStop removes" {
+@test "agent-status: REAL background flow — bg Post is the spawn ack (agent stays live)" {
   bash "$AGENT_STATUS" start <<< "$(start_json bg1 forge-architect)"
-  # PostToolUse returns immediately with a "Backgrounded agent" response
+  # PostToolUse returns ~1s later: the spawn ack. The agent must STAY.
   bash "$AGENT_STATUS" stop <<< "$(bg_json bg1 forge-architect)"
   grep -qE '^forge-architect [0-9]+ B[0-9]+$' "$STATE_DIR/bg1.agents"
-  # the spurious SubagentStop echo (seconds after spawn) must NOT remove it
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg1"}'
-  grep -qE '^forge-architect [0-9]+ B0$' "$STATE_DIR/bg1.agents"
-  [ ! -f "$HOME/.claude/forge-metrics/events.ndjson" ] || ! grep -q agent_stopped "$HOME/.claude/forge-metrics/events.ndjson"
-  # minutes later, the REAL SubagentStop ends it
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg1"}'
+  # the real completion arrives on the dedicated SubagentStop mode, and it is
+  # NAMED (subagent_type sits deep in the payload) -> exact removal
+  bash "$AGENT_STATUS" subagent-stop <<< '{"session_id":"bg1","subagent_type":"forge-architect"}'
   [ ! -s "$STATE_DIR/bg1.agents" ]
   grep -q agent_stopped "$HOME/.claude/forge-metrics/events.ndjson"
 }
 
-@test "agent-status: background with NO echo — aged stamp is removed by the true-end SubagentStop" {
-  bash "$AGENT_STATUS" start <<< "$(start_json bg2 forge-architect)"
-  bash "$AGENT_STATUS" stop <<< "$(bg_json bg2 forge-architect)"
-  # age the stamp beyond the echo window (simulates a long-running agent)
-  sed -i.bak -E 's/ B[0-9]+$/ B100/' "$STATE_DIR/bg2.agents" && rm -f "$STATE_DIR/bg2.agents.bak"
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg2"}'
-  [ ! -s "$STATE_DIR/bg2.agents" ]
+@test "agent-status: SubagentStop removes the NAMED agent, not the oldest (real trace replay)" {
+  # 5 parallel background agents, completing out of spawn order — the exact
+  # scenario recorded by hook-logger on 2026-07-20.
+  for a in forge-reviewer forge-tester forge-failure-hunter forge-typer forge-commenter; do
+    printf '{"session_id":"tr","tool_name":"Agent","tool_input":{"subagent_type":"%s","run_in_background":true}}' "$a" \
+      | bash "$AGENT_STATUS" start
+    printf '{"session_id":"tr","tool_name":"Agent","tool_input":{"subagent_type":"%s","run_in_background":true},"tool_response":"launched"}' "$a" \
+      | bash "$AGENT_STATUS" stop
+  done
+  [ "$(wc -l < "$STATE_DIR/tr.agents" | tr -d ' ')" -eq 5 ]
+  # commenter finishes FIRST — the oldest entry (reviewer) must survive
+  bash "$AGENT_STATUS" subagent-stop <<< '{"session_id":"tr","subagent_type":"context-forge:forge-commenter"}'
+  [ "$(wc -l < "$STATE_DIR/tr.agents" | tr -d ' ')" -eq 4 ]
+  ! grep -q '^forge-commenter ' "$STATE_DIR/tr.agents"
+  grep -q '^forge-reviewer ' "$STATE_DIR/tr.agents"
+  for a in forge-tester forge-failure-hunter forge-typer forge-reviewer; do
+    printf '{"session_id":"tr","subagent_type":"%s"}' "$a" | bash "$AGENT_STATUS" subagent-stop
+  done
+  [ ! -s "$STATE_DIR/tr.agents" ]
+}
+
+@test "agent-status: a background spawn ack never removes the agent (v0.40.1 regression)" {
+  printf '{"session_id":"bg2","tool_name":"Agent","tool_input":{"subagent_type":"forge-architect","run_in_background":true}}' \
+    | bash "$AGENT_STATUS" start
+  for _ in 1 2 3; do
+    printf '{"session_id":"bg2","tool_name":"Agent","tool_input":{"subagent_type":"forge-architect","run_in_background":true},"tool_response":"launched"}' \
+      | bash "$AGENT_STATUS" stop
+  done
+  [ "$(wc -l < "$STATE_DIR/bg2.agents" | tr -d ' ')" -eq 1 ]
 }
 
 @test "agent-status: foreground output mentioning 'backgrounded' is not misclassified" {

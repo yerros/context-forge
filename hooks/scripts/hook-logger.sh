@@ -58,11 +58,15 @@ if [ ! -f "$dir/enabled" ]; then cat > /dev/null 2>&1; exit 0; fi
 mkdir -p "$dir" 2>/dev/null || exit 0
 
 event=${1:-unknown}
-# keep the first 4000 bytes, drain the rest so the writer never sees EPIPE
-input=$( { head -c 4000; cat > /dev/null 2>&1; } )
+# Read the FULL payload (fields like subagent_type can sit far beyond the
+# first few KB — truncating first once made SubagentStop look unnamed and
+# sent a whole investigation down the wrong path). Only the STORED copy is
+# truncated; field extraction always scans everything.
+full=$(cat)
+input=$(printf '%s' "$full" | head -c 4000)
 
 jfield() {
-  printf '%s' "$input" \
+  printf '%s' "$full" \
     | grep -oE "\"$1\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" \
     | head -1 \
     | sed -E "s/^\"$1\"[[:space:]]*:[[:space:]]*\"(.*)\"$/\1/"
@@ -80,7 +84,8 @@ tool=$(jfield "tool_name")
 agent=$(jfield "subagent_type")
 [ -z "$agent" ] && agent=$(jfield "subagentType")
 bg=0
-printf '%s' "$input" | grep -qE '"(run_in_background|runInBackground)"[[:space:]]*:[[:space:]]*true' && bg=1
+printf '%s' "$full" | grep -qE '"(run_in_background|runInBackground)"[[:space:]]*:[[:space:]]*true' && bg=1
+bytes=$(printf '%s' "$full" | wc -c | tr -d ' ')
 
 # snapshot of every session's agent state at this instant
 states=""
@@ -91,9 +96,9 @@ if [ -d "$status_dir" ]; then
   done
 fi
 
-printf '{"ts":"%s","epoch":%s,"event":"%s","sid":"%s","tool":"%s","agent":"%s","bg":"%s","states":"%s","payload":"%s"}\n' \
+printf '{"ts":"%s","epoch":%s,"event":"%s","sid":"%s","tool":"%s","agent":"%s","bg":"%s","bytes":%s,"states":"%s","payload":"%s"}\n' \
   "$(date '+%Y-%m-%dT%H:%M:%S')" "$(date +%s)" \
-  "$(esc "$event")" "$(esc "$sid")" "$(esc "$tool")" "$(esc "$agent")" "$bg" \
+  "$(esc "$event")" "$(esc "$sid")" "$(esc "$tool")" "$(esc "$agent")" "$bg" "${bytes:-0}" \
   "$(esc "$states")" "$(esc "$input")" >> "$log" 2>/dev/null
 
 # rotation: cap ~8 MB, keep the newest 4000 events

@@ -107,7 +107,7 @@
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-status.sh\" stop",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-status.sh\" subagent-stop",
             "timeout": 5
           }
         ]

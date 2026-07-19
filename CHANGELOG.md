@@ -3,6 +3,42 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.43.0] — 2026-07-20
+
+### Fixed (background agents never disappeared — root cause found in a hook trace)
+`hook-logger` recorded a full 5-agent parallel review. The trace settled every
+open question and exposed a self-inflicted bug from 0.40.1:
+
+- **PostToolUse for a background agent fires AT SPAWN** (0–1 s after start:
+  `pre Agent 00:14:12` → `post Agent 00:14:13`), not at completion.
+- **SubagentStop fires at real completion** (49 s+ after start) **and it DOES
+  carry `subagent_type`** — it names the agent that finished. Every observed
+  stop matched the correct line. (The logger reported it "unnamed" only
+  because it truncated the payload to 4 KB; the field sits deeper.)
+- **There is no "spawn echo" SubagentStop.** The absorber built for one was
+  swallowing genuine completions.
+- **The bug**: because SubagentStop is named, it entered the named branch,
+  found a B-stamped entry, and hit 0.40.1's "spawn ack → refresh the stamp,
+  keep alive" path. Proof in the trace — each completion *refreshed* its
+  agent's stamp instead of removing it (`forge-commenter … B1784481279` →
+  `B1784481328` at the exact second of its SubagentStop). Background agents
+  therefore never left the dashboard.
+
+Each signal now has one unambiguous meaning and its own hook mode:
+
+- `stop` (PostToolUse): plain entry → foreground finished → remove;
+  B entry → spawn ack → leave untouched.
+- `subagent-stop` (new, wired to the SubagentStop hook): always a completion →
+  remove that agent's entry EXACTLY (prefer its B line), with an
+  oldest-B fallback for unnamed payloads. No positional guessing.
+- Echo absorption deleted entirely.
+- `hook-logger.sh` now extracts fields from the FULL payload (only the stored
+  copy is truncated) and records payload `bytes`, so a deep field can never
+  mislead a future investigation again.
+- Tests: real-trace replay (5 parallel agents completing out of spawn order,
+  each removal exact), spawn-ack-never-removes regression, TaskOutput-poll
+  immunity retained.
+
 ## [0.42.0] — 2026-07-19
 
 ### Added (hook diagnostic logger — stop guessing, start recording)
