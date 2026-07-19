@@ -59,7 +59,7 @@
     border-radius:999px;padding:4px 12px;font-size:12px;color:var(--text-dim);
     background:var(--surface);backdrop-filter:blur(var(--blur));white-space:nowrap;
     max-width:46vw;overflow:hidden;text-overflow:ellipsis}
-  .pill.live{color:var(--accent-2);border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.08)}
+  .pill.live{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
   .meta{margin-left:auto;display:flex;align-items:center;gap:var(--sp-2);font-size:12px;color:var(--text-dim)}
   .chip{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11px;
     color:var(--text-dim);background:var(--surface)}
@@ -110,9 +110,13 @@
   .search input::placeholder{color:var(--text-faint)}
 
   /* ---------- kanban ---------- */
-  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);min-height:230px}
+  /* minmax(0,1fr) + min-width:0 keep the columns EQUAL — long unbreakable
+     content (live-card mono lines) must ellipsize, never widen its column */
+  .board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--sp-3);padding:var(--sp-3) var(--sp-4);min-height:230px}
+  .board .col{min-width:0}
+  .board .card{min-width:0;overflow:hidden}
   @media(max-width:760px){.board{grid-template-columns:1fr}}
-  .col h3{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;
+  .col h3{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;white-space:nowrap;
     text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:4px 0 10px}
   .col h3::before{content:"";width:8px;height:8px;border-radius:3px;flex:none}
   .col.c-next h3::before{background:var(--accent)} .col.c-wip h3::before{background:var(--warn)}
@@ -139,7 +143,7 @@
   .tag.ready{background:rgba(52,211,153,.14);color:var(--ok)}
   .tag.archived{background:rgba(139,124,247,.14);color:var(--accent)}
   .tag.claimed{background:rgba(251,191,36,.15);color:var(--warn)}
-  .tag.live{background:rgba(34,211,238,.16);color:var(--accent-2);animation:blink 1.1s var(--ease) infinite alternate}
+  .tag.live{background:rgba(52,211,153,.16);color:var(--ok);animation:blink 1.1s var(--ease) infinite alternate}
   /* live work card v2: realtime session telemetry */
   .lvh{display:flex;align-items:center;gap:6px;font-weight:600}
   .lvh .lv-dur{margin-left:auto;color:var(--text-faint);font-size:10px;font-family:var(--font-mono)}
@@ -161,13 +165,14 @@
   .lvmeta{margin-top:6px;font-size:10px;color:var(--text-faint)}
   /* live card: animated gradient edge + pulse */
   .card.live{background:linear-gradient(rgba(10,20,34,.9),rgba(10,20,34,.9)) padding-box,
-    linear-gradient(120deg,var(--accent-2),var(--accent),var(--accent-2)) border-box;
+    linear-gradient(120deg,var(--ok),var(--accent-2),var(--ok)) border-box;
     border:1px solid transparent;background-size:100% 100%,220% 100%;
     animation:liveEdge 4s linear infinite;color:var(--text)}
-  .card.live::before{background:var(--accent-2)}
+  .card.live::before{background:var(--ok)}
   @keyframes liveEdge{to{background-position:0 0,220% 0}}
-  .livedot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent-2);
-    margin-right:7px;animation:blink 1.1s var(--ease) infinite alternate}
+  .livedot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);
+    margin-right:7px;animation:blink 1.1s var(--ease) infinite alternate;
+    box-shadow:0 0 6px rgba(52,211,153,.6)}
   @keyframes blink{from{opacity:1}to{opacity:.25}}
   .empty{display:flex;align-items:center;gap:8px;color:var(--text-faint);font-size:12px;
     font-style:italic;padding:10px 4px}
