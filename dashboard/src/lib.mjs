@@ -179,6 +179,15 @@ export function readSessions(statusDir = path.join(os.homedir(), ".claude", "for
       const sid = f.replace(/\.now$/, "");
       const [epoch, tool, detail] = safeRead(full).trim().split("\t");
       if (tool) merge(sessions, sid).now = { tool, detail: detail || "", since: Number(epoch) || 0 };
+    } else if (f.endsWith(".stream")) {
+      // rolling per-session tool log — the dashboard's realtime work timeline.
+      const sid = f.replace(/\.stream$/, "");
+      const now = Date.now() / 1000;
+      const events = safeRead(full).split("\n").filter(Boolean).map((l) => {
+        const [epoch, tool, detail] = l.split("\t");
+        return { ts: Number(epoch) || 0, tool, detail: detail || "" };
+      }).filter((e) => e.tool && e.ts > now - 7200);
+      if (events.length) merge(sessions, sid).stream = events.slice(-40);
     } else {
       const [state, skill, epoch] = safeRead(full).trim().split(/\s+/);
       if (state && skill) Object.assign(merge(sessions, f), { skillState: state, skill, skillSince: Number(epoch) || 0 });

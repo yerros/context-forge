@@ -7,9 +7,11 @@
 #   now-status.sh tool    # PreToolUse, matcher "" — record tool + target
 #   now-status.sh clear   # Stop — the turn ended, session is idle
 #
-# State file: ~/.claude/forge-status/<session_id>.now
-#   single line: "<epoch>\t<tool>\t<detail>"
-# Consumed by the forge-office dashboard (speech bubbles / live feed).
+# State files consumed by the forge-office dashboard:
+#   ~/.claude/forge-status/<session_id>.now     current: "<epoch>\t<tool>\t<detail>"
+#   ~/.claude/forge-status/<session_id>.stream  rolling log of the same lines —
+#     the dashboard's realtime work timeline. Appended per tool call, trimmed
+#     to the last 80 entries once it passes 200 (O(1) per call otherwise).
 
 set -u
 mode=${1:-tool}
@@ -55,5 +57,12 @@ case "$detail" in
 esac
 detail=$(printf '%.90s' "$detail")
 
-printf '%s\t%s\t%s\n' "$(date +%s)" "$tool" "$detail" > "$state" 2>/dev/null
+line="$(date +%s)	$tool	$detail"
+printf '%s\n' "$line" > "$state" 2>/dev/null
+stream="$dir/$sid.stream"
+printf '%s\n' "$line" >> "$stream" 2>/dev/null
+# rotation keeps the stream bounded (wc on a ≤200-line file is ~free)
+if [ "$(wc -l < "$stream" 2>/dev/null || echo 0)" -gt 200 ]; then
+  tail -n 80 "$stream" > "$stream.t.$$" 2>/dev/null && mv "$stream.t.$$" "$stream" 2>/dev/null
+fi
 exit 0

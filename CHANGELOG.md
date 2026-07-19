@@ -3,6 +3,35 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.40.0] — 2026-07-19
+
+### Added (Live Work Engine — the kanban goes truly realtime)
+- **Per-session tool stream**: `now-status.sh` now also appends every tool
+  call to `~/.claude/forge-status/<sid>.stream` (rolling, trimmed to 80 once
+  past 200 lines). `lib.mjs` parses it with a 2 h TTL.
+- **Live card v2** in the In Progress column: the static "working now" pill is
+  replaced with realtime session telemetry — current skill + who, the exact
+  tool + target being executed right now, a timeline of the last 6 actions
+  with per-tool colour coding (write/exec/read/agent/skill), run duration
+  (gaps over 15 min start a new run), and action/target counts. Updates live
+  over the existing SSE channel.
+
+### Changed
+- **The redesigned sprite office is now the DEFAULT.** `?classic=1` restores
+  the old procedural office; `?sprites=1` remains accepted (redundant).
+- Board badges are colour-coded: `spec ready` green, `archived spec` violet,
+  `claimed` amber, `live` pulsing cyan, `high` red, failed attempts orange.
+
+### Fixed (characters flickering while working)
+- Desk footprints in the sprite office ended below the seat row, so seat
+  cells were unwalkable — arriving agents oscillated at the rug edge
+  (push-apart → walk-back every frame read as "blinking"). Footprints now end
+  above the seats, and the crowd-separation pass skips anyone settling onto a
+  seat.
+- Speech bubbles no longer resize with the animated dots (fixed label width,
+  dots render in reserved space), and the seated typing pose alternates at a
+  calmer rate.
+
 ## [0.39.0] — 2026-07-19
 
 ### Added (redesigned sprite office — the `?sprites=1` mode grows a real office)

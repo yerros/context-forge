@@ -155,6 +155,20 @@ test("readSessions: agents beyond the 2 h TTL are dropped at read time", () => {
   assert.equal(s[0].agents[0].agent, "forge-tester");
 });
 
+test("readSessions: .stream files become the realtime work timeline", () => {
+  const dir = tmp();
+  const now = Math.floor(Date.now() / 1000);
+  fs.writeFileSync(path.join(dir, "sess-4.stream"),
+    `${now - 8000}\tRead\tstale-beyond-ttl.ts\n` +
+    `${now - 90}\tBash\tnpm test\n${now - 30}\tEdit\t…/api-routes.ts\n${now - 5}\tWrite\t…/new-file.ts\n`);
+  const s = readSessions(dir);
+  assert.equal(s.length, 1);
+  assert.equal(s[0].stream.length, 3);              // TTL filtered the stale one
+  assert.equal(s[0].stream[0].tool, "Bash");
+  assert.equal(s[0].stream[2].detail, "…/new-file.ts");
+  assert.equal(s[0].stream[2].ts, now - 5);
+});
+
 test("readSessions: .now files surface realtime tool activity", () => {
   const dir = tmp();
   const now = Math.floor(Date.now() / 1000);
