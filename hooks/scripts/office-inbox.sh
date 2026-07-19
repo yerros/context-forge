@@ -9,7 +9,7 @@
 # Contract: always exits 0; prints nothing when there is nothing to deliver.
 
 set -u
-input=$(cat 2>/dev/null || true)
+cat >/dev/null 2>&1 || true   # drain hook stdin; payload not needed
 
 inbox="${HOME}/.claude/forge-office/inbox/$(basename "$PWD").ndjson"
 [ -s "$inbox" ] || exit 0
