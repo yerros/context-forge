@@ -177,7 +177,24 @@
   ::-webkit-scrollbar-track{background:transparent}
 
   /* ---------- office & notes ---------- */
-  #office{display:block;width:100%;image-rendering:pixelated;background:#7d828c;border-radius:0 0 var(--r-lg) var(--r-lg)}
+  #office{display:block;width:100%;image-rendering:pixelated;background:#7d828c;cursor:pointer}
+  #chatbar{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);
+    border-radius:0 0 var(--r-lg) var(--r-lg);background:var(--surface)}
+  #chatbar select,#chatbar input{background:var(--bg-2);color:var(--text);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:7px 9px;font:12px var(--font-body)}
+  #chatbar select{max-width:150px}
+  #chatbar input{flex:1;min-width:0}
+  #chatbar input::placeholder{color:var(--text-faint)}
+  #chatbar button{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#0b1120;border:0;
+    border-radius:var(--r-sm);padding:7px 14px;font:600 12px var(--font-body);cursor:pointer}
+  #chatbar button:hover{filter:brightness(1.12)}
+  .card .assign{float:right;margin-left:6px;background:var(--surface-3);color:var(--accent-2);
+    border:1px solid var(--line-strong);border-radius:999px;padding:1px 9px;font:600 10px var(--font-body);cursor:pointer}
+  .card .assign:hover{border-color:var(--accent-2)}
+  #toast{position:fixed;bottom:18px;left:50%;transform:translate(-50%,8px);opacity:0;pointer-events:none;
+    transition:all var(--dur) var(--ease);background:var(--surface-3);color:var(--text);
+    border:1px solid var(--line-strong);border-radius:var(--r-sm);padding:8px 14px;font-size:12px;z-index:60;box-shadow:var(--shadow-lift)}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
   #notes{list-style:none;margin:0;padding:10px 16px;font-size:12.5px;color:var(--text-dim)}
   #notes li{padding:4px 0;border-bottom:1px dashed rgba(148,163,184,.08)} #notes li:last-child{border:none}
 
@@ -290,6 +307,23 @@
         <span class="right" id="occupancy" style="color:var(--text-faint);font-size:11px"></span>
       </h2>
       <canvas id="office" width="960" height="680" role="img" aria-label="live 2D office simulation of Claude Code agents"></canvas>
+      <div id="chatbar">
+        <select id="chat-to" aria-label="message recipient">
+          <option value="main session">Main session</option>
+          <option value="forge-architect">Architect</option>
+          <option value="forge-reviewer">Reviewer</option>
+          <option value="forge-tester">Tester</option>
+          <option value="forge-aligner">Aligner</option>
+          <option value="forge-failure-hunter">Failure Hunter</option>
+          <option value="forge-typer">Typer</option>
+          <option value="forge-commenter">Commenter</option>
+          <option value="forge-scout">Scout</option>
+          <option value="forge-archivist">Archivist</option>
+        </select>
+        <input id="chat-msg" maxlength="500" placeholder="Message the office — delivered as context at the next Claude Code prompt (click a character to address them)"
+          onkeydown="if(event.key==='Enter')sendChat()" aria-label="message text">
+        <button onclick="sendChat()">Send</button>
+      </div>
     </section>
     <section class="panel">
       <h2>
@@ -302,6 +336,7 @@
 </main>
 <footer>forge-office — read-only realtime mirror of a Context Forge project · 127.0.0.1 only</footer>
 
+<div id="toast" role="status" aria-live="polite"></div>
 <div id="overlay" onclick="closeDrawer()"></div>
 <div id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
   <header><h1 id="drawer-title">spec</h1>
@@ -349,6 +384,16 @@ function feedSkillNow() {
   return null;
 }
 
+// Freshest "<tool> <detail>" across sessions — realtime "what is Claude
+// doing right now" from the now-status hook. Stale after NOW_TTL seconds.
+const NOW_TTL = 90;
+function nowNow(s) {
+  const n = (s.sessions || []).map(x => x.now).filter(Boolean)
+    .sort((a, b) => b.since - a.since)[0];
+  return n && Date.now()/1000 - n.since < NOW_TTL ? n : null;
+}
+const nowLabel = (n) => (n.tool + (n.detail ? " · " + n.detail : "")).slice(0, 46);
+
 function liveNow(s) {
   const agents = new Set();
   let skill = null;
@@ -356,7 +401,31 @@ function liveNow(s) {
     for (const a of sess.agents || []) agents.add(a.agent);
     if (freshSkill(sess)) skill = sess.skill;
   }
-  return { agents, skill, skillIsActive: skill != null };
+  return { agents, skill, skillIsActive: skill != null, now: nowNow(s) };
+}
+
+/* ------------------------------------------------- chat + assign (inbox) - */
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2800);
+}
+async function sendChat() {
+  const msg = $("chat-msg").value.trim();
+  if (!msg) return;
+  try {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: $("chat-to").value, message: msg }) }).then(x => x.json());
+    if (r.ok) { $("chat-msg").value = ""; toast(`✓ sent to ${$("chat-to").selectedOptions[0].text} — delivered at the next prompt (${r.pending} pending)`); }
+    else toast("✗ " + (r.error || "failed"));
+  } catch { toast("✗ send failed"); }
+}
+async function assignUnit(u) {
+  try {
+    const r = await fetch("/api/assign", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unit: u }) }).then(x => x.json());
+    if (r.ok) toast(`✓ unit ${u} queued — the next Claude Code prompt picks it up`);
+    else toast("✗ " + (r.error || "failed"));
+  } catch { toast("✗ assign failed"); }
 }
 
 function connect() {
@@ -390,7 +459,9 @@ function renderHeader(s) {
   }
   ph.style.display = ph.textContent ? "" : "none";
   $("schema").textContent = "schema " + s.schema;
-  $("skillnow").textContent = liveSkills.length ? "⚒ " + liveSkills.map(k=>k.replace(/^forge-/,"")).join(", ") : "idle";
+  const nw = nowNow(s);
+  $("skillnow").textContent = nw ? "⌁ " + nowLabel(nw)
+    : liveSkills.length ? "⚒ " + liveSkills.map(k=>k.replace(/^forge-/,"")).join(", ") : "idle";
   $("updated").textContent = new Date(s.generatedAt).toLocaleTimeString();
   $("k-agents").textContent = liveAgents.length;
   $("k-agents-sub").textContent = liveAgents.length ? liveAgents.map(AGENT_LABEL).slice(0,3).join(", ") + (liveAgents.length>3?"…":"") : "right now";
@@ -573,7 +644,9 @@ function card(text, cls, claims, extra="") {
   const high = /\[complexity:\s*high\]/i.test(text);
   const claim = u != null && claims[String(u)];
   const clickable = u != null ? ` data-unit="${u}" onclick="openSpec(${u})" title="view spec" role="button" tabindex="0"` : "";
-  return `<div class="card ${cls}"${clickable}>${esc(stripMd(text.replace(/\[complexity:\s*high\]/i,"")).trim())}` +
+  const assign = cls === "next" && u != null
+    ? `<button class="assign" onclick="event.stopPropagation();assignUnit(${u})" title="queue this unit for the next session" aria-label="assign unit ${u}">▶ assign</button>` : "";
+  return `<div class="card ${cls}"${clickable}>${assign}${esc(stripMd(text.replace(/\[complexity:\s*high\]/i,"")).trim())}` +
     (high ? `<span class="tag high">high</span>` : "") +
     (claim ? `<span class="tag claim">claimed</span>` : "") + extra + `</div>`;
 }
@@ -796,7 +869,8 @@ const office = (() => {
   const LINGER = 8000;
   const lastSeen = new Map();
   const guests = new Map();            // non-forge agents get visiting characters
-  let skillNow = null, skillSeen = 0, skillActive = false;
+  let skillNow = null, skillSeen = 0, skillActive = false, nowInfo = null;
+  const nowFresh = () => nowInfo && Date.now()/1000 - nowInfo.since < NOW_TTL;
 
   const KNOWN = new Set(ROSTER.map(r => r.id));
   function guestFor(id) {
@@ -814,18 +888,21 @@ const office = (() => {
     return g;
   }
   let currentSet = new Set();          // agents in the LATEST state snapshot
-  function setLive({ agents, skill, skillIsActive }) {
+  function setLive({ agents, skill, skillIsActive, now: nw }) {
     const now = Date.now();
     currentSet = new Set(agents);
     for (const a of agents) { lastSeen.set(a, now); if (!KNOWN.has(a)) guestFor(a); }
     if (skill) { skillNow = skill; skillSeen = now; }
     skillActive = !!skillIsActive;
+    nowInfo = nw || null;              // realtime tool activity (now-status hook)
   }
   // Presence = membership in the current snapshot — an agent works for as long
   // as the state file lists it (NO time-based expiry, so no flapping between
   // refreshes). The short linger only covers the walk-off after it vanishes.
   function isWorking(id) {
-    if (id === "claude") return skillActive || (!!skillNow && Date.now() - skillSeen < LINGER);
+    // Claude is at work whenever a skill is active OR tools are firing right
+    // now (the now-status hook) — realtime presence, no skill needed.
+    if (id === "claude") return skillActive || nowFresh() || (!!skillNow && Date.now() - skillSeen < LINGER);
     return currentSet.has(id) || (lastSeen.get(id) || 0) > Date.now() - 3000;
   }
 
@@ -851,6 +928,8 @@ const office = (() => {
   function drawDeskF(d, working, t) {
     const w = d.wide?84:56, h=17, top=d.top||"#8a6a4a";
     const x=d.x, y=d.y;
+    px(x-w/2+2, y+h+6, w-4, 3, "rgba(0,0,0,.12)");    // soft floor shadow
+    if (working) px(x-w/2-2, y-14, w+4, h+16, "rgba(88,166,255,.07)"); // work glow
     px(x-w/2, y, w, h, top);
     px(x-w/2, y, w, 2, shade(top,24));
     px(x-w/2, y+h, w, 3, shade(top,-40));
@@ -954,23 +1033,38 @@ const office = (() => {
     px(x-5,y-27,10,7,b.hair); px(x-6,y-24,2,6,b.hair); px(x+4,y-24,2,6,b.hair);
     drawTag(b, x, y-38);
     if (b.typing) {
-      const label = b.id==="claude" && skillNow ? skillNow.replace(/^forge-/,"") : null;
       const dots = ".".repeat(1+Math.floor(t/420)%3);
-      if (label) {                                    // Claude names the skill
-        const w = label.length*5+14;
-        px(x+10, y-34, w, 9, "#20242c"); text(label+dots, x+10+w/2, y-27, "#9fd0ff", 7);
-      } else {
-        text(dots, x+11, y-28, "#fff", 9);
+      let label = null;
+      if (b.id === "claude") {
+        // realtime: the exact tool + target Claude Code touches right now;
+        // fall back to the running skill name
+        label = nowFresh() ? (nowInfo.tool + (nowInfo.detail ? "·" + nowInfo.detail : ""))
+          : skillNow ? skillNow.replace(/^forge-/,"") : null;
       }
+      if (label) bubble(x, y-44, label.slice(0, 30) + dots);
+      else text(dots, x+11, y-28, "#fff", 9);
     } else if (Math.floor(t/1300 + b.dx) % 5 === 0) { // idle at desk: rare doze
       text("z", x+10, y-32, "rgba(219,226,238,.5)", 7);
     }
   }
 
+  // Pixel speech bubble with a tail, clamped to the canvas.
+  function bubble(x, y, txt) {
+    const w = Math.min(txt.length*5+12, 176);
+    const bx = Math.min(Math.max(x - w/2, 2), W - w - 2);
+    px(bx, y-11, w, 12, "#161a22");
+    px(bx, y-11, w, 1, "#3a4150"); px(bx, y, w, 1, "#0c0f14");
+    px(x-2, y+1, 4, 3, "#161a22");                    // tail
+    text(txt.slice(0, 33), bx+w/2, y-3, "#9fd0ff", 7);
+  }
+
   function drawTag(b, x, ty) {
-    const w = b.label.length*5+8;
+    const w = b.label.length*5+14;
     px(x-w/2, ty, w, 9, b.shirt); px(x-w/2, ty, w, 1, shade(b.shirt,30));
-    text(b.label, x, ty+7, "#fff", 7);
+    // presence dot: green = working, yellow = on a break, gray = idle
+    const dot = b.typing ? "#3fea6a" : b.resting ? "#ffd35c" : "#c3cad6";
+    px(x-w/2+2, ty+3, 3, 3, dot);
+    text(b.label, x+3, ty+7, "#fff", 7);
   }
 
   /* ---- scene ---- */
@@ -991,6 +1085,8 @@ const office = (() => {
     drawCabinet(28,100); drawCabinet(186,100);
     px(300,120,156,8,"#cf6a1e"); px(300,120,156,2,"#e88b45");
     drawCabinet(304,100); drawCabinet(438,100);
+    px(MEET.x-66, MEET.y-42, 132, 86, "rgba(43,90,160,.10)");   // meeting rug
+    px(MEET.x-66, MEET.y-42, 132, 2, "rgba(90,134,224,.18)");
     drawPingPong(250,262);
     drawDartboard(300,246); drawPlant(456,246); drawPlant(10,246); drawPlant(222,60);
     if (meeting) text("review in session…", MEET.x, MEET.y+56, "#e8d5b0", 8);
@@ -1097,9 +1193,31 @@ const office = (() => {
     b.dirX = dx/d; b.dirY = dy/d;
   }
 
+  // Character under a logical canvas point (for click-to-chat).
+  function bodyAt(lx, ly) {
+    let best = null, bd = 18;
+    for (const b of bodies.concat([...guests.values()])) {
+      const d = Math.hypot(lx - b.x, ly - (b.y - 14));   // body center ≈ y-14
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
+  }
+
   requestAnimationFrame(tick);
-  return { setLive };
+  return { setLive, bodyAt };
 })();
+
+// Click a character → address them in the chat bar.
+$("office").addEventListener("click", (e) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  const b = office.bodyAt((e.clientX - r.left) / r.width * 480, (e.clientY - r.top) / r.height * 340);
+  if (!b) return;
+  const sel = $("chat-to");
+  sel.value = b.id === "claude" ? "main session" : b.id;
+  if (sel.value !== (b.id === "claude" ? "main session" : b.id)) sel.value = "main session"; // guests fall back
+  $("chat-msg").focus();
+  toast(`→ message addressed to ${b.label}`);
+});
 
 refresh();
 </script>

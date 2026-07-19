@@ -54,8 +54,62 @@ function broadcast(event, data) {
 
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml" };
 
+/* ------------- dashboard inbox (chat + assign) ----------------------------
+   The ONLY writes forge-office ever makes go to ITS OWN home directory
+   (~/.claude/forge-office/inbox/) — never to the project. The plugin's
+   UserPromptSubmit hook (office-inbox.sh) drains this file into the next
+   Claude Code turn as injected context.                                    */
+
+const INBOX_DIR = path.join(os.homedir(), ".claude", "forge-office", "inbox");
+const INBOX_FILE = path.join(INBOX_DIR, path.basename(root) + ".ndjson");
+
+function inboxAppend(entry) {
+  fs.mkdirSync(INBOX_DIR, { recursive: true });
+  fs.appendFileSync(INBOX_FILE, JSON.stringify(entry) + "\n");
+}
+function inboxCount() {
+  try { return fs.readFileSync(INBOX_FILE, "utf8").split("\n").filter(Boolean).length; }
+  catch { return 0; }
+}
+const clean = (s, max) => String(s ?? "").replace(/[\r\n\t]/g, " ").trim().slice(0, max);
+
+function readBody(req, cb) {
+  let body = "";
+  req.on("data", (c) => { body += c; if (body.length > 16384) req.destroy(); });
+  req.on("end", () => {
+    try { cb(JSON.parse(body || "{}")); }
+    catch { cb(null); }
+  });
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+
+  if (req.method === "POST" && (url.pathname === "/api/chat" || url.pathname === "/api/assign")) {
+    return readBody(req, (b) => {
+      if (!b) { res.writeHead(400, { "Content-Type": "application/json" }); return res.end('{"error":"bad json"}'); }
+      const ts = new Date().toISOString().slice(0, 19);
+      let entry;
+      if (url.pathname === "/api/chat") {
+        const message = clean(b.message, 500);
+        if (!message) { res.writeHead(400, { "Content-Type": "application/json" }); return res.end('{"error":"empty message"}'); }
+        entry = { kind: "chat", ts, to: clean(b.to, 40) || "main session", message };
+      } else {
+        const unit = Number(b.unit);
+        if (!Number.isInteger(unit) || unit <= 0) { res.writeHead(400, { "Content-Type": "application/json" }); return res.end('{"error":"bad unit"}'); }
+        entry = { kind: "assign", ts, unit: String(unit), message: clean(b.message, 200) };
+      }
+      try { inboxAppend(entry); } catch (e) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: String(e && e.message || e) }));
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true, pending: inboxCount() }));
+    });
+  }
+  if (url.pathname === "/api/inbox") {
+    return json(res, () => ({ pending: inboxCount() }));
+  }
 
   if (url.pathname === "/api/state") {
     return json(res, () => getState(root));
@@ -103,5 +157,5 @@ function json(res, fn) {
 
 server.listen(PORT, HOST, () => {
   console.log(`forge-office → http://${HOST}:${PORT}  (project: ${root})`);
-  console.log("read-only: this dashboard never writes to the project");
+  console.log("project-safe: never writes to the project (chat/assign go to ~/.claude/forge-office/inbox)");
 });

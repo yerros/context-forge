@@ -135,13 +135,35 @@ test("readClaims + readLocks parse the plugin's on-disk formats", () => {
 
 test("readSessions merges skill state and active agents per session", () => {
   const dir = tmp();
-  fs.writeFileSync(path.join(dir, "sess-1"), "active forge-build 1752800000\n");
-  fs.writeFileSync(path.join(dir, "sess-1.agents"), "forge-reviewer 1752800100\nforge-tester 1752800200\n");
+  const now = Math.floor(Date.now() / 1000);
+  fs.writeFileSync(path.join(dir, "sess-1"), `active forge-build ${now - 60}\n`);
+  fs.writeFileSync(path.join(dir, "sess-1.agents"), `forge-reviewer ${now - 50}\nforge-tester ${now - 40}\n`);
   const s = readSessions(dir);
   assert.equal(s.length, 1);
   assert.equal(s[0].skill, "forge-build");
   assert.equal(s[0].agents.length, 2);
   assert.equal(s[0].agents[1].agent, "forge-tester");
+});
+
+test("readSessions: agents beyond the 2 h TTL are dropped at read time", () => {
+  const dir = tmp();
+  const now = Math.floor(Date.now() / 1000);
+  fs.writeFileSync(path.join(dir, "sess-2.agents"), `forge-reviewer ${now - 7300}\nforge-tester ${now - 30}\n`);
+  const s = readSessions(dir);
+  assert.equal(s.length, 1);
+  assert.equal(s[0].agents.length, 1);
+  assert.equal(s[0].agents[0].agent, "forge-tester");
+});
+
+test("readSessions: .now files surface realtime tool activity", () => {
+  const dir = tmp();
+  const now = Math.floor(Date.now() / 1000);
+  fs.writeFileSync(path.join(dir, "sess-3.now"), `${now - 5}\tEdit\t…/api-routes.ts\n`);
+  const s = readSessions(dir);
+  assert.equal(s.length, 1);
+  assert.equal(s[0].now.tool, "Edit");
+  assert.equal(s[0].now.detail, "…/api-routes.ts");
+  assert.equal(s[0].now.since, now - 5);
 });
 
 test("readFeed: newest first, corrupt lines skipped, window respected", () => {

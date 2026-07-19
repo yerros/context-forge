@@ -15,6 +15,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 
 let proc;
 let root;
+let fakeHome;
 
 before(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "fo-proj-"));
@@ -24,8 +25,10 @@ before(async () => {
   fs.writeFileSync(path.join(root, "context", "specs", "00-build-plan.md"),
     "## Units\n\n- 02 world\n\n## Completed\n\n- 01 hello\n");
 
+  // Isolated HOME so inbox writes (chat/assign) never touch the real ~/.claude.
+  fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), "fo-home-"));
   proc = spawn(process.execPath, [SERVER, root], {
-    env: { ...process.env, FORGE_OFFICE_PORT: String(PORT) },
+    env: { ...process.env, FORGE_OFFICE_PORT: String(PORT), HOME: fakeHome, USERPROFILE: fakeHome },
     stdio: ["ignore", "pipe", "pipe"],
   });
   // wait until it listens
@@ -86,6 +89,44 @@ test("GET / serves the UI", async () => {
   const r = await fetch(BASE + "/");
   assert.equal(r.status, 200);
   assert.match(await r.text(), /forge-office/i);
+});
+
+test("POST /api/chat appends to the home-dir inbox (never the project)", async () => {
+  const r = await fetch(BASE + "/api/chat", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ to: "forge-reviewer", message: "please re-check unit 2" }) });
+  assert.equal(r.status, 200);
+  const body = await r.json();
+  assert.equal(body.ok, true);
+  assert.ok(body.pending >= 1);
+  const inbox = path.join(fakeHome, ".claude", "forge-office", "inbox",
+    path.basename(root) + ".ndjson");
+  const lines = fs.readFileSync(inbox, "utf8").trim().split("\n").map(JSON.parse);
+  const chat = lines.find((l) => l.kind === "chat");
+  assert.equal(chat.to, "forge-reviewer");
+  assert.equal(chat.message, "please re-check unit 2");
+  // and the project itself stays untouched
+  assert.ok(!fs.existsSync(path.join(root, ".claude")));
+});
+
+test("POST /api/assign queues a unit; bad input rejected", async () => {
+  const ok = await (await fetch(BASE + "/api/assign", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ unit: 2 }) })).json();
+  assert.equal(ok.ok, true);
+  const bad = await fetch(BASE + "/api/assign", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ unit: "nope" }) });
+  assert.equal(bad.status, 400);
+  const empty = await fetch(BASE + "/api/chat", { method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "   " }) });
+  assert.equal(empty.status, 400);
+});
+
+test("GET /api/inbox reports the pending count", async () => {
+  const r = await (await fetch(BASE + "/api/inbox")).json();
+  assert.ok(r.pending >= 2);
 });
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }

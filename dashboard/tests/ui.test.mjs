@@ -28,6 +28,8 @@ function makeEl(ops) {
     set innerHTML(v) {}, get innerHTML() { return ""; },
     set textContent(v) {}, get textContent() { return ""; },
     getContext: () => makeCtx(ops),
+    addEventListener() {}, focus() {},
+    value: "", selectedOptions: [{ text: "" }],
     width: 960, height: 680,
   };
 }

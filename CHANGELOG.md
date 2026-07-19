@@ -3,6 +3,35 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.37.0] — 2026-07-19
+
+### Added (forge-office goes live — realtime + interactive)
+Inspired by the pixel-office UX of `agent-office`, the dashboard now shows what
+Claude Code is doing *as it happens* and can talk back — without ever writing
+to the project.
+
+- **Realtime "now working on"**: new `now-status.sh` hook (PreToolUse, all
+  tools) records `<tool> <target>` per session to
+  `~/.claude/forge-status/<sid>.now`; cleared on Stop. Claude's character shows
+  it in a speech bubble, the header chip shows `⌁ Edit · …/file.ts`, and
+  presence is truly live (tools firing = Claude at his desk typing).
+- **Chat with the session**: chat bar under the office (click a character to
+  address them). Messages POST to `/api/chat` → appended to
+  `~/.claude/forge-office/inbox/<project>.ndjson` → the new `office-inbox.sh`
+  UserPromptSubmit hook injects them as context at the next prompt, exactly
+  once (atomic claim, no double delivery).
+- **Assign from the kanban**: "▶ assign" on Next Up cards queues
+  "build unit NN next" through the same inbox (`/api/assign`).
+- **Presence dots** on every name tag: green = working, yellow = on a break,
+  gray = idle at desk.
+- **Visual polish**: desk shadows, work glow on active desks, meeting rug,
+  clamped pixel speech bubbles.
+- Server: `POST /api/chat`, `POST /api/assign`, `GET /api/inbox` (pending
+  count). Writes go ONLY to `~/.claude/forge-office/` — the "never writes to
+  the project" guarantee is unchanged. Still 127.0.0.1-only.
+- Tests: `.now` parsing, agent TTL at read time, chat/assign endpoints with an
+  isolated `HOME`, inbox delivered-once smoke test.
+
 ## [0.36.2] — 2026-07-19
 
 ### Fixed (ghost agents from dead sessions now clean themselves)

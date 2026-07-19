@@ -4,11 +4,12 @@ description: >
   This skill should be used to open, stop, or configure the bundled forge-office
   dashboard — phrases like "forge-office", "open the dashboard", "show the office",
   "start the kanban board", "stop the dashboard", or "start the dashboard
-  automatically". It launches the plugin's local, read-only web dashboard (kanban
-  from the progress tracker, live agent office, activity feed) for the current
-  project, and can enable autostart so it runs with every session.
+  automatically". It launches the plugin's local web dashboard (kanban from the
+  progress tracker, live agent office with realtime speech bubbles, activity
+  feed, chat-to-session, assign-from-kanban) for the current project, and can
+  enable autostart so it runs with every session.
 metadata:
-  version: "0.35.1"
+  version: "0.37.0"
 ---
 
 # forge-office
@@ -18,8 +19,20 @@ kanban board parsed from `progress-tracker.md` + the build plan, live claims and
 locks, an activity feed from the local metrics, and a 2D pixel office where the
 nine forge agents visibly work (desks, meeting table, lounge).
 
-Read-only by design — the dashboard never writes to the project. It binds to
-127.0.0.1 only. Requires Node ≥ 18.
+Live interaction (0.37.0):
+
+- **Realtime speech bubble** — Claude's character shows the exact tool + file
+  being touched right now (from the `now-status.sh` PreToolUse hook), with
+  presence dots on every name tag (green = working, yellow = break, gray = idle).
+- **Chat** — the bar under the office (or clicking a character) sends a message
+  that the `office-inbox.sh` UserPromptSubmit hook injects as context at the
+  next Claude Code prompt in that project. Delivered exactly once.
+- **Assign** — "▶ assign" on a Next Up card queues "build unit NN next" through
+  the same inbox.
+
+Project-safe by design — the dashboard NEVER writes to the project; chat and
+assignments go to `~/.claude/forge-office/inbox/<project>.ndjson` only. It
+binds to 127.0.0.1 only. Requires Node ≥ 18.
 
 ## Argument
 
