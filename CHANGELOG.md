@@ -3,6 +3,29 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.36.1] — 2026-07-19
+
+### Fixed (agents stuck "working" in the dashboard)
+Parallel subagent spawns (e.g. forge-review's seven lenses) left permanent
+"working" ghosts in forge-office and the status line: the old stop protocol
+needed TWO paired signals per agent, and since `SubagentStop` carries no agent
+name the script guessed by position — under parallel distinct-name agents the
+marks landed on the wrong entries and removals never matched (and when
+`SubagentStop` didn't fire at all, the single named `PostToolUse` only *marked*,
+so every agent stayed live until the 2 h prune).
+
+- **Single-signal protocol**: a named `PostToolUse` means the Task/Agent tool
+  returned → the foreground subagent is done → remove immediately. No pairing,
+  no positional guessing; correct under any parallel spawn/finish interleaving
+  and when `SubagentStop` never fires.
+- `SubagentStop` now only serves background agents (echo absorption + true-end
+  removal of `B` stamps); otherwise it is a no-op.
+- Background detection tightened: response must say "backgrounded agent" AND
+  arrive within 15 s of the spawn entry — a foreground agent whose output merely
+  mentions the word is no longer misclassified.
+- Regression test: 7 parallel distinct-name agents, three signal orderings
+  (paired / burst / post-only) — zero leftovers.
+
 ## [0.36.0] — 2026-07-19
 
 ### Added (forge-reconcile — adopt out-of-band work)

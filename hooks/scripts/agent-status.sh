@@ -9,21 +9,26 @@
 #   agent-status.sh stop    # PostToolUse (named) AND SubagentStop (unnamed)
 #
 # State file: ~/.claude/forge-status/<session_id>.agents
-#   one line per active agent: "<agent-name> <epoch>[ P]"  (oldest first;
-#   trailing P = one stop signal already seen)
+#   one line per active agent: "<agent-name> <epoch>[ B<epoch>|B0]"  (oldest
+#   first; trailing B* = running in background)
 #
-# STOP PROTOCOL. Signals per instance depend on how it ran:
-#   foreground:  SubagentStop (true end) then PostToolUse (named, same moment)
-#                -> two signals: first MARKS (P), second removes.
-#   background:  PostToolUse fires AT SPAWN (the tool returns "Backgrounded
-#                agent..."), and a spurious SubagentStop ECHO can fire moments
-#                later — the real SubagentStop only comes at the true end.
-# Background is detected from the PostToolUse tool_response ("backgrounded"):
-# the entry is stamped "B<epoch>". A SubagentStop within ECHO_S seconds of the
-# stamp is consumed as the spawn echo (entry becomes "B0"); the NEXT
-# SubagentStop is the true completion and removes it. Foreground keeps the
-# plain two-signal P protocol. Entries older than 2 h are pruned as a crash
-# safety net (a lost signal cannot pin a ghost).
+# STOP PROTOCOL (single-signal; safe under PARALLEL spawns).
+#   foreground:  the named PostToolUse means the Task/Agent tool RETURNED —
+#                the subagent is done. Remove its oldest entry immediately.
+#                No second signal needed; SubagentStop is ignored for
+#                foreground (it carries no agent name, so under parallel
+#                distinct-name agents any guess corrupts the state — the
+#                cause of the "agents never stop" dashboard ghosts).
+#   background:  PostToolUse fires AT SPAWN (response says "Backgrounded
+#                agent…" AND arrives within SPAWN_S of the start entry) —
+#                the entry is stamped B<epoch>, the agent stays live. A
+#                SubagentStop within ECHO_S of the stamp is consumed as the
+#                spawn echo (stamp becomes B0); a later SubagentStop is the
+#                true completion and removes the oldest B entry.
+# Both conditions must hold for the background stamp, so a foreground agent
+# whose OUTPUT merely mentions "backgrounded agent" is not misclassified
+# (its Post arrives long after SPAWN_S). Entries older than 2 h are pruned
+# as a crash safety net (a lost signal cannot pin a ghost).
 #
 # Also emits opt-in metrics events (agent_started / agent_stopped) via
 # metrics.sh — a no-op unless ~/.claude/forge-metrics/enabled exists.
@@ -51,7 +56,7 @@ metrics="$(dirname "$0")/metrics.sh"
 emit() { [ -f "$metrics" ] && bash "$metrics" record "$@" 2>/dev/null; return 0; }
 
 # Prune: drop entries older than 2 h (crashed/abandoned subagent sessions).
-# Keeps lines intact — the optional trailing "P" marker must survive.
+# Keeps lines intact — the optional trailing "B*" marker must survive.
 prune() {
   [ -f "$state" ] || return 0
   now=$(date +%s)
@@ -77,27 +82,27 @@ if [ "$mode" = "stop" ]; then
   [ -s "$state" ] || exit 0
   now=$(date +%s)
   ECHO_S=15
+  SPAWN_S=15
   if [ -n "$agent" ]; then
-    # Named signal (PostToolUse).
-    if printf '%s' "$input" | grep -qi 'backgrounded' \
-       && grep -q "^$agent [0-9]*$" "$state"; then
-      # Background handoff: the tool returned immediately — the agent is STILL
+    # Named signal (PostToolUse) — the Task/Agent tool returned.
+    started=$(awk -v a="$agent" '$1 == a && NF == 2 { print $2; exit }' "$state")
+    if [ -n "$started" ] \
+       && printf '%s' "$input" | grep -qi 'backgrounded agent' \
+       && [ $((now - started)) -le "$SPAWN_S" ]; then
+      # Background handoff: the tool returned AT SPAWN — the agent is STILL
       # RUNNING. Stamp it B<now> so the imminent SubagentStop echo is absorbed.
       awk -v a="$agent" -v s="B$now" \
         '($1 == a && NF == 2 && !done) { done = 1; print $1, $2, s; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
-    elif grep -q "^$agent [0-9]* P$" "$state"; then
-      # Second signal for a foreground instance -> remove the oldest marked.
-      awk -v a="$agent" '($1 == a && $3 == "P" && !done) { done = 1; next } { print }' \
+    elif grep -q "^$agent " "$state"; then
+      # Foreground completion: the tool returned, the subagent is done.
+      # Remove the oldest entry for this agent — single signal, no pairing.
+      awk -v a="$agent" '($1 == a && !done) { done = 1; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
       emit agent_stopped "agent=$agent"
-    elif grep -q "^$agent [0-9]*$" "$state"; then
-      # First signal -> mark the oldest unmarked instance.
-      awk -v a="$agent" '($1 == a && NF == 2 && !done) { done = 1; print $0 " P"; next } { print }' \
-        "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
     fi
   else
-    # Unnamed signal (SubagentStop).
+    # Unnamed signal (SubagentStop) — meaningful only for BACKGROUND agents.
     # 1) Absorb a background spawn echo: a fresh B<epoch> stamp within ECHO_S.
     fresh=$(awk -v now="$now" -v w="$ECHO_S" \
       'substr($3,1,1)=="B" && $3!="B0" && now - substr($3,2) < w { print NR; exit }' "$state")
@@ -110,17 +115,10 @@ if [ "$mode" = "stop" ]; then
       awk '(substr($3,1,1)=="B" && !done) { done = 1; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
       [ -n "$done_agent" ] && emit agent_stopped "agent=$done_agent"
-    # 3) Foreground: second signal removes the marked entry…
-    elif grep -q " P$" "$state"; then
-      done_agent=$(awk '$3 == "P" { print $1; exit }' "$state")
-      awk '($3 == "P" && !done) { done = 1; next } { print }' \
-        "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
-      [ -n "$done_agent" ] && emit agent_stopped "agent=$done_agent"
-    # 4) …or the first signal marks the newest entry.
-    else
-      awk 'NR==FNR { last = FNR; next } { if (FNR == last && NF == 2) print $0 " P"; else print }' \
-        "$state" "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
     fi
+    # 3) No B entries -> foreground SubagentStop: IGNORE. The named
+    # PostToolUse handles foreground removal; guessing here by position
+    # corrupts the state under parallel distinct-name agents.
   fi
   exit 0
 fi

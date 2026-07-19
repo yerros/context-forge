@@ -35,40 +35,40 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
   [ "$(tail -1 "$STATE_DIR/s3.agents" | cut -d' ' -f1)" = "forge-tester" ]
 }
 
-@test "agent-status: FOREGROUND order — SubagentStop marks, named Post removes" {
+@test "agent-status: FOREGROUND — SubagentStop is a no-op, the named Post removes" {
   bash "$AGENT_STATUS" start <<< "$(start_json s4 forge-reviewer)"
-  # true end: SubagentStop (unnamed) arrives first -> entry marked, still active
+  # SubagentStop (unnamed) may arrive first -> ignored, entry untouched
   bash "$AGENT_STATUS" stop <<< '{"session_id":"s4"}'
   [ "$(wc -l < "$STATE_DIR/s4.agents" | tr -d ' ')" -eq 1 ]
-  grep -q ' P$' "$STATE_DIR/s4.agents"
-  # then PostToolUse (named) -> removed
+  grep -qE '^forge-reviewer [0-9]+$' "$STATE_DIR/s4.agents"
+  # PostToolUse (named) = the tool returned = the agent is done -> removed
   bash "$AGENT_STATUS" stop <<< "$(start_json s4 forge-reviewer)"
   [ ! -s "$STATE_DIR/s4.agents" ]
 }
 
-@test "agent-status: BACKGROUND order — named Post at spawn only marks; SubagentStop at true end removes" {
+@test "agent-status: FOREGROUND — named Post alone removes (no SubagentStop ever)" {
   bash "$AGENT_STATUS" start <<< "$(start_json s4b forge-reviewer)"
-  # background: the Task tool returns immediately -> PostToolUse fires at spawn
   bash "$AGENT_STATUS" stop <<< "$(start_json s4b forge-reviewer)"
-  # the agent must STILL be visible as active (it is still working)
-  [ "$(wc -l < "$STATE_DIR/s4b.agents" | tr -d ' ')" -eq 1 ]
-  grep -q '^forge-reviewer .* P$' "$STATE_DIR/s4b.agents"
-  # minutes later the subagent truly finishes
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"s4b"}'
   [ ! -s "$STATE_DIR/s4b.agents" ]
 }
 
-@test "agent-status: three parallel background agents survive their spawn Posts" {
-  for a in forge-reviewer forge-typer forge-failure-hunter; do
+@test "agent-status: PARALLEL distinct-name agents all clear (dashboard ghost regression)" {
+  # 7 agents spawned in one parallel batch — the exact shape that used to
+  # leave permanent "working" ghosts in the forge-office dashboard.
+  agents="frontend-agent forge-reviewer forge-tester forge-failure-hunter forge-typer forge-commenter general-purpose"
+  for a in $agents; do
     bash "$AGENT_STATUS" start <<< "$(start_json s4c $a)"
-    bash "$AGENT_STATUS" stop  <<< "$(start_json s4c $a)"   # immediate Post
   done
-  [ "$(wc -l < "$STATE_DIR/s4c.agents" | tr -d ' ')" -eq 3 ]   # all still active
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"s4c"}'          # first finishes
-  [ "$(wc -l < "$STATE_DIR/s4c.agents" | tr -d ' ')" -eq 2 ]
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"s4c"}'
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"s4c"}'
-  [ ! -s "$STATE_DIR/s4c.agents" ]
+  [ "$(wc -l < "$STATE_DIR/s4c.agents" | tr -d ' ')" -eq 7 ]
+  # worst-case signal order: every SubagentStop fires before any named Post
+  for a in $agents; do
+    bash "$AGENT_STATUS" stop <<< '{"session_id":"s4c"}'
+  done
+  [ "$(wc -l < "$STATE_DIR/s4c.agents" | tr -d ' ')" -eq 7 ]   # untouched
+  for a in $agents; do
+    bash "$AGENT_STATUS" stop <<< "$(start_json s4c $a)"
+  done
+  [ ! -s "$STATE_DIR/s4c.agents" ]                              # ALL cleared
 }
 
 @test "agent-status: REAL background flow — bg Post stamps B, echo SubagentStop absorbed, next SubagentStop removes" {
@@ -97,16 +97,17 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
 
 @test "agent-status: foreground output mentioning 'backgrounded' is not misclassified" {
   bash "$AGENT_STATUS" start <<< "$(start_json bg3 forge-scout)"
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"bg3"}'                      # SubagentStop first (foreground order)
+  # age the entry past SPAWN_S — a genuine bg handoff Post fires within seconds
+  sed -i.bak -E 's/ [0-9]+$/ 1000000000/' "$STATE_DIR/bg3.agents" && rm -f "$STATE_DIR/bg3.agents.bak"
   bash "$AGENT_STATUS" stop <<< "$(bg_json bg3 forge-scout)"                # Post whose text contains "Backgrounded"
   [ ! -s "$STATE_DIR/bg3.agents" ]                                          # removed, not stuck as B
 }
 
-@test "agent-status: mixed names — named second signal removes the right one" {
+@test "agent-status: mixed names — each named Post removes exactly its own agent" {
   bash "$AGENT_STATUS" start <<< "$(start_json s4d forge-reviewer)"
   bash "$AGENT_STATUS" start <<< "$(start_json s4d forge-tester)"
-  bash "$AGENT_STATUS" stop <<< '{"session_id":"s4d"}'                 # marks newest (tester)
-  bash "$AGENT_STATUS" stop <<< "$(start_json s4d forge-tester)"       # removes tester
+  bash "$AGENT_STATUS" stop <<< '{"session_id":"s4d"}'                 # unnamed: ignored
+  bash "$AGENT_STATUS" stop <<< "$(start_json s4d forge-tester)"       # removes tester only
   [ "$(wc -l < "$STATE_DIR/s4d.agents" | tr -d ' ')" -eq 1 ]
   [ "$(cut -d' ' -f1 "$STATE_DIR/s4d.agents")" = "forge-reviewer" ]
 }
@@ -136,11 +137,10 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
   [ ! -f "$STATE_DIR/s7.agents" ]
 }
 
-@test "agent-status: metrics — started at spawn, stopped only at true completion" {
+@test "agent-status: metrics — started at spawn, stopped at the named Post" {
   bash "$AGENT_STATUS" start <<< "$(start_json s8 forge-typer)"
-  bash "$AGENT_STATUS" stop  <<< "$(start_json s8 forge-typer)"    # first signal: no stop event yet
   ! grep -q agent_stopped "$HOME/.claude/forge-metrics/events.ndjson"
-  bash "$AGENT_STATUS" stop  <<< '{"session_id":"s8"}'             # second signal: stopped
+  bash "$AGENT_STATUS" stop  <<< "$(start_json s8 forge-typer)"    # tool returned -> stopped
   jq -es '[.[] | .event] | index("agent_started") != null and index("agent_stopped") != null' \
     < "$HOME/.claude/forge-metrics/events.ndjson" >/dev/null
   jq -es 'all(.[]; .agent == "forge-typer")' < "$HOME/.claude/forge-metrics/events.ndjson" >/dev/null
