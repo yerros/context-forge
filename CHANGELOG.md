@@ -3,6 +3,26 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.36.2] — 2026-07-19
+
+### Fixed (ghost agents from dead sessions now clean themselves)
+0.36.1 fixed the protocol going forward, but state files from already-ended
+sessions stayed on disk forever — the per-session prune only runs when a hook
+touches that same session's file, which never happens once the session is gone.
+Users had to delete `~/.claude/forge-status/*.agents` by hand. Now automatic,
+three layers:
+
+- **`Stop` hook (`agent-status.sh turnend`)** — when the main turn ends, every
+  foreground subagent's tool has returned, so leftover foreground entries are
+  missed signals, not live agents: cleared on the spot (background `B` entries
+  survive). Also sweeps orphaned `*.agents` files older than 2 h from OTHER
+  dead sessions.
+- **`SessionEnd` hook (`agent-status.sh end`)** — deletes the session's state
+  file outright.
+- **Dashboard read-time TTL** — `readSessions()` skips entries older than 2 h,
+  so even a stale file that survives (hooks not yet reloaded, crashed session)
+  can never render ghosts.
+
 ## [0.36.1] — 2026-07-19
 
 ### Fixed (agents stuck "working" in the dashboard)

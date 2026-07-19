@@ -165,11 +165,20 @@ export function readSessions(statusDir = path.join(os.homedir(), ".claude", "for
     if (!st.isFile()) continue;
     if (f.endsWith(".agents")) {
       const sid = f.replace(/\.agents$/, "");
+      // TTL guard: never render entries older than 2 h — same safety net as
+      // the recorder's prune, but applied at read time so a stale file from a
+      // dead session (which no hook will ever touch again) can't show ghosts.
+      const now = Date.now() / 1000;
       const agents = safeRead(full).split("\n").filter(Boolean).map((l) => {
         const [agent, epoch] = l.split(/\s+/);
         return { agent, since: Number(epoch) || 0 };
-      });
+      }).filter((a) => a.since > 0 && now - a.since < 7200);
       if (agents.length) merge(sessions, sid).agents = agents;
+    } else if (f.endsWith(".now")) {
+      // "<epoch>\t<tool>\t<detail>" — what the session is doing right now.
+      const sid = f.replace(/\.now$/, "");
+      const [epoch, tool, detail] = safeRead(full).trim().split("\t");
+      if (tool) merge(sessions, sid).now = { tool, detail: detail || "", since: Number(epoch) || 0 };
     } else {
       const [state, skill, epoch] = safeRead(full).trim().split(/\s+/);
       if (state && skill) Object.assign(merge(sessions, f), { skillState: state, skill, skillSince: Number(epoch) || 0 });

@@ -112,6 +112,36 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
   [ "$(cut -d' ' -f1 "$STATE_DIR/s4d.agents")" = "forge-reviewer" ]
 }
 
+@test "agent-status: turnend clears leftover foreground entries, keeps background" {
+  bash "$AGENT_STATUS" start <<< "$(start_json s4e forge-reviewer)"    # fg, signal lost
+  bash "$AGENT_STATUS" start <<< "$(start_json s4e forge-architect)"
+  bash "$AGENT_STATUS" stop  <<< "$(bg_json s4e forge-architect)"      # bg, still running
+  bash "$AGENT_STATUS" turnend <<< '{"session_id":"s4e"}'
+  [ "$(wc -l < "$STATE_DIR/s4e.agents" | tr -d ' ')" -eq 1 ]
+  grep -qE '^forge-architect [0-9]+ B' "$STATE_DIR/s4e.agents"
+  # all-foreground leftovers -> file removed entirely
+  bash "$AGENT_STATUS" start <<< "$(start_json s4f forge-scout)"
+  bash "$AGENT_STATUS" turnend <<< '{"session_id":"s4f"}'
+  [ ! -e "$STATE_DIR/s4f.agents" ]
+}
+
+@test "agent-status: turnend sweeps orphaned session files older than 2h" {
+  mkdir -p "$STATE_DIR"
+  printf 'forge-scout 1000\n' > "$STATE_DIR/dead-session.agents"
+  touch -d '3 hours ago' "$STATE_DIR/dead-session.agents" 2>/dev/null \
+    || touch -t "$(date -d '3 hours ago' +%Y%m%d%H%M 2>/dev/null || date -v-3H +%Y%m%d%H%M)" "$STATE_DIR/dead-session.agents"
+  bash "$AGENT_STATUS" start <<< "$(start_json s4g forge-reviewer)"    # fresh file untouched
+  bash "$AGENT_STATUS" turnend <<< '{"session_id":"s4g"}'
+  [ ! -e "$STATE_DIR/dead-session.agents" ]
+}
+
+@test "agent-status: SessionEnd deletes the session's state file" {
+  bash "$AGENT_STATUS" start <<< "$(start_json s4h forge-reviewer)"
+  bash "$AGENT_STATUS" stop  <<< "$(bg_json s4h forge-reviewer)"       # even a live bg entry
+  bash "$AGENT_STATUS" end <<< '{"session_id":"s4h"}'
+  [ ! -e "$STATE_DIR/s4h.agents" ]
+}
+
 @test "agent-status: stop on empty state is a silent no-op" {
   run bash "$AGENT_STATUS" stop <<< '{"session_id":"s5"}'
   [ "$status" -eq 0 ]

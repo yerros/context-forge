@@ -7,6 +7,11 @@
 # Usage (from hooks.json):
 #   agent-status.sh start   # PreToolUse,   matcher Task — a subagent is spawning
 #   agent-status.sh stop    # PostToolUse (named) AND SubagentStop (unnamed)
+#   agent-status.sh turnend # Stop — the main turn ended: every foreground
+#                           # subagent has returned, so clear this session's
+#                           # foreground entries (keep B = background), and
+#                           # sweep orphaned session files older than 2 h
+#   agent-status.sh end     # SessionEnd — the session is gone: delete its file
 #
 # State file: ~/.claude/forge-status/<session_id>.agents
 #   one line per active agent: "<agent-name> <epoch>[ B<epoch>|B0]"  (oldest
@@ -76,6 +81,27 @@ for key in subagent_type subagentType agent_type agentType; do
   fi
 done
 case "$agent" in *[!A-Za-z0-9._-]*) agent="" ;; esac
+
+if [ "$mode" = "end" ]; then
+  # SessionEnd: the session (and any subagent in it) no longer exists.
+  rm -f "$state"
+  exit 0
+fi
+
+if [ "$mode" = "turnend" ]; then
+  # Stop hook: the main turn ended, so every FOREGROUND subagent's tool has
+  # returned — any plain entry left here is a missed signal, not a live agent.
+  # Background (B*) entries survive: those agents may outlive the turn.
+  if [ -s "$state" ]; then
+    awk 'NF >= 3 && substr($3,1,1) == "B"' "$state" > "$state.tmp.$$" \
+      && mv "$state.tmp.$$" "$state" || rm -f "$state.tmp.$$"
+    [ -s "$state" ] || rm -f "$state"
+  fi
+  # Sweep ORPHANED session files (their session died without SessionEnd —
+  # nothing will ever touch them again, so the per-session prune can't help).
+  find "$dir" -maxdepth 1 -name '*.agents' -mmin +120 -delete 2>/dev/null
+  exit 0
+fi
 
 if [ "$mode" = "stop" ]; then
   prune
