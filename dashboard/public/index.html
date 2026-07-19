@@ -768,6 +768,20 @@ const office = (() => {
   const S = 2, W = 480, H = 340;
   ctx.scale(S, S);
 
+  /* ---- optional original sprite atlas (?sprites=1) ------------------------
+     Forge agents render from dashboard/public/sprites.png (24x32 cells, rows =
+     ROSTER order, cols = SCOL). Falls back to the procedural characters when
+     the flag is off or the atlas hasn't loaded; guests always stay procedural
+     (their identity comes from a per-name color the atlas can't provide).     */
+  const USE_SPRITES = new URLSearchParams(location.search).has("sprites");
+  const AGENT_ROW = Object.fromEntries(ROSTER.map((r, i) => [r.id, i]));
+  const SCOL = { down:0, down_walk:1, up:2, up_walk:3, left:4, left_walk:5,
+                 right:6, right_walk:7, sit:8, sit_type:9 };
+  let atlas = null, atlasReady = false;
+  if (USE_SPRITES) { atlas = new Image(); atlas.onload = () => { atlasReady = true; }; atlas.src = "/sprites.png?v=1"; }
+  const hasSprite = (b) => atlasReady && !b.guest && (b.id in AGENT_ROW);
+  function blit(col, row, dx, dy) { ctx.drawImage(atlas, col*24, row*32, 24, 32, dx|0, dy|0, 24, 32); }
+
   /* ---- layout ---- */
   const DESKS = {
     boss:{ x:262, y:96, wide:true, top:"#3a7d8c" },   // Claude's command desk
@@ -1058,6 +1072,36 @@ const office = (() => {
     text(txt.slice(0, 33), bx+w/2, y-3, "#9fd0ff", 7);
   }
 
+  // Sprite-atlas versions of the two character draws (overlays reused as-is).
+  function spriteStanding(b, t, moving) {
+    const x = b.x|0, y = b.y|0;
+    let key = "down";
+    if (moving) {
+      if (b.dirY < -0.5) key = "up";
+      else if (b.dirY > 0.5) key = "down";
+      else key = b.dirX < 0 ? "left" : "right";
+      if (Math.floor(t/160)%2) key += "_walk";
+    }
+    blit(SCOL[key], AGENT_ROW[b.id], b.x-12, b.y-30);
+    drawTag(b, x, y-36);
+    if (b.resting && b.breakSpot) text(b.breakSpot.what, x+12, y-30, "#e8d5b0", 9);
+  }
+  function spriteSeated(b, t) {
+    const x = b.x|0, y = b.y|0;
+    const pose = b.typing && Math.floor(t/200)%2 ? "sit_type" : "sit";
+    blit(SCOL[pose], AGENT_ROW[b.id], b.x-12, b.y-28);
+    drawTag(b, x, y-36);
+    if (b.typing) {
+      const dots = ".".repeat(1+Math.floor(t/420)%3);
+      let label = null;
+      if (b.id === "claude") label = nowFresh()
+        ? (nowInfo.tool + (nowInfo.detail ? "·"+nowInfo.detail : ""))
+        : skillNow ? skillNow.replace(/^forge-/,"") : null;
+      if (label) bubble(x, y-42, label.slice(0,30)+dots);
+      else text(dots, x+11, y-30, "#fff", 9);
+    }
+  }
+
   function drawTag(b, x, ty) {
     const w = b.label.length*5+14;
     px(x-w/2, ty, w, 9, b.shirt); px(x-w/2, ty, w, 1, shade(b.shirt,30));
@@ -1170,7 +1214,9 @@ const office = (() => {
     for (const b of all) {
       const moving = Math.hypot(b.tx-b.x, b.ty-b.y) > 2;
       items.push({ y: b.y, draw: () =>
-        b.seat ? drawSeated(b, t) : drawStanding(b, t, moving) });
+        b.seat
+          ? (hasSprite(b) ? spriteSeated(b, t) : drawSeated(b, t))
+          : (hasSprite(b) ? spriteStanding(b, t, moving) : drawStanding(b, t, moving)) });
     }
     items.sort((a,z) => a.y - z.y).forEach(it => it.draw());
     drawPet(t);

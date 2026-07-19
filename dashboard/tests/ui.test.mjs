@@ -34,6 +34,13 @@ function makeEl(ops) {
   };
 }
 
+// Minimal Image stub so the optional sprite atlas (?sprites=1) path constructs
+// cleanly; onload never fires here, so the render stays on the procedural path.
+class ImageStub {
+  set src(_v) {}
+  set onload(_f) {}
+}
+
 const SAMPLE_STATE = {
   project: "demo", contextDir: ".forge", schema: "1", generatedAt: new Date().toISOString(),
   tracker: {
@@ -75,6 +82,9 @@ test("inline UI script runs headlessly: refresh + 30 animation frames, no errors
     requestAnimationFrame: (cb) => { frames.push(cb); },
     setInterval: () => 0,
     console,
+    location: { search: "" },
+    URLSearchParams,
+    Image: ImageStub,
     Math, Date, JSON, Object, Array, String, Number, Promise, URL,
   };
   ctxGlobal.window = ctxGlobal;
@@ -132,4 +142,41 @@ test("inline UI script runs headlessly: refresh + 30 animation frames, no errors
   assert.match(md, /<blockquote>a quote<\/blockquote>/);
   assert.ok(!md.includes("<script>"), "raw html must be escaped");
   assert.ok(!md.includes("<img"), "raw html must be escaped");
+});
+
+test("sprite mode (?sprites=1): loads the atlas and blits agents via drawImage", async () => {
+  const ops = [];
+  const frames = [];
+  // an Image whose onload fires immediately, so the sprite path goes live
+  class LiveImage {
+    set src(_v) {}
+    set onload(f) { this._f = f; queueMicrotask(() => f && f()); }
+  }
+  const ctxGlobal = {
+    document: {
+      getElementById: () => makeEl(ops),
+      addEventListener: () => {},
+      createElement: () => ({ set textContent(_v){}, get textContent(){return "";},
+        get innerHTML(){return "";}, set innerHTML(_){}, classList:{add(){},remove(){}}, style:{} }),
+    },
+    fetch: async (url) => ({ json: async () => (String(url).includes("feed") ? SAMPLE_FEED : SAMPLE_STATE) }),
+    EventSource: class { addEventListener(){} set onopen(v){ v && v(); } set onerror(_){} },
+    requestAnimationFrame: (cb) => { frames.push(cb); },
+    setInterval: () => 0,
+    console,
+    location: { search: "?sprites=1" },
+    URLSearchParams, Image: LiveImage,
+    queueMicrotask,
+    Math, Date, JSON, Object, Array, String, Number, Promise, URL,
+  };
+  ctxGlobal.window = ctxGlobal;
+  vm.createContext(ctxGlobal);
+  vm.runInContext(script, ctxGlobal, { filename: "index.inline.js" });
+  await new Promise((r) => setTimeout(r, 20));   // let atlas onload + refresh settle
+
+  let t = 0;
+  for (let i = 0; i < 30; i++) { const cb = frames.shift(); assert.ok(cb); t += 120; cb(t); }
+
+  // sprite path is exercised: agents drawn with drawImage, no procedural error
+  assert.ok(ops.includes("drawImage"), "forge agents should blit from the atlas");
 });
