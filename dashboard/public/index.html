@@ -782,16 +782,39 @@ const office = (() => {
   const hasSprite = (b) => atlasReady && !b.guest && (b.id in AGENT_ROW);
   function blit(col, row, dx, dy) { ctx.drawImage(atlas, col*24, row*32, 24, 32, dx|0, dy|0, 24, 32); }
 
-  /* ---- layout ---- */
-  const DESKS = {
+  /* ---- layout (two variants: classic procedural / v3 sprite office) ---- */
+  const WALL_B = USE_SPRITES ? 62 : 52;             // walkable only below this
+  const DESKS = USE_SPRITES ? {
+    // v3: Claude works at the glass meeting room's table; Planning pod left
+    // (architect, aligner, typer, commenter), Build pod right (reviewer,
+    // tester, hunter, scout); the archivist has a bar seat at the coffee bar.
+    boss:{ x:240, y:184, glass:true },
+    A1:  { x:62,  y:152 }, L2:{ x:140, y:152 }, R0:{ x:62, y:214 }, R1:{ x:140, y:214 },
+    L0:  { x:338, y:152 }, L1:{ x:416, y:152 }, L3:{ x:338, y:214 }, R2:{ x:416, y:214 },
+    R3:  { x:412, y:92, bar:true },
+  } : {
     boss:{ x:262, y:96, wide:true, top:"#3a7d8c" },   // Claude's command desk
     A1:  { x:150, y:96,  top:"#b7a23a" },             // architect
     L0:  { x:66,  y:158 }, L1:{ x:140, y:158 }, L2:{ x:66, y:222 }, L3:{ x:140, y:222 },
     R0:  { x:346, y:158 }, R1:{ x:420, y:158 }, R2:{ x:346, y:222 }, R3:{ x:420, y:222 },
   };
-  const MEET = { x:245, y:196 };
+  const MEET = USE_SPRITES ? { x:240, y:184 } : { x:245, y:196 };
+  const GLASS = { x:192, y:128, w:96, h:112 };      // v3 meeting room bounds
   // rectangles characters must not wander into (x,y,w,h)
-  const OBSTACLES = [
+  const OBSTACLES = USE_SPRITES ? [
+    [0,0,480,WALL_B],                                // wall band
+    [4,64,32,50],                                    // server rack
+    [372,86,88,24],[448,62,28,46],                   // coffee bar, vending
+    ...Object.entries(DESKS).filter(([k,d]) => !d.glass && !d.bar)
+      .map(([,d]) => [d.x-31, d.y-17, 62, 46]),
+    // glass room walls with a door gap at the bottom centre
+    [GLASS.x,GLASS.y,GLASS.w,4],[GLASS.x,GLASS.y,4,GLASS.h],[GLASS.x+GLASS.w-4,GLASS.y,4,GLASS.h],
+    [GLASS.x,GLASS.y+GLASS.h-4,36,4],[GLASS.x+60,GLASS.y+GLASS.h-4,36,4],
+    [204,168,72,32],                                 // meeting table
+    [23,282,64,24],[96,293,28,14],[136,262,34,46],[108,268,12,32], // sofa, table, shelf, lamp
+    [226,300,68,28],                                 // ping-pong
+    [0,236,16,26],[462,236,16,26],[196,298,14,16],[450,304,14,16], // plants
+  ] : [
     [0,0,480,52],                                   // wall band
     [16,52,46,46],[66,52,80,30],[218,54,20,18],     // bookshelf, couch, plant
     [376,48,90,26],[442,66,32,48],[384,68,18,28],   // kitchen, vending, cooler
@@ -807,7 +830,7 @@ const office = (() => {
   for (let gy=0; gy<GH; gy++) { walkable[gy] = [];
     for (let gx=0; gx<GW; gx++) {
       const x = gx*CELL + CELL/2, y = gy*CELL + CELL/2;
-      walkable[gy][gx] = y > 52 && !inObstacle(x, y, 2);
+      walkable[gy][gx] = y > WALL_B && !inObstacle(x, y, 2);
     } }
   const cellOf = (x,y) => [Math.min(GW-1, Math.max(0, x/CELL|0)), Math.min(GH-1, Math.max(0, y/CELL|0))];
   function nearestWalkable(gx, gy) {
@@ -855,7 +878,13 @@ const office = (() => {
 
   // Break spots: where office people actually go — coffee, water, a quick
   // round of ping-pong — for a short while, then back to their desk.
-  const BREAK_SPOTS = [
+  const BREAK_SPOTS = USE_SPRITES ? [
+    { x: 396, y: 122, what: "☕" },   // coffee bar
+    { x: 440, y: 116, what: "🍫" },  // vending machine
+    { x: 60,  y: 316, what: "☕" },   // lounge sofa corner
+    { x: 214, y: 334, what: "🏓" },  // ping-pong left
+    { x: 306, y: 334, what: "🏓" },  // ping-pong right
+  ] : [
     { x: 398, y: 82,  what: "☕" },   // kitchen counter
     { x: 392, y: 102, what: "🥤" },  // water cooler
     { x: 452, y: 122, what: "🍫" },  // vending machine
@@ -1136,6 +1165,185 @@ const office = (() => {
     if (meeting) text("review in session…", MEET.x, MEET.y+56, "#e8d5b0", 8);
   }
 
+  /* ================= v3 sprite-office scene (approved mockup port) ======= */
+  function tintRect(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(x,y,w,h); }
+
+  function rugV3(x,y,w,h,base,inner){
+    px(x,y,w,h,base);
+    ctx.strokeStyle="#efe6cf"; ctx.lineWidth=2; ctx.strokeRect(x+4,y+4,w-8,h-8);
+    px(x+8,y+8,w-16,h-16,inner);
+    for(let sx=x+14;sx<x+w-10;sx+=12) tintRect(sx,y+12,1,h-24,"rgba(255,255,255,.09)");
+    for(let sy=y+14;sy<y+h-10;sy+=14) tintRect(x+12,sy,w-24,1,"rgba(255,255,255,.05)");
+    px(x,y,w,1,shade(base,30)); px(x,y+h-1,w,1,shade(base,-34));
+  }
+  function windowV3(x){
+    px(x-3,5,52,34,"#5b6b52"); px(x,8,46,28,"#33507a");
+    px(x+2,10,42,12,"#a9d8f0"); px(x+2,16,42,6,"#8fc7e8");
+    px(x+2,22,42,6,"#a7d8b0"); px(x+2,28,42,6,"#8ec898");
+    px(x+34,11,7,7,"#f9eeb0");
+    for(const gx of [x+2,x+23,x+44]) px(gx,10,1,24,"#33507a");
+    px(x+2,21,42,1,"#33507a"); px(x-4,36,54,3,"#ded6c4");
+    px(x+4,30,5,5,"#a5502e"); px(x+5,26,3,4,"#2ea043"); px(x+8,27,2,3,"#49c46a");
+  }
+  function plantV3(x,y,big){
+    if(big){ px(x+2,y+10,9,7,"#b0552f"); px(x+3,y+10,7,2,"#c8703f");
+      px(x+3,y-10,6,14,"#2ea043"); px(x-1,y-5,5,9,"#1f7a33"); px(x+8,y-6,5,10,"#1f7a33");
+      px(x+4,y-14,4,6,"#49c46a"); px(x+1,y-8,3,4,"#49c46a");
+    } else { px(x+2,y+7,9,7,"#b0552f"); px(x+3,y+7,7,2,"#c8703f");
+      px(x+4,y,4,8,"#2ea043"); px(x+1,y+2,4,5,"#1f7a33"); px(x+7,y+2,4,5,"#1f7a33"); px(x+4,y-1,3,3,"#49c46a"); }
+  }
+  function signV3(x,y,label,dot){
+    const w=label.length*6+20;
+    tintRect(x+2,y+12,w,4,"rgba(0,0,0,.24)");
+    px(x,y,w,15,"#131a28"); px(x+3,y+1,w-5,1,"#31405e");
+    ctx.strokeStyle="#3a4a6a"; ctx.lineWidth=1; ctx.strokeRect(x+.5,y+.5,w-1,14);
+    ctx.beginPath(); ctx.arc(x+9,y+8,3,0,Math.PI*2); ctx.fillStyle=dot; ctx.fill();
+    ctx.font="bold 8px monospace"; ctx.textAlign="left"; ctx.fillStyle="#f5f8fd";
+    ctx.fillText(label,x+15,y+11); ctx.textAlign="center";
+  }
+  function glassRoomBack(t){
+    const g=GLASS;
+    tintRect(g.x+2,g.y+2,g.w-4,g.h-4,"rgba(232,244,248,.13)");
+    tintRect(g.x,g.y,g.w,3,"rgba(191,227,239,.47)");
+    tintRect(g.x,g.y,3,g.h,"rgba(191,227,239,.43)"); tintRect(g.x+g.w-3,g.y,3,g.h,"rgba(191,227,239,.43)");
+    for(const fx of [g.x, g.x+g.w/2-1, g.x+g.w-2]) px(fx,g.y,2,g.h,"#3d4757");
+    px(g.x,g.y,g.w,2,"#3d4757");
+    // glare on the back glass
+    for(let i=0;i<14;i++){ tintRect(g.x+8+i,g.y+4+i,1,2,"rgba(255,255,255,.17)");
+      tintRect(g.x+g.w-34+i,g.y+4+i,1,2,"rgba(255,255,255,.10)"); }
+    // interior chairs
+    for(const i of [-1,0,1]){ chairV3(MEET.x+i*26, MEET.y-26); chairV3(MEET.x+i*26, MEET.y+27); }
+    // table + screen
+    px(MEET.x-36,MEET.y-12,72,24,"#8a5a34"); px(MEET.x-36,MEET.y-12,72,10,"#a4703f");
+    px(MEET.x-36,MEET.y+10,72,3,"#66401f");
+    px(MEET.x-9,MEET.y-5,18,10,"#171b22"); px(MEET.x-8,MEET.y-4,16,7,"#2f6fd9"); px(MEET.x-6,MEET.y-3,12,1,"#9fd0ff");
+    px(MEET.x-30,MEET.y-2,4,4,"#39c5cf"); px(MEET.x+26,MEET.y-1,4,4,"#e8c531");
+  }
+  function glassRoomFront(){
+    const g=GLASS, doorL=g.x+g.w/2-12;
+    tintRect(g.x,g.y+g.h-3,doorL-g.x,3,"rgba(191,227,239,.35)");
+    tintRect(doorL+24,g.y+g.h-3,g.x+g.w-doorL-24,3,"rgba(191,227,239,.35)");
+    px(g.x,g.y+g.h-2,36,2,"#3d4757"); px(g.x+60,g.y+g.h-2,36,2,"#3d4757");
+  }
+  function chairV3(cx,cy){
+    px(cx-6,cy-11,12,10,"#38404f"); px(cx-6,cy-11,12,2,"#4b5568");
+    px(cx-7,cy-2,14,4,"#2a303b"); px(cx-1,cy+2,2,5,"#7f8896");
+    px(cx-5,cy+7,10,2,"#20242c"); px(cx-6,cy+8,2,2,"#20242c"); px(cx+4,cy+8,2,2,"#20242c");
+  }
+  function drawDeskV3(d, working, t){
+    if (d.glass || d.bar) return;                     // scene draws those
+    const cx=d.x, y=d.y;
+    tintRect(cx-32,y+19,64,5,"rgba(36,21,5,.25)");
+    px(cx-31,y,62,15,"#8a5a34"); px(cx-31,y,62,3,"#a4703f"); px(cx-31,y+15,62,3,"#66401f");
+    tintRect(cx-29,y+2,58,2,"rgba(255,255,255,.07)");
+    px(cx-29,y+18,4,9,"#66401f"); px(cx+25,y+18,4,9,"#66401f");
+    px(cx-26,y+18,54,2,"#3a3f4a");
+    for(let i=0;i<2;i++){ const mx=i?cx+3:cx-23;
+      px(mx,y-17,20,15,"#171b22");
+      px(mx+1,y-16,18,12, working?"#2f6fd9":"#151b26");
+      if(working){ const ph=Math.floor(t/240)%3;
+        for(let l=0;l<4;l++) px(mx+3,y-14+l*3,5+((l+ph+i)%3)*4,1,l%2?"#7ee2a8":"#9fd0ff"); }
+      px(mx+8,y-2,4,2,"#7f8896");
+      tintRect(mx+1,y-16,18,3,"rgba(255,255,255,.10)");
+    }
+    px(cx-12,y+4,24,4,"#2b2f38"); px(cx-12,y+4,24,1,"#3d4452"); px(cx+15,y+5,3,3,"#2b2f38");
+    px(cx-23,y+3,4,5,"#d0483e"); px(cx-19,y+4,1,3,"#e0655c");
+    px(cx+19,y+3,6,5,"#f6f2e8"); px(cx+19,y+3,6,1,"#d8d2c4");
+    px(cx-29,y-2,4,4,"#a5502e"); px(cx-28,y-5,3,3,"#2ea043"); px(cx-26,y-6,2,2,"#49c46a");
+  }
+  function drawSceneV3(t){
+    // parquet
+    for(let by=48; by<H; by+=24) for(let bx=0; bx<W; bx+=24){
+      const horiz=((bx/24|0)+(by/24|0))%2===0, base=horiz?"#cfa471":"#c5975f";
+      px(bx,by,24,24,base);
+      for(let i=0;i<24;i+=6) horiz?px(bx,by+i,24,1,shade(base,14)):px(bx+i,by,1,24,shade(base,14));
+      px(bx,by,24,1,shade(base,-22)); px(bx,by,1,24,shade(base,-22));
+    }
+    rugV3(16,128,172,116,"#3f5f93","#4f74ad");
+    rugV3(292,128,172,116,"#b06a43","#c37f54");
+    rugV3(18,268,168,62,"#4f948a","#5da79b");
+    // walls: cream + sage wainscot
+    px(0,0,W,58,"#efe9db"); px(0,0,W,3,"#ded6c4");
+    px(0,42,W,12,"#9aa98f"); px(0,42,W,2,"#b0bfa4"); px(0,54,W,4,"#7f8f76");
+    // brick + neon FORGE
+    px(0,0,150,54,"#7e3a2c");
+    for(let ry=0;ry<46;ry+=7){ const off=(ry/7|0)%2?8:0;
+      for(let rx=-8+off;rx<150;rx+=16) px(Math.max(rx,0),ry+1,Math.min(14,150-rx),5,((rx/16|0)+ry)%3?"#a34e3b":"#b25a44"); }
+    px(0,46,150,4,"#8e4434"); px(150,0,2,54,"#d8cfba");
+    tintRect(12,6,124,38,"rgba(34,211,238,.10)"); tintRect(16,9,116,30,"rgba(34,211,238,.12)");
+    ctx.font="bold 20px monospace"; ctx.textAlign="left";
+    ctx.fillStyle="rgba(11,107,124,.9)"; ctx.fillText("FORGE",23,29);
+    ctx.fillStyle="#7ff4ff"; ctx.fillText("FORGE",22,28);
+    ctx.font="bold 8px monospace"; ctx.fillStyle="#ff7ac2"; ctx.fillText("· OFFICE ·",34,40);
+    ctx.textAlign="center";
+    windowV3(170); windowV3(258);
+    // wall dashboard TV
+    px(330,10,54,30,"#16181d"); px(332,12,50,24,"#0e1420");
+    [6,9,7,12,10,15,13,18].forEach((hh,i)=>px(335+i*6,34-hh,4,hh,i%2?"#2ea043":"#49c46a"));
+    px(332,12,50,1,"#39c5cf"); px(334,14,16,2,"#9fd0ff");
+    // clock + wall dartboard
+    ctx.beginPath(); ctx.arc(319,19,7,0,Math.PI*2); ctx.fillStyle="#f6f2e8"; ctx.fill();
+    px(319,14,1,5,"#20242c"); px(319,19,3,1,"#d0483e");
+    for(const [r,cc] of [[7,"#2f7d3a"],[4,"#d0483e"],[2,"#f6f2e8"]]){
+      ctx.beginPath(); ctx.arc(447,29,r,0,Math.PI*2); ctx.fillStyle=cc; ctx.fill(); }
+    // menu board
+    px(392,8,34,24,"#1d2129");
+    ctx.font="bold 6px monospace"; ctx.fillStyle="#ffd98a"; ctx.fillText("COFFEE",409,16);
+    px(396,20,22,1,"#8aa0bd"); px(396,24,16,1,"#8aa0bd"); px(396,28,19,1,"#8aa0bd");
+    // hanging plants
+    for(const hx of [160,250,388]){ px(hx,2,1,6,"#7f8896"); px(hx-3,8,7,5,"#a5502e");
+      px(hx-4,11,3,5,"#1f7a33"); px(hx+2,11,3,6,"#2ea043"); px(hx-1,12,2,7,"#49c46a"); }
+    // pendants
+    for(const lx of [110,240,370]){ px(lx,52,1,12,"#3a4150"); px(lx-6,64,12,5,"#242a35");
+      px(lx-5,68,10,2,"#f6e6a8"); tintRect(lx-16,69,32,12,"rgba(255,217,138,.13)"); }
+    // server rack with blinking LEDs
+    px(8,66,26,46,"#232833"); px(8,66,26,2,"#333a48"); px(32,66,2,46,"#181c24");
+    for(let r=0;r<5;r++){ const ry=70+r*8; px(10,ry,22,6,"#2c323e"); px(10,ry,22,1,"#3a4150");
+      ["#49c46a","#e8c531","#39c5cf","#d0483e"].forEach((cc,i)=>{
+        const on=Math.floor(t/300+(r*4+i)*1.7)%4!==0; px(12+i*3,ry+2,2,2,on?cc:"#1a1e26"); });
+      px(25,ry+2,5,2,"#12161d"); }
+    // coffee bar + stools
+    px(376,88,80,7,"#3a2f24"); px(376,88,80,2,"#57452f"); px(376,95,80,12,"#57452f"); px(376,105,80,2,"#2e2115");
+    px(384,78,16,11,"#8c1f1f"); px(386,80,12,4,"#c8c1b2"); px(388,86,3,3,"#f6f2e8"); px(394,86,3,3,"#f6f2e8");
+    px(410,82,8,7,"#d0483e"); px(422,83,6,6,"#39c5cf"); px(434,81,14,8,"#e8ecf2"); px(436,83,10,4,"#c03030");
+    for(const sx of [384,410,436]){ px(sx,109,8,2,"#2b313c"); px(sx+3,111,2,6,"#7f8896"); px(sx+1,117,6,2,"#20242c"); }
+    // vending
+    px(448,62,28,44,"#c03030"); px(448,62,28,6,"#d94444"); px(450,70,17,30,"#12202b");
+    for(let r=0;r<4;r++)for(let c=0;c<3;c++)px(452+c*5,72+r*7,3,5,["#e8c531","#39c5cf","#e06ad4"][c]);
+    px(469,72,5,16,"#8c1f1f"); px(470,92,4,6,"#1b1e23");
+    // lounge: sofa + pillows, coffee table, bookshelf, floor lamp
+    px(23,282,56,6,"#264a56"); px(23,286,56,15,"#31616f"); px(23,286,56,2,"#3f7b8c");
+    for(let cx2=28;cx2<68;cx2+=19) px(cx2,288,15,9,"#3a707f");
+    px(20,284,5,19,"#264a56"); px(77,284,5,19,"#264a56");
+    px(27,290,6,5,"#e8c531"); px(67,290,6,5,"#d0483e");
+    px(96,296,28,8,"#8a5a34"); px(96,296,28,2,"#a4703f"); px(98,304,2,3,"#66401f"); px(120,304,2,3,"#66401f");
+    px(106,293,5,4,"#f6f2e8"); px(114,294,4,3,"#39c5cf");
+    px(136,262,34,46,"#8a5a34"); px(137,263,32,44,"#66401f"); px(136,262,34,2,"#a4703f");
+    for(let r=0;r<4;r++){ const by2=265+r*11; let bx2=139;
+      for(const cc of ["#d0483e","#3b6fd4","#2ea043","#d29922","#9a5bd4","#39c5cf"]){
+        const hh=8+((bx2+r)%2); px(bx2,by2+(9-hh),4,hh,cc); bx2+=5; }
+      px(138,by2+9,30,1,"#a4703f"); }
+    px(111,268,2,22,"#3a4150"); px(108,290,8,2,"#20242c"); px(108,260,8,9,"#e8c531"); px(109,260,6,2,"#f2d569");
+    tintRect(100,252,24,18,"rgba(255,233,168,.14)");
+    // ping-pong
+    px(226,300,68,22,"#1e7e34"); px(226,300,68,2,"#2ba24a"); px(259,300,2,22,"#eef7f0");
+    px(226,310,68,1,"#cfe8d5"); px(226,322,68,3,"#14571f");
+    px(230,322,3,6,"#66401f"); px(287,322,3,6,"#66401f");
+    px(280,297,5,4,"#d0483e"); px(254,298,2,2,"#f6f2e8");
+    // plants
+    plantV3(2,240,true); plantV3(464,240,true); plantV3(196,300,false); plantV3(450,306,false);
+    glassRoomBack(t);
+    signV3(20,112,"PLANNING","#5a86e0"); signV3(398,112,"BUILD","#e8944a");
+    signV3(206,116,"MEETING","#39c5cf"); signV3(24,250,"LOUNGE","#39c5cf");
+  }
+  function lightingV3(){
+    for(const wx of [193,281]) for(let i=0;i<24;i++)
+      tintRect(wx-12-(i>>1),59+i*3,34,3,"rgba(255,244,214,.05)");
+    tintRect(0,0,W,H,"rgba(255,184,100,.04)");
+    tintRect(0,H-8,W,8,"rgba(10,15,28,.16)"); tintRect(0,H-14,W,6,"rgba(10,15,28,.08)");
+    tintRect(0,0,6,H,"rgba(10,15,28,.13)"); tintRect(W-6,0,6,H,"rgba(10,15,28,.13)");
+  }
+
   /* ---- loop ---- */
   function tick(t) {
     // visiting agents (non-forge) leave the office once truly done
@@ -1199,17 +1407,18 @@ const office = (() => {
     }
 
     ctx.clearRect(0,0,W,H);
-    drawScene(t, tableGroup.length > 0);
-    drawMeetingTable(MEET.x, MEET.y, tableGroup.length > 0);
+    if (USE_SPRITES) drawSceneV3(t);
+    else { drawScene(t, tableGroup.length > 0); drawMeetingTable(MEET.x, MEET.y, tableGroup.length > 0); }
 
     // painter's order: desks and characters interleaved by y
     const items = [];
     for (const key of Object.keys(DESKS)) {
       const d = DESKS[key];
+      if (USE_SPRITES && (d.glass || d.bar)) continue;   // scene draws those
       // monitor lights up only when its owner is actually TYPING (idle
       // sitters keep a dim screen — the room's light mirrors real work)
       const working = bodies.some(b => b.desk===key && b.seat==="desk" && b.typing);
-      items.push({ y: d.y+17, draw: () => drawDeskF(d, working, t) });
+      items.push({ y: d.y+17, draw: () => (USE_SPRITES ? drawDeskV3 : drawDeskF)(d, working, t) });
     }
     for (const b of all) {
       const moving = Math.hypot(b.tx-b.x, b.ty-b.y) > 2;
@@ -1218,8 +1427,11 @@ const office = (() => {
           ? (hasSprite(b) ? spriteSeated(b, t) : drawSeated(b, t))
           : (hasSprite(b) ? spriteStanding(b, t, moving) : drawStanding(b, t, moving)) });
     }
+    if (USE_SPRITES)                                    // glass front over the people inside
+      items.push({ y: GLASS.y + GLASS.h - 1, draw: glassRoomFront });
     items.sort((a,z) => a.y - z.y).forEach(it => it.draw());
     drawPet(t);
+    if (USE_SPRITES) lightingV3();
     requestAnimationFrame(tick);
   }
 

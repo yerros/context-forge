@@ -3,6 +3,29 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.39.0] — 2026-07-19
+
+### Added (redesigned sprite office — the `?sprites=1` mode grows a real office)
+The sprite mode now renders a fully redesigned office scene (user-approved
+mockup, 100% original pixel art): brick accent wall with a glowing neon
+"FORGE · OFFICE" sign, a central glass meeting room (framed glass walls,
+door gap, interior table + screen — the glass front renders OVER the people
+inside for real depth), oak parquet floor, patterned zone rugs with legible
+sign badges (PLANNING / BUILD / MEETING / LOUNGE), a server rack with
+blinking LEDs, a coffee bar with espresso machine + menu board + stools, a
+lounge (sofa with throw pillows, coffee table, bookshelf, glowing floor
+lamp), wall dashboard TV with a chart, hanging plants, pendant lights, and a
+warm light grade with window pools + soft vignette.
+
+- Layout is data-driven: sprite mode swaps DESKS / MEET / OBSTACLES /
+  BREAK_SPOTS so A* pathfinding, seats, meetings and breaks all work in the
+  new floor plan. Claude works in the glass room; the archivist gets a bar
+  seat; break spots move to the coffee bar, vending, lounge and ping-pong.
+- Desks in sprite mode are detailed (dual monitors with animated code when
+  working, cable tray, mug, papers, desk plant).
+- Default (no flag) remains the classic procedural office, byte-for-byte
+  unchanged behaviour.
+
 ## [0.38.0] — 2026-07-19
 
 ### Added (optional original agent sprites — `?sprites=1`)

@@ -10,7 +10,7 @@
       "name": "context-forge",
       "source": "./",
       "description": "Set up and maintain the Context Forge methodology in any project: initialize context files, refine prompts, plan and build features, verify, debug, log decisions and lessons, audit for drift, compact for token budget, and resume via tiered context loading \u2014 with persistent memory and lightweight, token-free command hooks that auto-load the digest, record activity, flag budget overruns, and guard generated/protected files.",
-      "version": "0.38.0",
+      "version": "0.39.0",
       "author": {
         "name": "yerros",
         "url": "https://github.com/yerros"
