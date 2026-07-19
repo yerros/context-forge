@@ -3,6 +3,31 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.40.1] — 2026-07-19
+
+### Fixed (spawned agents invisible in the dashboard — root-caused for good)
+Five parallel background review agents ran in the CLI while the dashboard
+said "AGENTS LIVE 0". Two compounding causes, both eliminated:
+
+- **Unanchored hook matchers**: `"Task|Agent"` is an unanchored regex, so
+  PreToolUse/PostToolUse also fired for tools like `TaskOutput` — and a
+  `TaskOutput` PostToolUse carries no agent name, fell into the unnamed
+  branch, and deleted one LIVE background entry per output poll. Matchers are
+  now anchored (`^(Task|Agent)$`, `^Skill$`, `^(Write|Edit|MultiEdit|NotebookEdit)$`),
+  and `agent-status.sh` additionally hard-rejects any named tool other than
+  Task/Agent (defense in depth, works even with sloppy matchers).
+- **Phrase-sniffing background detection**: background agents were only
+  recognized if the spawn response contained the words "backgrounded agent" —
+  wording that changes across Claude Code versions; when it didn't match, the
+  spawn ack was treated as a foreground completion and removed the agent at
+  birth. Detection is now STRUCTURAL: `run_in_background:true` in the
+  tool_input stamps the entry `B<epoch>` at start; the spawn ack refreshes
+  the stamp; only real SubagentStops (or the 2 h prune) remove it. The
+  foreground removal path now explicitly never touches B entries. The phrase
+  heuristic remains as a fallback for older wordings.
+- Regression tests: TaskOutput-poll immunity, structural bg stamp + ack
+  survival, and foreign named-tool rejection (bats).
+
 ## [0.40.0] — 2026-07-19
 
 ### Added (Live Work Engine — the kanban goes truly realtime)

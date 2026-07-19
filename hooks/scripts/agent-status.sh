@@ -70,6 +70,17 @@ prune() {
     && mv "$tmp" "$state" 2>/dev/null || rm -f "$tmp"
 }
 
+# DEFENSE IN DEPTH: only the spawn tools may mutate state. Unanchored hook
+# matchers ("Task|Agent") also fire for tools like TaskOutput — whose named
+# PostToolUse carries NO agent name and previously fell through to the
+# unnamed branch, deleting a LIVE background agent per output poll (the
+# "5 agents spawned, dashboard shows 0" bug). SubagentStop has no tool_name,
+# so an empty tool passes; any other named tool is ignored outright.
+tool_name=$(jfield "tool_name")
+if [ -n "$tool_name" ]; then
+  case "$tool_name" in Task|Agent) ;; *) exit 0 ;; esac
+fi
+
 # Both modes need the subagent type from tool_input (defensive key list).
 agent=""
 for key in subagent_type subagentType agent_type agentType; do
@@ -115,17 +126,26 @@ if [ "$mode" = "stop" ]; then
     if [ -n "$started" ] \
        && printf '%s' "$input" | grep -qi 'backgrounded agent' \
        && [ $((now - started)) -le "$SPAWN_S" ]; then
-      # Background handoff: the tool returned AT SPAWN — the agent is STILL
-      # RUNNING. Stamp it B<now> so the imminent SubagentStop echo is absorbed.
+      # Background handoff (phrase heuristic): the tool returned AT SPAWN —
+      # the agent is STILL RUNNING. Stamp B<now> so the imminent
+      # SubagentStop echo is absorbed.
       awk -v a="$agent" -v s="B$now" \
         '($1 == a && NF == 2 && !done) { done = 1; print $1, $2, s; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
-    elif grep -q "^$agent " "$state"; then
+    elif [ -n "$started" ]; then
       # Foreground completion: the tool returned, the subagent is done.
-      # Remove the oldest entry for this agent — single signal, no pairing.
-      awk -v a="$agent" '($1 == a && !done) { done = 1; next } { print }' \
+      # Remove the oldest PLAIN entry for this agent — never a B entry
+      # (a background agent's spawn ack must not kill it).
+      awk -v a="$agent" '($1 == a && NF == 2 && !done) { done = 1; next } { print }' \
         "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
       emit agent_stopped "agent=$agent"
+    elif awk -v a="$agent" '$1 == a && $3 != "B0" && $3 ~ /^B[0-9]+$/ { f = 1 } END { exit !f }' "$state"; then
+      # Spawn ack for a STRUCTURALLY background-stamped agent (start saw
+      # run_in_background:true): refresh the stamp so the echo window counts
+      # from the ack, keep the agent live.
+      awk -v a="$agent" -v s="B$now" \
+        '($1 == a && $3 != "B0" && $3 ~ /^B[0-9]+$/ && !done) { done = 1; print $1, $2, s; next } { print }' \
+        "$state" > "$state.tmp.$$" && mv "$state.tmp.$$" "$state"
     fi
   else
     # Unnamed signal (SubagentStop) — meaningful only for BACKGROUND agents.
@@ -152,6 +172,14 @@ fi
 # start
 [ -z "$agent" ] && exit 0
 prune
-printf '%s %s\n' "$agent" "$(date +%s)" >> "$state"
+# STRUCTURAL background detection: run_in_background:true in tool_input means
+# this agent is background from birth — stamp B<epoch> immediately instead of
+# sniffing response phrasing later (phrasing changes across CC versions).
+if printf '%s' "$input" | grep -qE '"(run_in_background|runInBackground)"[[:space:]]*:[[:space:]]*true'; then
+  now=$(date +%s)
+  printf '%s %s B%s\n' "$agent" "$now" "$now" >> "$state"
+else
+  printf '%s %s\n' "$agent" "$(date +%s)" >> "$state"
+fi
 emit agent_started "agent=$agent"
 exit 0

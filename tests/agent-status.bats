@@ -186,3 +186,38 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
   run jq -r '.hooks.SubagentStop[0].hooks[0].command' "$PLUGIN_ROOT/hooks/hooks.json"
   [[ "$output" == *'agent-status.sh" stop'* ]]
 }
+
+# ---- v0.40.1 regressions: the "5 live agents, dashboard shows 0" bug ------
+
+@test "agent-status: PostToolUse from TaskOutput NEVER touches background entries" {
+  # 3 structurally-background agents live
+  for a in forge-reviewer forge-tester forge-typer; do
+    printf '{"session_id":"s20","tool_name":"Task","tool_input":{"subagent_type":"%s","run_in_background":true}}' "$a" \
+      | bash "$AGENT_STATUS" start
+  done
+  [ "$(wc -l < "$STATE_DIR/s20.agents" | tr -d ' ')" -eq 3 ]
+  # output polls (named Post, no subagent name) — the old code deleted one per poll
+  for _ in 1 2 3 4; do
+    printf '{"session_id":"s20","tool_name":"TaskOutput","tool_input":{"task_id":"x"}}' \
+      | bash "$AGENT_STATUS" stop
+  done
+  [ "$(wc -l < "$STATE_DIR/s20.agents" | tr -d ' ')" -eq 3 ]
+}
+
+@test "agent-status: run_in_background:true stamps B at start; spawn ack keeps it live" {
+  printf '{"session_id":"s21","tool_name":"Task","tool_input":{"subagent_type":"forge-scout","run_in_background":true}}' \
+    | bash "$AGENT_STATUS" start
+  grep -qE '^forge-scout [0-9]+ B[0-9]+$' "$STATE_DIR/s21.agents"
+  # spawn ack WITHOUT the legacy "backgrounded agent" phrase (new CC wording)
+  printf '{"session_id":"s21","tool_name":"Task","tool_input":{"subagent_type":"forge-scout","run_in_background":true},"tool_response":"Async agent launched"}' \
+    | bash "$AGENT_STATUS" stop
+  grep -qE '^forge-scout [0-9]+ B[0-9]+$' "$STATE_DIR/s21.agents"
+}
+
+@test "agent-status: named Post for other tools is ignored even with sloppy matchers" {
+  printf '{"session_id":"s22","tool_name":"Task","tool_input":{"subagent_type":"forge-reviewer"}}' \
+    | bash "$AGENT_STATUS" start
+  printf '{"session_id":"s22","tool_name":"BashOutput","tool_input":{}}' | bash "$AGENT_STATUS" stop
+  printf '{"session_id":"s22","tool_name":"AgentOutput","tool_input":{}}' | bash "$AGENT_STATUS" stop
+  [ "$(wc -l < "$STATE_DIR/s22.agents" | tr -d ' ')" -eq 1 ]
+}
