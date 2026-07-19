@@ -9,7 +9,7 @@ description: >
   feed, chat-to-session, assign-from-kanban) for the current project, and can
   enable autostart so it runs with every session.
 metadata:
-  version: "0.40.3"
+  version: "0.40.4"
 ---
 
 # forge-office

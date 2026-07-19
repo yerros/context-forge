@@ -149,7 +149,10 @@ def cell(shirt, hair, acc, accent, pose):
         px(d, cx - 3, 4, 8, 4, hr); px(d, cx - 4, 5, 2, 6, hr)    # hair back
         head_wear(d, shirt, hair, acc, accent, cx, 4)
 
-    elif base == "sit":                                          # seated, back to viewer
+    elif base.startswith("sit"):                                 # seated, back to viewer
+        # ("sit" AND "sit_type" — replace("_walk") does not strip "_type", so
+        # an equality check left the sit_type cell EMPTY: seated agents
+        # blinked in and out every pose toggle)
         px(d, cx - 6, 22, 12, 4, (43, 47, 56, 255))              # chair back
         px(d, cx - 7, 23, 2, 6, (32, 36, 44, 255)); px(d, cx + 5, 23, 2, 6, (32, 36, 44, 255))
         typ = pose == "sit_type"
