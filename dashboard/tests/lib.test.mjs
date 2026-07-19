@@ -155,6 +155,19 @@ test("readSessions: agents beyond the 2 h TTL are dropped at read time", () => {
   assert.equal(s[0].agents[0].agent, "forge-tester");
 });
 
+test("readSessions: BACKGROUND agents expire after 20 min, foreground survive", () => {
+  const dir = tmp();
+  const now = Math.floor(Date.now() / 1000);
+  fs.writeFileSync(path.join(dir, "sess-2b.agents"),
+    `forge-reviewer ${now - 1300} B${now - 1300}\n` +   // bg ghost > 20 min → dropped
+    `forge-tester ${now - 1300}\n` +                     // fg 21 min → kept (2 h net)
+    `forge-typer ${now - 60} B${now - 60}\n`);           // live bg → kept
+  const s = readSessions(dir);
+  assert.equal(s.length, 1);
+  assert.deepEqual(s[0].agents.map(a => a.agent), ["forge-tester", "forge-typer"]);
+  assert.equal(s[0].agents[1].bg, true);
+});
+
 test("readSessions: .stream files become the realtime work timeline", () => {
   const dir = tmp();
   const now = Math.floor(Date.now() / 1000);

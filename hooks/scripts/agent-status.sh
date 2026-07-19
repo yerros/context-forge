@@ -60,13 +60,18 @@ state="$dir/$sid.agents"
 metrics="$(dirname "$0")/metrics.sh"
 emit() { [ -f "$metrics" ] && bash "$metrics" record "$@" 2>/dev/null; return 0; }
 
-# Prune: drop entries older than 2 h (crashed/abandoned subagent sessions).
-# Keeps lines intact — the optional trailing "B*" marker must survive.
+# Prune. Two TTLs:
+#   plain (foreground) entries: 2 h safety net (turnend sweeps them anyway)
+#   B* (background) entries: 20 min — Claude Code does not reliably deliver a
+#     completion signal for background agents, so a hard TTL is the only
+#     guaranteed ghost-killer; long multi-lens reviews finish well within it.
 prune() {
   [ -f "$state" ] || return 0
   now=$(date +%s)
   tmp="$state.tmp.$$"
-  awk -v now="$now" 'NF >= 2 && ($2 + 0) > now - 7200' "$state" > "$tmp" 2>/dev/null \
+  awk -v now="$now" '
+    NF >= 3 && substr($3,1,1) == "B" { if (($2 + 0) > now - 1200) print; next }
+    NF >= 2 { if (($2 + 0) > now - 7200) print }' "$state" > "$tmp" 2>/dev/null \
     && mv "$tmp" "$state" 2>/dev/null || rm -f "$tmp"
 }
 

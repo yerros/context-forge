@@ -412,23 +412,38 @@ function feedSkillNow() {
   return null;
 }
 
-// Freshest "<tool> <detail>" across sessions — realtime "what is Claude
-// doing right now" from the now-status hook. Stale after NOW_TTL seconds.
+// ---- single-session presence -------------------------------------------
+// Multiple CLI sessions can run on one machine; mixing their agents made the
+// dashboard show "live" agents from another window. Presence now follows THE
+// MOST RECENTLY ACTIVE session only (freshest tool/stream/skill/agent time).
 const NOW_TTL = 90;
+function sessionScore(x) {
+  let t = 0;
+  if (x.now) t = Math.max(t, x.now.since);
+  if (x.stream && x.stream.length) t = Math.max(t, x.stream[x.stream.length-1].ts);
+  if (x.skillSince) t = Math.max(t, x.skillSince);
+  for (const a of x.agents || []) t = Math.max(t, a.since);
+  return t;
+}
+function activeSession(s) {
+  let best = null, bt = 0;
+  for (const x of s.sessions || []) {
+    const t = sessionScore(x);
+    if (t > bt) { bt = t; best = x; }
+  }
+  return best;
+}
 function nowNow(s) {
-  const n = (s.sessions || []).map(x => x.now).filter(Boolean)
-    .sort((a, b) => b.since - a.since)[0];
+  const sess = activeSession(s);
+  const n = sess && sess.now;
   return n && Date.now()/1000 - n.since < NOW_TTL ? n : null;
 }
 const nowLabel = (n) => (n.tool + (n.detail ? " · " + n.detail : "")).slice(0, 46);
 
 function liveNow(s) {
-  const agents = new Set();
-  let skill = null;
-  for (const sess of s.sessions || []) {
-    for (const a of sess.agents || []) agents.add(a.agent);
-    if (freshSkill(sess)) skill = sess.skill;
-  }
+  const sess = activeSession(s);
+  const agents = new Set((sess && sess.agents || []).map(a => a.agent));
+  const skill = sess && freshSkill(sess) ? sess.skill : null;
   return { agents, skill, skillIsActive: skill != null, now: nowNow(s) };
 }
 
@@ -473,8 +488,9 @@ function renderHeader(s) {
   $("proj").textContent = s.project;
   // The headline pill is LIVE: what Claude Code is doing right now. The
   // tracker phase is history — it only shows while nothing is running.
-  const liveAgents = [...new Set((s.sessions||[]).flatMap(x => (x.agents||[]).map(a => a.agent)))];
-  const liveSkills = (s.sessions||[]).filter(freshSkill).map(x => x.skill);
+  const lv = liveNow(s);
+  const liveAgents = [...lv.agents];
+  const liveSkills = lv.skill ? [lv.skill] : [];
   const ph = $("phase");
   if (liveAgents.length || liveSkills.length) {
     const what = ((liveAgents.length ? feedSkillNow() : null) || liveSkills[0] || "working").replace(/^forge-/, "");
@@ -606,9 +622,10 @@ function renderBoard(s) {
       wip.push(card(`unit ${n} — claimed${c.mode==="build" ? " (in-place build)" : ""}`, "wip", claims, br));
     }
   }
-  const liveSkills = (s.sessions||[]).filter(freshSkill).map(x => x.skill);
-  const liveAgents = [...new Set((s.sessions||[]).flatMap(x => (x.agents||[]).map(a => a.agent)))];
-  const nw = nowNow(s);
+  const lv = liveNow(s);
+  const liveAgents = [...lv.agents];
+  const liveSkills = lv.skill ? [lv.skill] : [];
+  const nw = lv.now;
   if (liveSkills.length || liveAgents.length || nw) {
     const who = liveAgents.length ? liveAgents.map(AGENT_LABEL).join(", ") : "main session";
     // When agents are running, the honest label is the skill that launched
@@ -674,12 +691,11 @@ const TOOL_CLASS = (t) => /^(Edit|Write|MultiEdit|NotebookEdit)$/.test(t) ? "wri
   : /^(Task|Agent)$/.test(t) ? "agent"
   : /^Skill/.test(t) ? "skill" : "other";
 
-// The freshest session stream, cut to the CURRENT RUN (trailing events with
+// The ACTIVE session's stream, cut to the CURRENT RUN (trailing events with
 // gaps under 15 min — a lunch break should not count into the duration).
 function currentRun(s) {
-  const sess = (s.sessions||[]).filter(x => x.stream && x.stream.length)
-    .sort((a, b) => b.stream[b.stream.length-1].ts - a.stream[a.stream.length-1].ts)[0];
-  if (!sess) return [];
+  const sess = activeSession(s);
+  if (!sess || !sess.stream || !sess.stream.length) return [];
   const ev = sess.stream;
   let i = ev.length - 1;
   while (i > 0 && ev[i].ts - ev[i-1].ts < 900) i--;

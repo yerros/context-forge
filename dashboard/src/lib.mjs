@@ -170,9 +170,11 @@ export function readSessions(statusDir = path.join(os.homedir(), ".claude", "for
       // dead session (which no hook will ever touch again) can't show ghosts.
       const now = Date.now() / 1000;
       const agents = safeRead(full).split("\n").filter(Boolean).map((l) => {
-        const [agent, epoch] = l.split(/\s+/);
-        return { agent, since: Number(epoch) || 0 };
-      }).filter((a) => a.since > 0 && now - a.since < 7200);
+        const [agent, epoch, mark] = l.split(/\s+/);
+        return { agent, since: Number(epoch) || 0, bg: !!(mark && mark.startsWith("B")) };
+      // background agents expire after 20 min (their completion signal is not
+      // reliably delivered), foreground after the 2 h safety net
+      }).filter((a) => a.since > 0 && now - a.since < (a.bg ? 1200 : 7200));
       if (agents.length) merge(sessions, sid).agents = agents;
     } else if (f.endsWith(".now")) {
       // "<epoch>\t<tool>\t<detail>" — what the session is doing right now.

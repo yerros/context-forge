@@ -3,6 +3,20 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.41.0] — 2026-07-19
+
+### Changed (presence mirrors the CLI — stopped agents leave the UI fast)
+- **Single-session presence**: multiple CLI sessions on one machine mixed
+  their agents into one "live" pool, so the dashboard showed workers from
+  another window long after the session you were watching went idle. The
+  header KPI, live card and office now follow ONLY the most recently active
+  session (freshest tool/stream/skill/agent timestamp).
+- **Background ghost TTL 20 min** (was 2 h): Claude Code does not reliably
+  deliver completion signals for background agents; a hard TTL on B entries
+  (write-side prune + read-side filter) guarantees finished agents disappear
+  quickly even when every signal is missed. Foreground entries keep the 2 h
+  net but are already swept at every turn end.
+
 ## [0.40.1] — 2026-07-19
 
 ### Fixed (spawned agents invisible in the dashboard — root-caused for good)
