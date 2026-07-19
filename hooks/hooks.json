@@ -35,6 +35,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/now-status.sh\" tool",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/hook-logger.sh\" pre",
+            "timeout": 5
           }
         ]
       },
@@ -71,6 +76,16 @@
     ],
     "PostToolUse": [
       {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/hook-logger.sh\" post",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "^(Task|Agent)$",
         "hooks": [
           {
@@ -85,6 +100,11 @@
       {
         "matcher": "",
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/hook-logger.sh\" subagent-stop",
+            "timeout": 5
+          },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-status.sh\" stop",
@@ -113,6 +133,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/office-inbox.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/hook-logger.sh\" user-prompt",
+            "timeout": 5
           }
         ]
       }
@@ -121,6 +146,11 @@
       {
         "matcher": "",
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/hook-logger.sh\" stop-pre",
+            "timeout": 5
+          },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/track.sh\"",
@@ -140,6 +170,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-status.sh\" turnend",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/hook-logger.sh\" stop",
+            "timeout": 5
           }
         ]
       }
@@ -148,6 +183,11 @@
       {
         "matcher": "",
         "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/hook-logger.sh\" session-end",
+            "timeout": 5
+          },
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent-status.sh\" end",

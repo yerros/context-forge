@@ -3,6 +3,23 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.42.0] — 2026-07-19
+
+### Added (hook diagnostic logger — stop guessing, start recording)
+Agent lifecycle detection infers state from hook side-effects; when it
+misbehaves, the fix must come from evidence. New `hooks/scripts/hook-logger.sh`
+records ground truth, opt-in (`touch ~/.claude/forge-debug/enabled`):
+
+- one NDJSON line per hook event (PreToolUse all tools, PostToolUse all
+  tools, SubagentStop, UserPromptSubmit, Stop pre+post cleanup, SessionEnd):
+  timestamp, event, session_id, tool_name, raw subagent_type,
+  run_in_background flag, a snapshot of EVERY `.agents` state file at that
+  instant (catches cross-session writes), and the first 4 KB of the raw
+  payload — safely escaped, rotated at ~8 MB.
+- `hook-logger.sh report`: events by type/tool, sessions seen, agent
+  lifecycle timeline with state snapshots, recent-event tail.
+- Zero cost when disabled (one file-stat); never writes to stdout.
+
 ## [0.41.0] — 2026-07-19
 
 ### Changed (presence mirrors the CLI — stopped agents leave the UI fast)
