@@ -53,7 +53,9 @@ be reproduced, that's the first job — not fixing.
 ## 4. Fix, in scope
 
 Smallest change that addresses the root cause — never a workaround layered over a
-symptom. No drive-by refactors or "improvements"; anything out of scope goes to the
+symptom. Smallest also means simplest: a fix introduces no new abstraction,
+configurability, or error handling for scenarios the bug didn't demonstrate. No
+drive-by refactors or "improvements"; anything out of scope goes to the
 tracker as an open question or to `forge-feature`. Protected files stay protected.
 
 ## 5. Verify

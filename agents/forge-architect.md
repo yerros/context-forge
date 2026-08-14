@@ -43,6 +43,10 @@ wrong code, failed verifications, and wasted tokens. Think hard; write tersely.
 - Never violate an invariant to make a plan work; flag the conflict instead.
 - If the request is ambiguous on a point that changes the design, do NOT invent an
   answer — return the question(s) to the caller instead of a spec built on guesses.
+- **Record assumptions, don't bury them**: when you resolve a minor ambiguity with a
+  reasonable reading (not design-changing — those go back as questions), record it in
+  the spec's optional `## Assumptions` section with the why. The user must be able to
+  veto an assumption before code exists; an assumption only in your head is a guess.
 
 ## What you produce
 

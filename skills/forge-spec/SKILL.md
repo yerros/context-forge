@@ -79,7 +79,9 @@ file `context/specs/NN-feature-name.md` matching the build plan numbering.
 If anything about the unit is unclear, ask the user before writing the spec — a vague
 spec produces vague code.
 
-A spec has six sections:
+A spec has six sections (plus an optional **Assumptions** section after Goal — used
+only when the spec resolved a minor ambiguity with a judgment call; each entry states
+the assumption and why, so the user can veto it before any code exists):
 
 1. **Goal** — one or two sentences, concrete. Bad: "Create the auth pages." Good:
    "Create sign-in and sign-up pages using Clerk components with a two-panel layout on

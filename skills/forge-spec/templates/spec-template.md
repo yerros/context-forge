@@ -4,6 +4,16 @@
 
 One or two sentences describing the concrete output of this unit.
 
+## Assumptions
+
+<!-- Optional — include ONLY when the spec resolved an ambiguity or made a
+     judgment call the request didn't dictate. Each line is a veto point for
+     the user before any code exists. Omit the section when there are none.
+     Genuinely design-changing ambiguity is still returned as a question,
+     never assumed (see forge-architect ground rules). -->
+
+- [assumption made] — [why this reading was chosen]
+
 ## Design
 
 Visual and structural decisions specific to this unit.

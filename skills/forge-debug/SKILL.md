@@ -78,7 +78,9 @@ auto-applying** when the cause is non-obvious or the fix touches multiple files.
 
 ### 6. Fix the root cause, in scope
 
-Apply the smallest fix that addresses the root cause. Stay within the unit's scope. Then
+Apply the smallest fix that addresses the root cause. Smallest also means simplest:
+no new abstraction, configurability, or error handling for scenarios the bug didn't
+demonstrate. Stay within the unit's scope. Then
 re-run the reproduction and the unit's verification checklist to confirm.
 
 ### 7. Record it

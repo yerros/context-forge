@@ -3,6 +3,23 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.44.0] — 2026-08-14
+
+### Changed (Karpathy-guidelines adoption, round 2)
+Closed the two gaps left by the v0.20 adoption
+(github.com/multica-ai/andrej-karpathy-skills):
+
+- **Assumptions surfaced in specs** — "state assumptions explicitly" had no home:
+  the architect was forbidden to invent answers to design-changing ambiguity, but
+  minor judgment calls lived only in its head. The spec template gained an optional
+  `## Assumptions` section (each entry: assumption + why — a veto point before any
+  code exists); `forge-architect` must record its readings there; `forge-spec`
+  documents the section.
+- **Simplicity-within-scope for fixes** — `forge-fix` and `forge-debug` demanded
+  the *smallest* change but not the *simplest*: a fix could still introduce
+  abstractions, configurability, or speculative error handling. One line in each
+  fix step now forbids it (nothing the bug didn't demonstrate).
+
 ## [0.43.0] — 2026-07-20
 
 ### Fixed (background agents never disappeared — root cause found in a hook trace)
