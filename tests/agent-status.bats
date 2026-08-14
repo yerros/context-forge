@@ -202,8 +202,8 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
   run jq -r '.hooks.PostToolUse[] | select(.matcher | test("Task")) | .hooks[0].command' \
     "$PLUGIN_ROOT/hooks/hooks.json"
   [[ "$output" == *'agent-status.sh" stop'* ]]
-  run jq -r '.hooks.SubagentStop[0].hooks[0].command' "$PLUGIN_ROOT/hooks/hooks.json"
-  [[ "$output" == *'agent-status.sh" stop'* ]]
+  run jq -r '.hooks.SubagentStop[].hooks[].command' "$PLUGIN_ROOT/hooks/hooks.json"
+  [[ "$output" == *'agent-status.sh" subagent-stop'* ]]
 }
 
 # ---- v0.40.1 regressions: the "5 live agents, dashboard shows 0" bug ------
