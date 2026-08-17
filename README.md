@@ -99,6 +99,22 @@ with `/plugin`. For local development, clone the repo and
 `/plugin marketplace add ./context-forge`. Update later with
 `/plugin marketplace update yerros`.
 
+### Google Antigravity (CLI/IDE)
+
+The same repo builds an [Antigravity](https://antigravity.google/docs/cli/plugins)
+plugin bundle — same skills, agents, guard, digest injection, and dashboard,
+adapted to Antigravity's hook contract by a thin adapter
+(`hooks/antigravity/agy-hook.sh`):
+
+```bash
+./scripts/build-antigravity.sh          # requires python3
+agy plugin install dist/antigravity/context-forge
+```
+
+Restart `agy`, then verify with `/hooks` and type `/forge-` to see the skills
+as slash commands. See `docs/PORTING-ANTIGRAVITY.md` for the full feature
+mapping and the (small) list of best-effort differences.
+
 ## Quick start
 
 From inside any project:

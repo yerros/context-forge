@@ -3,6 +3,37 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.45.0] — 2026-08-17
+
+### Added (Google Antigravity support)
+
+The plugin now also runs on Google Antigravity (CLI + IDE) from the same
+source, at feature parity for the core methodology:
+
+- **`scripts/build-antigravity.sh`** — generates `dist/antigravity/context-forge/`:
+  strict Antigravity `plugin.json`, generated Antigravity-format `hooks.json`,
+  agents with frontmatter translated (tools → `view_file`/`grep_search`/
+  `find_by_name`/`run_command`/…, validated against Antigravity's tool
+  whitelist because a typo hangs the subagent; models → `pro`/`flash`;
+  `subagent`/`mainAgent`/`commandExecutionPolicy` added), skills copied
+  verbatim with `${CLAUDE_PLUGIN_ROOT}` substituted, plus a `rules/` term-map
+  and the statusline (whose payload contract Antigravity happens to share).
+  The build self-validates (JSON, manifests, leftover vars, `bash -n`).
+- **`hooks/antigravity/agy-hook.sh`** — one adapter entry point for all four
+  Antigravity events; parses the camelCase payload (python3, jq fallback),
+  normalizes it to the flat JSON the existing `hooks/scripts/` grep for, runs
+  those scripts UNMODIFIED, and emits Antigravity's required response JSON.
+  Mappings: SessionStart digest → `PreInvocation` (invocation 0)
+  `injectSteps`; guard exit-JSON → `{"decision":"deny"}` (never `allow` — the
+  hook must not weaken default gating, so pass-through is `ask`);
+  UserPromptSubmit inbox → every `PreInvocation`; Stop + `fullyIdle` →
+  SessionEnd equivalent. Subagents register as background entries (Antigravity
+  has no SubagentStop; TTL cleanup applies).
+- **`tests/antigravity.bats`** — 17 tests: deny/ask decisions, protected
+  paths, digest injection (0 vs later invocations, `context/` vs `.forge/`),
+  skill/agent/now status side effects, office inbox delivery, Stop cleanup,
+  corrupt stdin, and full-bundle build validation.
+
 ## [0.44.0] — 2026-08-14
 
 ### Changed (Karpathy-guidelines adoption, round 2)
