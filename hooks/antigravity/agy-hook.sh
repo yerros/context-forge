@@ -116,6 +116,7 @@ for k, v in out.items():
 sid="" ws="" inv="" idle="" tool="" file="" cmd="" pattern="" query="" url=""
 prompt="" desc="" dirpath="" skillfile="" agtype=""
 while IFS=$(printf '\t') read -r k v; do
+  # shellcheck disable=SC2034 # skillfile parsed for parity with agy_hook.py payload; not consumed downstream yet
   case "$k" in
     sid) sid=$v ;; ws) ws=$v ;; inv) inv=$v ;; idle) idle=$v ;;
     tool) tool=$v ;; file) file=$v ;; cmd) cmd=$v ;; pattern) pattern=$v ;;
@@ -128,7 +129,7 @@ EOF
 
 # Run project-relative scripts from the workspace root (Antigravity does not
 # guarantee the hook cwd; guard globs, git and the office inbox rely on $PWD).
-[ -n "$ws" ] && [ -d "$ws" ] && cd "$ws" 2>/dev/null
+[ -n "$ws" ] && [ -d "$ws" ] && cd "$ws" 2>/dev/null || true
 
 # ------------------------------------------------------- tool-name mapping ----
 # Antigravity tool -> the Claude Code name the downstream scripts expect.
