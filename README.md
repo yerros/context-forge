@@ -58,8 +58,9 @@ The workflow runs in four phases:
    opus-pinned architect agent decomposes work into small, ordered, verifiable units
    and writes a six-section spec per unit (goal, design, implementation,
    dependencies, tests, verification) with complexity markers for risky ones.
-3. **Build loop** (`/forge-build`, `/forge-build-all`) — implement one unit exactly
-   to its spec, tests written during implementation, then an explicit verify loop:
+3. **Build loop** (`/forge-build`, `/forge-build-all`) — tests written first from
+   the spec and run to a recorded failure (red), then implement one unit exactly to
+   its spec until they pass (green, tests frozen), then an explicit verify loop:
    unit tests → full suite (regression gate) → build/typecheck/lint → spec checklist.
    Same failure twice → mandatory stop-and-diagnose (`/forge-debug`), never a third
    blind fix. Ship per unit with `/forge-pr`.
@@ -146,7 +147,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-prompt` | Sharpens a rough request into a precise, context-aligned prompt or spec — goal, scope, constraints, acceptance — without changing your intent. |
 | `forge-spec` | Builds the ordered build plan and writes a six-section spec per unit (goal, design, implementation, dependencies, tests, verification), delegated to the opus architect. |
 | `forge-feature` | Adds a feature to a working project: updates scope, inserts correctly-ordered units into the build plan, generates specs — without breaking existing work. |
-| `forge-build` | The disciplined implement → verify → close loop for one spec'd unit: tests written during implementation, full-suite regression gate, 2-failure escalation to `forge-debug`. |
+| `forge-build` | The disciplined tests-first (red) → implement (green) → verify → close loop for one spec'd unit: tests written from the spec before any code and run to a recorded failure, then frozen; full-suite regression gate, 2-failure escalation to `forge-debug`. |
 | `forge-build-all` | The autonomous multi-unit version: builds every remaining unit in order, verifying each, **stopping at the first failure**. |
 | `forge-verify` | The pre-close gate: spec checklist + the unit's tests + full suite + build/typecheck/lint + tiered adversarial review, with a hard PASS/FAIL verdict. |
 | `forge-review` | Comprehensive multi-lens review of a PR, branch, or working diff (spec, standards, tests, errors, types, comments, simplicity) — confidence-gated, severity-ranked, read-only. The wide sweep to `forge-verify`'s unit close-gate. |

@@ -4,11 +4,11 @@ description: >
   This skill should be used to build every remaining unit in a Context Forge
   Methodology project in one continuous run — phrases like "forge-build-all", "build
   all units", "run the whole build", "build everything", "loop until the build plan is
-  done", "finish all the specs", or "autonomous build". It runs the implement → verify →
+  done", "finish all the specs", or "autonomous build". It runs the tests-first → implement → verify →
   close loop for each pending unit in order, updating the tracker after each, and stops
   on the first failure.
 metadata:
-  version: "0.25.3"
+  version: "0.26.0"
 ---
 
 # forge-build-all
@@ -52,8 +52,11 @@ For each pending unit N:
 1. **Check the spec.** Require `context/specs/NN-*.md`. If it is missing, STOP the run and
    tell the user to generate it with `forge-spec` (do not invent a spec).
 2. **Mark in progress** in `context/progress-tracker.md`.
-3. **Implement exactly the spec** — only what its Implementation section describes,
-   **including the spec's Tests section** (written during implementation, not after).
+3. **Tests first, then implement exactly the spec** — write the spec's Tests
+   section tests before any implementation code, run them to a recorded failure
+   for the right reason, and freeze them (forge-build's "Tests first — red before
+   green" step; skips per that step). Then build only what the Implementation
+   section describes until the tests pass — fix code, never the frozen tests.
    Use the tokens/patterns in `ui-context.md` and `code-standards.md`. Install only the
    dependencies the spec lists. Do not touch protected files. Do not expand scope or pull
    work from other units; note any discovered out-of-scope work as an open question.

@@ -4,17 +4,18 @@ description: >
   This skill should be used to implement one build unit in a project that uses the
   Context Forge methodology — phrases like "forge-build", "build unit NN", "run
   the build loop", "implement the next unit", or "build the next spec". It runs the
-  disciplined implement → verify → close loop for a single spec'd unit and keeps the
-  progress tracker in sync.
+  disciplined tests-first (red) → implement (green) → verify → close loop for a
+  single spec'd unit and keeps the progress tracker in sync.
 metadata:
-  version: "0.25.3"
+  version: "0.26.0"
 ---
 
 # forge-build
 
-Run the three-prompt build loop for ONE unit, end to end, without scope drift. This is
-the execution engine of the methodology: the spec defines the work, this loop does
-exactly that work and nothing more.
+Run the build loop for ONE unit, end to end, without scope drift. This is the
+execution engine of the methodology: the spec defines the work, the tests (written
+first, from the spec) define done, and this loop does exactly that work and nothing
+more.
 
 ## Preconditions
 
@@ -67,13 +68,39 @@ Never guess — if the spec references something you haven't read, read that fil
 Update `context/progress-tracker.md`: move this unit into "In Progress", set "Current
 Goal" to the unit's goal.
 
-### 3. Implement — exactly the spec, nothing more
+### 3. Tests first — red before green
+
+Write the unit's automated tests from the spec's **Tests** section BEFORE any
+implementation code. Tests derived from the spec alone encode what was asked;
+tests written alongside the code tend to confirm whatever got written — bugs
+included.
+
+- Derive each test from the spec's Tests + Implementation sections only. Match the
+  project's real test stack and conventions (`code-standards.md`). Test through
+  public interfaces the spec names; don't invent internals to assert against —
+  if a test can't be written without guessing an internal shape, write the minimal
+  interface stub (signatures only, no logic) and let the test call it.
+- **Run the new tests and confirm each fails for the right reason** — the missing
+  behavior (assertion failure, unimplemented function), not a syntax/import error
+  in the test itself. Record the red evidence in the tracker's In Progress entry:
+  `red: [command] → [N failed, right reasons]`. A test that has never failed
+  proves nothing (loop-contract § Red before green).
+- **Freeze the tests.** From here until Close, implementation must not edit them
+  to make them pass. A test may change only if it misread the spec — say so
+  explicitly to the user, treat it as spec debt (correct the spec's Tests section
+  too), then re-run red before continuing.
+- Skips: spec says "none — [reason]" → skip this step. Older spec with no Tests
+  section → propose the obvious tests, confirm with the user, then still write
+  them first. Spec'd checks with no automatable form (pure-visual, config-only)
+  → they stay in "Verify when done" as manual items; don't force hollow tests.
+
+### 4. Implement — exactly the spec, nothing more
 
 - Build only what the spec's Implementation section describes.
-- **Write the unit's tests as you build** — the spec's Tests section is part of the
-  implementation, not an afterthought. If the spec says "none — [reason]", skip;
-  if the spec has no Tests section at all (older spec), propose the obvious tests
-  and confirm with the user.
+- **Make the red tests green** — the tests from step 3 are the executable
+  contract. Implement until they pass without editing them (the freeze rule
+  above). If a test still seems wrong mid-implementation, stop and route it as
+  spec debt — never bend it quietly.
 - Use the tokens and patterns in `ui-context.md` and `code-standards.md` — make no
   visual or structural guesses. **Every rule in `code-standards.md` and every
   lesson in `lessons.md` is a hard constraint, not a style suggestion — each will
@@ -97,9 +124,10 @@ Goal" to the unit's goal.
   "improve" adjacent code, comments, or formatting — every changed line must trace
   to the spec.
 
-### 4. Verify — an explicit loop with a hard escape
+### 5. Verify — an explicit loop with a hard escape
 
-Run, in order: the unit's tests, the **full test suite** (regression gate — earlier
+Run, in order: the unit's tests (green now — cite the red→green pair from the
+tracker as evidence they test something real), the **full test suite** (regression gate — earlier
 units must stay green), the project's real build/typecheck/lint, the spec's "Verify
 when done" checklist, and the **standards compliance gate**: re-read
 `code-standards.md` and `lessons.md`, then walk YOUR diff against them **rule by
@@ -134,7 +162,7 @@ is external, claims cite evidence, retries read the attempt log:
   starts from what is already known to not work. Resume this loop only after the
   root cause is fixed.
 
-### 5. Close
+### 6. Close
 
 Only when every verification item passes, run the close-unit procedure in
 `${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/close-unit.md`: update and (if
@@ -148,6 +176,8 @@ Then tell the user the unit is complete and verified, and suggest shipping it wi
 
 - One unit per loop. Never combine units.
 - Never expand scope beyond the spec.
+- Never edit a frozen test to make it pass — a wrong test is spec debt, surfaced
+  and corrected in the spec, never silently bent.
 - Never mark a unit complete with failing checks or partial implementation.
 - A closed unit's spec belongs in `context/specs/archived/`, not the active `specs/` folder.
 - The tracker must reflect reality before the loop ends.

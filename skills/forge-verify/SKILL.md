@@ -7,7 +7,7 @@ description: >
   I close this". It runs the spec's verification checklist plus build/typecheck/lint and
   an adversarial review, then reports pass/fail.
 metadata:
-  version: "0.25.3"
+  version: "0.26.0"
 ---
 
 # forge-verify
@@ -44,9 +44,12 @@ are listed separately in the verdict.
 
 Check the spec's **Tests** section: every listed test must exist and pass. If the spec
 defined tests but they were never written, that is a **FAIL** — implementation isn't
-complete without them. (A spec that explicitly says "none — [reason]" passes this
-check; an older spec with no Tests section gets a Warning recommending tests be
-added.)
+complete without them. Check red evidence too: the tracker's In Progress entry should
+carry the `red: …` line from the tests-first step — tests with no record of ever
+failing get a **Warning** (a test that has never failed proves nothing; see
+loop-contract § Red before green). (A spec that explicitly says "none — [reason]"
+passes this check; an older spec with no Tests section gets a Warning recommending
+tests be added.)
 
 ### 3. Automated checks (incl. regression gate)
 

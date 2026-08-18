@@ -1,7 +1,7 @@
 # Close-unit procedure (shared reference)
 
 The single source of truth for closing a completed, verified unit. Used by
-`forge-build` (step 5), `forge-build-all` (per-unit Pass decision), and `forge-pr`
+`forge-build` (step 6), `forge-build-all` (per-unit Pass decision), and `forge-pr`
 (step 4). If the close rules or window numbers ever change, change them HERE only.
 
 ## Active-window numbers (canonical)
@@ -29,9 +29,9 @@ yourself if the agent is unavailable.
    "Completed", set the next unit as "Next Up", and add a **one- to two-line**
    Session Note (what shipped + any decision). Keep notes terse — this file is
    read on every resume/build, so every line costs tokens. **Clear the unit's
-   attempt log** (the `attempt N:` lines under its In Progress entry) — it served
-   its purpose; a recurring root cause becomes a lesson (step 8) before the log
-   goes.
+   attempt log and red-evidence line** (the `attempt N:` and `red:` lines under
+   its In Progress entry) — they served their purpose; a recurring root cause
+   becomes a lesson (step 8) before the log goes.
 2. **Rotate the tracker if it has grown** past the active window above: move the
    oldest Completed entries and Session Notes into `context/progress-archive.md`
    (create it if absent; append newest-first). Pure token saving — no loss of

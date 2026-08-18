@@ -35,9 +35,11 @@ Description.
 
 ## Tests
 
-<!-- The automated tests THIS unit must ship with (written during implementation,
-     not after). Name what is tested and at what level; "none — [reason]" is
-     allowed for pure-visual/config units, but say so explicitly. -->
+<!-- The automated tests THIS unit must ship with. The build loop writes them
+     BEFORE implementation, from this section alone, and runs them to a recorded
+     failure first (red before green) — so name observable behaviors, precisely.
+     "none — [reason]" is allowed for pure-visual/config units, but say so
+     explicitly. -->
 
 - [test level: unit/integration/e2e] [behavior it must prove]
 - ...
@@ -46,7 +48,7 @@ Description.
 
 - [ ] Condition one
 - [ ] Condition two
-- [ ] This unit's tests (above) written and green
+- [ ] This unit's tests (above) written first, seen red, now green
 - [ ] Full test suite green (no regressions in earlier units)
 - [ ] No TypeScript errors
 - [ ] No console errors

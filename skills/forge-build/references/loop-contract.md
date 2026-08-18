@@ -33,7 +33,22 @@ context is affordable, use one: deterministic tools always; the `forge-reviewer`
 subagent per the risk tiering. Self-review in the same transcript is the weakest
 form of verification — evidence citation is what keeps it honest.
 
-## 3. Retries add information — the attempt log
+## 3. Red before green — a test that has never failed proves nothing
+
+Tests are only valid evidence if they were seen to fail first. A test written
+next to the implementation tends to confirm whatever the implementation does —
+bugs included — and a test that passes on first run may be asserting nothing.
+So:
+
+- Unit tests are written **before** implementation, derived from the spec alone,
+  and run to a recorded failure **for the right reason** (the missing behavior,
+  not a syntax/import error in the test).
+- Once red is recorded, the tests are **frozen**: a fix loop repairs the code,
+  never the test. A test may change only when it demonstrably misread the spec —
+  stated openly, corrected in the spec's Tests section too, and re-run to red.
+- At verify, "unit tests green" cites the red→green pair, not just the green.
+
+## 4. Retries add information — the attempt log
 
 A retry that knows nothing about the last failure is a coin flip. On every failed
 verification attempt, append one line to the unit's **In Progress** entry in
@@ -56,7 +71,7 @@ Rules:
 - When the unit closes, the attempt log is cleared from the tracker (the close-unit
   procedure); a recurring root cause becomes a lesson first.
 
-## 4. State survives compaction
+## 5. State survives compaction
 
 Progress lives in files, not in the transcript: the tracker (with the attempt
 log), specs, lessons, `.last-session.md`. Anything the loop needs to resume must
@@ -65,5 +80,6 @@ be re-derivable from disk — assume the transcript can be truncated at any mome
 ## The one-line version
 
 Done means external evidence says done; claims cite their evidence or say
-UNVERIFIED; retries read the attempt log and differ; two failures hand the log to
-the diagnostician; everything that matters is on disk.
+UNVERIFIED; tests fail before they pass and are never bent to pass; retries read
+the attempt log and differ; two failures hand the log to the diagnostician;
+everything that matters is on disk.

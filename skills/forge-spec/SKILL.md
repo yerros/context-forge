@@ -8,7 +8,7 @@ description: >
   and writes detailed per-feature spec files into context/specs/ that a coding agent
   implements exactly.
 metadata:
-  version: "0.25.3"
+  version: "0.26.0"
 ---
 
 # forge-spec
@@ -93,7 +93,9 @@ the assumption and why, so the user can veto it before any code exists):
 4. **Dependencies** — packages this unit needs that aren't installed yet, listed
    explicitly with the reason.
 5. **Tests** — the automated tests this unit ships with (level + behavior each must
-   prove), written *during* implementation, not after. Match the project's real test
+   prove). The build loop writes these *before* implementation, from this section
+   alone, and runs them red first — so each entry must name an observable behavior
+   precise enough to test without seeing the code. Match the project's real test
    stack from `code-standards.md`. "None — [reason]" is allowed for pure-visual or
    config-only units, but must be stated, never implied.
 6. **Verify when done** — specific conditions that must be true, plus the standard
@@ -102,12 +104,15 @@ the assumption and why, so the user can veto it before any code exists):
 
 One feature may need one spec or several — let complexity decide, not a fixed rule.
 
-## The three-prompt build loop (share with the user)
+## The build loop (share with the user)
 
 Once a spec exists, the build runs as:
 
-- **Implement**: "Read context/specs/NN-feature-name.md. Mark it in progress in
-  context/progress-tracker.md. Implement it exactly as specified. Do not go beyond scope."
+- **Test first**: "Read context/specs/NN-feature-name.md. Mark it in progress in
+  context/progress-tracker.md. Write the tests from its Tests section — before any
+  implementation — run them, and confirm they fail for the right reason."
+- **Implement**: "Implement the spec exactly as specified until those tests pass,
+  without editing the tests. Do not go beyond scope."
 - **Correct**: "The [element] does not match the spec. Expected: [X]. Current: [Y]. Fix
   only this. Do not change anything else."
 - **Close**: "Implementation is complete and verified. Mark unit NN complete in

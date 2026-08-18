@@ -3,6 +3,35 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.46.0] — 2026-08-18
+
+### Changed (tests-first: red before green)
+
+The build loop now writes a unit's tests **before** its implementation, from the
+spec alone, and runs them to a recorded failure — closing the self-confirming-tests
+gap where tests written alongside the code confirm whatever got written, bugs
+included:
+
+- **`forge-build`** — new step 3 "Tests first — red before green": derive tests
+  from the spec's Tests section, run them, confirm each fails for the right reason
+  (recorded as a `red: …` line in the tracker's In Progress entry), then freeze
+  them; implementation (now step 4) makes them green without editing them. A test
+  may change only if it demonstrably misread the spec — surfaced as spec debt, the
+  spec corrected, red re-run. New hard rule: never bend a frozen test to pass.
+  Skips preserved: "none — [reason]" specs, and non-automatable checks stay
+  manual in "Verify when done".
+- **`loop-contract.md`** — new §3 "Red before green — a test that has never
+  failed proves nothing": red-first, test freeze, and red→green as the evidence
+  pair cited at verify. Later sections renumbered.
+- **`forge-build-all`** — per-unit step 3 follows the same red-first flow.
+- **`forge-spec`** (+ spec template) — the Tests section is now written to be
+  implementable test-first: each entry names an observable behavior precise enough
+  to test without seeing the code; "Verify when done" says "written first, seen
+  red, now green". The shared build-loop prompts gain a **Test first** prompt.
+- **`forge-verify`** — the unit-tests check also looks for the red evidence line;
+  tests with no record of ever failing get a Warning.
+- **`close-unit.md`** — clears the `red:` line along with the attempt log.
+
 ## [0.45.0] — 2026-08-17
 
 ### Added (Google Antigravity support)
