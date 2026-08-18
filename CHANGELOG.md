@@ -3,6 +3,49 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.48.0] — 2026-08-18
+
+### Added (PR comments per fix round)
+
+- **`forge-review`** — when the review scope is a PR and findings are fixed and
+  committed via `forge-fix` (with `--until-clean` or not), post **one PR comment
+  per fix round** (`gh pr comment`): each fixed finding with file:line,
+  lens/severity, what + root cause, its regression test, and the commit; plus
+  what's still open and the next pass. A 3-pass loop leaves 3 comments — a
+  readable audit trail of what the loop changed, without opening the ledger.
+  Non-PR scopes keep the ledger's pass log as the trail.
+
+## [0.47.0] — 2026-08-18
+
+### Changed (review convergence: inventory, ledger, until-clean)
+
+Repeated reviews kept finding new bugs because each pass was a stochastic restart:
+no memory of prior findings, no proof of coverage, and fixes (new code) reviewed
+no differently. The review now converges instead of hoping one pass is perfect:
+
+- **`forge-review` — inventory first.** Before any lens runs, the diff is
+  enumerated mechanically into numbered items (file + hunk/function); every lens
+  marks every due item clean-or-finding. An unmarked item is an unreviewed item —
+  no verdict may be reported with unmarked cells, and the report states coverage
+  ("N items × M lenses, all cells marked") before the verdict.
+- **`forge-review` — persistent review ledger** (new
+  `references/review-ledger.md`): one file per review scope
+  (`context/reviews/<scope-id>.md`) holding the inventory, findings with status
+  (`open` → `fixed` → `verified-fixed`, the last requiring fresh cited evidence),
+  and a pass log. Later passes read it first: re-verify fixed findings, dedupe,
+  and add fix-diff hunks as new inventory items — passes accumulate coverage
+  instead of restarting. Working state: deleted when the scope merges.
+- **`forge-review --until-clean`** — convergence mode: review → route findings to
+  `forge-fix` → re-review, done only when one complete pass reports zero
+  Critical/Important and every finding is `verified-fixed`. Hard stop after 3
+  passes without convergence, and any finding that reopens twice goes to
+  `forge-debug` — endless review-fix cycling is a diagnosis problem. Review
+  passes stay read-only; fixes run through `forge-fix`.
+- **`forge-fix` — pin the bug red before fixing** (new step 4): every bug gets an
+  automated regression test that fails on the current code (recorded red) before
+  any fix; the test is frozen, the fix makes it green, and it stays in the suite
+  as the permanent guard. Verify now also runs the full suite.
+
 ## [0.46.0] — 2026-08-18
 
 ### Changed (tests-first: red before green)

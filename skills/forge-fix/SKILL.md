@@ -6,11 +6,11 @@ description: >
   in X", "fix this bug", "X is broken", "this stopped working", or "users report
   an error in Y". It intakes and reproduces the bug, triages it (fix directly when
   the cause is obvious; hand off to forge-debug when it isn't), and closes with the
-  same discipline as a build unit — tracker updated, lesson captured, shipped via
-  forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
+  same discipline as a build unit — regression test pinned red before the fix,
+  tracker updated, lesson captured, shipped via forge-pr. NOT for being stuck after repeated failed fixes (that is forge-debug)
   or for correcting the unit currently being built (that is forge-build's loop).
 metadata:
-  version: "0.25.3"
+  version: "0.26.0"
 ---
 
 # forge-fix
@@ -50,7 +50,18 @@ be reproduced, that's the first job — not fixing.
   fix attempt already failed twice** → STOP and run `forge-debug`. Do not guess-fix.
   One diagnosis engine, not two.
 
-## 4. Fix, in scope
+## 4. Pin the bug with a test — red before the fix
+
+Before touching the code, turn the step-2 reproduction into an **automated
+regression test** that fails on the current code for the bug's reason (record the
+red evidence: command + failing summary), per loop-contract § Red before green.
+The test is then frozen: the fix makes it pass without editing it, and it stays in
+the suite permanently — this bug can never silently return, because it is now
+guarded by a machine, not by anyone's memory. If the bug has no automatable form
+(pure-visual glitch, environment-only), say so explicitly and record the manual
+reproduction as the check instead — don't force a hollow test.
+
+## 5. Fix, in scope
 
 Smallest change that addresses the root cause — never a workaround layered over a
 symptom. Smallest also means simplest: a fix introduces no new abstraction,
@@ -58,9 +69,10 @@ configurability, or error handling for scenarios the bug didn't demonstrate. No
 drive-by refactors or "improvements"; anything out of scope goes to the
 tracker as an open question or to `forge-feature`. Protected files stay protected.
 
-## 5. Verify
+## 6. Verify
 
-Re-run the reproduction (it must now pass), the project's real build/typecheck/lint,
+Run the regression test (red→green cited as evidence), the **full test suite**
+(the fix must not break anything else), the project's real build/typecheck/lint,
 the **standards compliance gate** (walk the fix's diff rule-by-rule against
 `code-standards.md` + `lessons.md` — from the files, not memory), and — if the fix
 touched a completed unit's behavior — that unit's "Verify when done" checklist from
@@ -71,7 +83,7 @@ same check → `forge-debug` with the log. If the fix touched an
 invariant-adjacent area or multiple call sites, have the `forge-reviewer` agent
 review the diff before closing.
 
-## 6. Close with discipline
+## 7. Close with discipline
 
 - Update `context/progress-tracker.md`: one-line entry for the fix (what + root
   cause), per the close-unit procedure in

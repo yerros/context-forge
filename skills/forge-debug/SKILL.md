@@ -17,7 +17,7 @@ without a model of the failure just compounds damage. Switch to this disciplined
 
 (A fresh bug report that isn't stuck yet enters through `forge-fix`, which triages
 and hands off here when the cause is non-obvious. After this loop resolves it,
-closing — tracker, lesson, `fix/` branch — follows `forge-fix` step 6.)
+closing — tracker, lesson, `fix/` branch — follows `forge-fix` step 7.)
 
 ## Argument
 
