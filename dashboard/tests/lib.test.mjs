@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
-  parseTracker, parseBuildPlan, resolveContextDir, resolveGitCommonDir,
+  parseTracker, parseBuildPlan, unitOf, resolveContextDir, resolveGitCommonDir,
   readClaims, readLocks, readSessions, readFeed, getState,
   projectDirName, parseSubagentTranscript, readSubagents, attachSubagents,
 } from "../src/lib.mjs";
@@ -374,4 +374,25 @@ test("readSubagents + attachSubagents join transcript activity onto hook agents"
 test("attachSubagents: a session with only finished transcripts is not invented", () => {
   const sessions = attachSubagents([], { "s9": [{ agentType: "forge-scout", done: true, last: Date.now() / 1000, since: 1 }] });
   assert.equal(sessions.length, 0);
+});
+
+test("parseTracker: shipped paragraphs + their bullets under In Progress are completed, not WIP", () => {
+  const t = parseTracker(
+    "## In Progress\n\n- Unit 183: real wip item\n\n**Next Up — nothing specced.** Phase 179 shipped as one PR.\n\n**Unit 179 SHIPPED 2026-09-03, PR #267 (`feat/x`) — manual booking.**\ndetail line\n\n**Homepage redesign — SHIPPED 2026-09-03, PR #261.** What shipped:\n\n- **Credibility band** moved noir → ivory\n- Also in the commit: nav work\n"
+  );
+  assert.deepEqual(t.inProgress.map(i => i.text), ["Unit 183: real wip item"]);
+  assert.equal(t.completed.length, 4);
+  assert.equal(t.completed[0], "Unit 179 — manual booking");
+  assert.equal(t.completed[1], "Homepage redesign");
+});
+
+test("parseBuildPlan: prose bullets skipped, table rows + Active sections are pending, loose digits are not units", () => {
+  const p = parseBuildPlan(
+    "### Active — Business Info (Units 120–124)\n\n- **Address = structured** maps 1:1 to schema.org\n- **`sameAs` = `Json?`** not `String[]`\n\n### In Progress — backups\n\n| Unit | Title |\n|---|---|\n| 162 | Restore drill |\n| 161 | Offsite | ✅ **Done** |\n\n### Shipped — old\n\n- unit 99 thing (PR #100)\n"
+  );
+  assert.deepEqual(p.pending.map(x => x.unit), [162]);
+  assert.equal(p.pending[0].text, "unit 162: Restore drill");
+  assert.deepEqual(p.completed.map(x => x.unit), [161, 99]);
+  assert.equal(unitOf("maps 1:1 to schema.org"), null);
+  assert.equal(unitOf("176 (backend). GET /x"), 176);
 });

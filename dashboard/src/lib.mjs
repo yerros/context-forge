@@ -57,15 +57,26 @@ export function parseTracker(md) {
   if (phase) out.phase = phase[1].trim();
 
   let bucket = null;
+  // Real trackers leave shipped units under "In Progress" as bold paragraphs
+  // ("**Unit 179 SHIPPED …**") with sub-bullets; those are done, not WIP.
+  let paraDone = false;
   for (const raw of md.split("\n")) {
     const line = raw.replace(/\r$/, "");
     const h = line.match(/^#{2,4}\s+(.+)$/);
     if (h) {
-      bucket = null;
+      bucket = null; paraDone = false;
       for (const [re, key] of SECTION_MAP) if (re.test(h[1])) { bucket = key; break; }
       continue;
     }
     if (!bucket) continue;
+    if (bucket === "inProgress" && /^\*\*/.test(line)) {
+      // only the bold lead-in decides; body prose may mention "shipped" freely
+      const bold = (line.match(/^\*\*(.*?)\*\*/) || [0, line.replace(/^\*\*/, "")])[1];
+      const m = bold.match(/^(.*?)\s*[—-]?\s*\b(?:shipped|done|merged)\b[^—]*(?:—\s*(.*))?$/i);
+      paraDone = !!m;
+      if (m) out.completed.push([m[1], m[2]].filter(Boolean).join(" — ").replace(/\.$/, "").trim());
+      continue;
+    }
 
     const attempt = line.match(/^\s+attempt\s+(\d+)\s*:\s*(.+)$/i);
     if (attempt && bucket === "inProgress" && out.inProgress.length) {
@@ -76,7 +87,8 @@ export function parseTracker(md) {
     if (!item) continue;
     const text = item[1].trim();
     if (!text || /^\(none\)/i.test(text)) continue;
-    if (bucket === "inProgress") out.inProgress.push({ text, attempts: [] });
+    if (bucket === "inProgress" && !paraDone) out.inProgress.push({ text, attempts: [] });
+    else if (bucket === "inProgress") out.completed.push(text);
     else out[bucket].push(text);
   }
   // Real trackers often carry the live unit in the Current Phase line itself
@@ -90,19 +102,31 @@ export function parseTracker(md) {
 
 /* ---------------- build plan ---------------------------------------------- */
 
+// Unit refs are "unit 12", "Units 160–162" or a bullet/row that STARTS with the
+// number — a bare digit mid-sentence ("maps 1:1", "PR #243") is not a unit.
+export function unitOf(text) {
+  const m = String(text).match(/\bunits?\s*0*(\d{1,3})\b/i) || String(text).match(/^\W*0*(\d{1,3})\b/);
+  return m ? Number(m[1]) : null;
+}
+
 export function parseBuildPlan(md) {
   const out = { pending: [], completed: [] };
   if (!md) return out;
   let bucket = "pending";
   for (const line of md.split("\n")) {
     const h = line.match(/^#{2,3}\s+(.+)$/);
-    if (h) { bucket = /completed/i.test(h[1]) ? "completed" : "pending"; continue; }
-    const item = line.match(/^\s*(?:[-*]|\d+[.)])\s+(.+)$/);
+    if (h) { bucket = /completed|shipped|\bdone\b|parked|superseded|adopted/i.test(h[1]) ? "completed" : "pending"; continue; }
+    // "| 160 | title | spec | status |" table rows are how real plans list units
+    const row = line.match(/^\|\s*0*(\d{1,3})\s*\|\s*([^|]+)\|/);
+    const item = row ? [null, `unit ${row[1]}: ${row[2].trim()}`] : line.match(/^\s*(?:[-*]|\d+[.)])\s+(.+)$/);
     if (item) {
       const text = item[1].trim();
-      const unit = text.match(/(?:unit\s*)?0*(\d{1,3})\b/i);
+      const unit = unitOf(text);
+      // ponytail: a plan bullet with no unit number is prose (a decision, a note), not work
+      if (unit == null) continue;
       const complexity = /\[complexity:\s*high\]/i.test(text);
-      out[bucket].push({ text, unit: unit ? Number(unit[1]) : null, high: complexity });
+      const done = bucket === "completed" || /✅|\b(done|shipped)\b/i.test(line);
+      out[done ? "completed" : "pending"].push({ text, unit, high: complexity });
     }
   }
   return out;
