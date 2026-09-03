@@ -6,6 +6,7 @@ import path from "node:path";
 import {
   parseTracker, parseBuildPlan, resolveContextDir, resolveGitCommonDir,
   readClaims, readLocks, readSessions, readFeed, getState,
+  projectDirName, parseSubagentTranscript, readSubagents, attachSubagents,
 } from "../src/lib.mjs";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "fo-"));
@@ -182,6 +183,17 @@ test("readSessions: .stream files become the realtime work timeline", () => {
   assert.equal(s[0].stream[2].ts, now - 5);
 });
 
+test("readSessions: .wait files surface blocked-on-user state (2 h TTL)", () => {
+  const dir = tmp();
+  const now = Math.floor(Date.now() / 1000);
+  fs.writeFileSync(path.join(dir, "w1.wait"), `permission ${now - 3}\n`);
+  fs.writeFileSync(path.join(dir, "w2.wait"), `waiting ${now - 8000}\n`);
+  fs.writeFileSync(path.join(dir, "w3.wait"), `bogus ${now}\n`);
+  const s = readSessions(dir);
+  assert.deepEqual(s.map(x => x.session), ["w1"]);
+  assert.deepEqual(s[0].wait, { state: "permission", since: now - 3 });
+});
+
 test("readSessions: .now files surface realtime tool activity", () => {
   const dir = tmp();
   const now = Math.floor(Date.now() / 1000);
@@ -294,4 +306,72 @@ test("getState assembles a full project snapshot", () => {
   assert.equal(st.project, path.basename(root));
   assert.ok(Array.isArray(st.claims) && Array.isArray(st.locks));
   assert.ok(Array.isArray(st.archivedUnits));
+});
+
+/* ---------------- subagent transcripts ------------------------------------ */
+
+const iso = (secAgo) => new Date(Date.now() - secAgo * 1000).toISOString();
+const rec = (o) => JSON.stringify(o) + "\n";
+const use = (id, name, input, secAgo) => rec({ type: "assistant", timestamp: iso(secAgo),
+  message: { model: "claude-sonnet-5", content: [{ type: "tool_use", id, name, input }] } });
+const result = (id, secAgo) => rec({ type: "user", timestamp: iso(secAgo),
+  message: { content: [{ type: "tool_result", tool_use_id: id, content: "ok" }] } });
+const text = (secAgo) => rec({ type: "assistant", timestamp: iso(secAgo),
+  message: { model: "claude-sonnet-5", content: [{ type: "text", text: "## Findings" }] } });
+
+test("projectDirName mirrors Claude Code's project directory rule", () => {
+  assert.equal(projectDirName("/Users/me/Agent Research/ctx-forge"), "-Users-me-Agent-Research-ctx-forge");
+});
+
+test("parseSubagentTranscript: current tool = newest tool_use without a result", () => {
+  const t = use("t1", "Read", { file_path: "/a/b/c/auth.ts" }, 30) + result("t1", 29)
+    + use("t2", "Bash", { command: "npm test" }, 10) + "garbage line\n";
+  const r = parseSubagentTranscript(t);
+  assert.equal(r.model, "claude-sonnet-5");
+  assert.equal(r.tool, "Bash");
+  assert.equal(r.detail, "npm test");
+  assert.equal(r.done, false);
+  assert.deepEqual(r.stream.map(e => e.tool), ["Read", "Bash"]);
+  assert.equal(r.stream[0].detail, "…/auth.ts");
+  assert.ok(r.since <= r.last && r.last > 0);
+});
+
+test("parseSubagentTranscript: a final text answer marks the agent done", () => {
+  const r = parseSubagentTranscript(use("t1", "Grep", { pattern: "foo" }, 20) + result("t1", 19) + text(5));
+  assert.equal(r.done, true);
+  assert.equal(r.tool, null);
+});
+
+test("readSubagents + attachSubagents join transcript activity onto hook agents", () => {
+  const projects = tmp();
+  const root = "/Users/me/demo proj";
+  const dir = path.join(projects, projectDirName(root), "sess-1", "subagents");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "agent-aaa.meta.json"), JSON.stringify({ agentType: "context-forge:forge-reviewer", description: "review diff", toolUseId: "x" }));
+  fs.writeFileSync(path.join(dir, "agent-aaa.jsonl"), use("t1", "Read", { file_path: "/p/q/r/api.ts" }, 5));
+  fs.writeFileSync(path.join(dir, "agent-bbb.meta.json"), JSON.stringify({ agentType: "forge-tester" }));
+  fs.writeFileSync(path.join(dir, "agent-bbb.jsonl"), use("t1", "Bash", { command: "npm t" }, 50) + result("t1", 49) + text(40));
+  fs.writeFileSync(path.join(dir, "agent-ccc.meta.json"), JSON.stringify({ agentType: "Explore" }));
+  fs.writeFileSync(path.join(dir, "agent-ccc.jsonl"), use("t1", "Grep", { pattern: "x" }, 3));
+
+  const by = readSubagents(root, projects);
+  assert.equal(by["sess-1"].length, 3);
+  assert.ok(by["sess-1"].some(x => x.agentType === "forge-reviewer"));   // prefix stripped
+
+  const now = Math.floor(Date.now() / 1000);
+  const sessions = [{ session: "sess-1", agents: [{ agent: "forge-reviewer", since: now - 10, bg: false }] }];
+  attachSubagents(sessions, by);
+  const a = sessions[0].agents;
+  assert.equal(a[0].tool, "Read");                    // hook entry enriched
+  assert.equal(a[0].detail, "…/api.ts");
+  assert.equal(a[0].description, "review diff");
+  assert.equal(a.some(x => x.agent === "forge-tester"), false);   // done → not appended
+  const guest = a.find(x => x.agent === "Explore");
+  assert.equal(guest.fromTranscript, true);            // live, hook missed it → appended
+  assert.equal(guest.tool, "Grep");
+});
+
+test("attachSubagents: a session with only finished transcripts is not invented", () => {
+  const sessions = attachSubagents([], { "s9": [{ agentType: "forge-scout", done: true, last: Date.now() / 1000, since: 1 }] });
+  assert.equal(sessions.length, 0);
 });

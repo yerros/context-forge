@@ -181,6 +181,13 @@ export function readSessions(statusDir = path.join(os.homedir(), ".claude", "for
       const sid = f.replace(/\.now$/, "");
       const [epoch, tool, detail] = safeRead(full).trim().split("\t");
       if (tool) merge(sessions, sid).now = { tool, detail: detail || "", since: Number(epoch) || 0 };
+    } else if (f.endsWith(".wait")) {
+      // "<waiting|permission> <epoch>" — the session is blocked on the user.
+      const sid = f.replace(/\.wait$/, "");
+      const [state, epoch] = safeRead(full).trim().split(/\s+/);
+      const since = Number(epoch) || 0;
+      if (/^(waiting|permission)$/.test(state) && Date.now() / 1000 - since < 7200)
+        merge(sessions, sid).wait = { state, since };
     } else if (f.endsWith(".stream")) {
       // rolling per-session tool log — the dashboard's realtime work timeline.
       const sid = f.replace(/\.stream$/, "");
@@ -202,6 +209,115 @@ export function readSessions(statusDir = path.join(os.homedir(), ".claude", "for
     if (!s) { s = { session: sid, agents: [] }; list.push(s); }
     return s;
   }
+}
+
+/* ---------------- subagent transcripts (per-agent live activity) ---------- */
+// Claude Code writes every subagent's own transcript to
+//   ~/.claude/projects/<project-dir>/<session_id>/subagents/agent-<id>.jsonl
+// plus agent-<id>.meta.json {agentType, description, toolUseId}. The hooks
+// only see the MAIN session's tools, so this is the only source for "what is
+// forge-reviewer doing right now". Read-only; unofficial format — every
+// parse failure degrades to "no detail", never to an error.
+
+// Same rule Claude Code uses for the project directory name.
+export const projectDirName = (root) => String(root).replace(/[^a-zA-Z0-9-]/g, "-");
+
+const SUB_TAIL_BYTES = 64 * 1024;   // only the recent tail of a transcript matters
+const SUB_TTL_S = 7200;
+
+// Human detail for a tool call — mirrors now-status.sh (first matching key).
+function toolDetail(input) {
+  if (!input || typeof input !== "object") return "";
+  let v = "";
+  for (const k of ["file_path", "notebook_path", "path", "pattern", "skill", "subagent_type", "url", "command", "description", "prompt", "query"]) {
+    if (typeof input[k] === "string" && input[k]) { v = input[k]; break; }
+  }
+  v = v.replace(/[\t\n]/g, " ");
+  // shorten deep PATHS to their tail; commands (contain spaces) stay intact
+  if (!/\s/.test(v) && (v.match(/\//g) || []).length >= 3) v = "…/" + v.slice(v.lastIndexOf("/") + 1);
+  return v.slice(0, 90);
+}
+
+function tailRead(file, bytes) {
+  let fd;
+  try {
+    const size = fs.statSync(file).size;
+    const start = Math.max(0, size - bytes);
+    fd = fs.openSync(file, "r");
+    const buf = Buffer.alloc(size - start);
+    fs.readSync(fd, buf, 0, buf.length, start);
+    let text = buf.toString("utf8");
+    if (start > 0) text = text.slice(text.indexOf("\n") + 1);   // drop the cut first line
+    return text;
+  } catch { return ""; }
+  finally { if (fd !== undefined) fs.closeSync(fd); }
+}
+
+// Parse one subagent transcript tail into a compact activity record.
+export function parseSubagentTranscript(text) {
+  const out = { model: "", since: 0, last: 0, done: false, tool: null, detail: "", stream: [] };
+  const open = new Map();   // tool_use id -> stream event (awaiting its result)
+  for (const line of String(text).split("\n")) {
+    if (!line) continue;
+    let r; try { r = JSON.parse(line); } catch { continue; }
+    const ts = Math.floor(Date.parse(r.timestamp || "") / 1000) || 0;
+    if (ts) { if (!out.since) out.since = ts; out.last = ts; }
+    const m = r.message;
+    const content = m && Array.isArray(m.content) ? m.content : [];
+    if (r.type === "assistant") {
+      if (m && m.model) out.model = m.model;
+      for (const c of content) {
+        if (c.type === "tool_use") {
+          const ev = { ts, tool: String(c.name || ""), detail: toolDetail(c.input) };
+          out.stream.push(ev);
+          if (c.id) open.set(c.id, ev);
+          out.done = false;
+        } else if (c.type === "text" && c.text) {
+          out.done = true;   // a final text answer = the agent finished its turn
+        }
+      }
+    } else if (r.type === "user") {
+      for (const c of content) if (c.type === "tool_result" && c.tool_use_id) open.delete(c.tool_use_id);
+    }
+  }
+  // current tool = the newest tool_use without a result yet
+  const pending = [...open.values()];
+  if (pending.length && !out.done) { const cur = pending[pending.length - 1]; out.tool = cur.tool; out.detail = cur.detail; }
+  out.stream = out.stream.slice(-20);
+  return out;
+}
+
+export function readSubagents(root, projectsDir = path.join(os.homedir(), ".claude", "projects")) {
+  const projDir = path.join(projectsDir, projectDirName(root));
+  const bySession = {};
+  let sessions;
+  try { sessions = fs.readdirSync(projDir); } catch { return bySession; }
+  const now = Date.now() / 1000;
+  for (const sid of sessions) {
+    const dir = path.join(projDir, sid, "subagents");
+    let files;
+    try { files = fs.readdirSync(dir); } catch { continue; }
+    for (const f of files) {
+      const m = f.match(/^agent-([A-Za-z0-9]+)\.jsonl$/);
+      if (!m) continue;
+      const jsonl = path.join(dir, f);
+      let st; try { st = fs.statSync(jsonl); } catch { continue; }
+      if (now - st.mtimeMs / 1000 > SUB_TTL_S) continue;   // long-dead subagent
+      let meta = {};
+      try { meta = JSON.parse(safeRead(path.join(dir, `agent-${m[1]}.meta.json`))); } catch { /* optional */ }
+      const rec = parseSubagentTranscript(tailRead(jsonl, SUB_TAIL_BYTES));
+      (bySession[sid] ||= []).push({
+        id: m[1],
+        agentType: String(meta.agentType || "").replace(/^.*:/, "") || "unknown",
+        description: String(meta.description || "").slice(0, 120),
+        toolUseId: meta.toolUseId || "",
+        ...rec,
+        mtime: Math.floor(st.mtimeMs / 1000),
+      });
+    }
+    if (bySession[sid]) bySession[sid].sort((a, b) => a.since - b.since);
+  }
+  return bySession;
 }
 
 /* ---------------- metrics feed --------------------------------------------- */
@@ -271,6 +387,35 @@ export function readActiveSpecs(ctxDir) {
   return readSpecDir(path.join(ctxDir, "specs")).sort((a, b) => a.unit - b.unit);
 }
 
+// Join transcript activity onto the hook-recorded agent list. Match is by
+// agent type, oldest-first on both sides (two forge-reviewers = two entries).
+// Hook entries stay authoritative for presence; transcripts only add detail.
+// Transcript-only agents (hook signal missed) are appended as `fromTranscript`.
+export function attachSubagents(sessions, bySession) {
+  for (const [sid, subs] of Object.entries(bySession)) {
+    let s = sessions.find((x) => x.session === sid);
+    const now = Date.now() / 1000;
+    // ponytail: a transcript with no final text but no activity for 20 min is
+    // a crashed/killed agent, not a live one — same TTL as background entries.
+    const live = subs.filter((x) => !x.done && now - x.last < 1200);
+    if (!s) {
+      if (!live.length) continue;
+      s = { session: sid, agents: [] }; sessions.push(s);
+    }
+    const pool = new Map();
+    for (const x of live) (pool.get(x.agentType) || pool.set(x.agentType, []).get(x.agentType)).push(x);
+    for (const a of s.agents) {
+      const q = pool.get(a.agent);
+      const x = q && q.shift();
+      if (x) Object.assign(a, { tool: x.tool, detail: x.detail, description: x.description, model: x.model, stream: x.stream, last: x.last });
+    }
+    for (const q of pool.values()) for (const x of q)
+      s.agents.push({ agent: x.agentType, since: x.since, bg: false, fromTranscript: true,
+        tool: x.tool, detail: x.detail, description: x.description, model: x.model, stream: x.stream, last: x.last });
+  }
+  return sessions;
+}
+
 /* ---------------- whole-project state -------------------------------------- */
 
 export function getState(root) {
@@ -291,7 +436,7 @@ export function getState(root) {
     activeSpecs: readActiveSpecs(ctxDir),
     claims: readClaims(common),
     locks: readLocks(common),
-    sessions: readSessions(),
+    sessions: attachSubagents(readSessions(), readSubagents(root)),
     repoUrl: repoUrl(common),
     lastSession: safeRead(path.join(ctxDir, ".last-session.md")),
     generatedAt: new Date().toISOString(),
@@ -319,6 +464,17 @@ export function stateSignature(root, statusDir, metricsFile) {
   }
   if (fs.existsSync(statusDir)) for (const f of fs.readdirSync(statusDir)) add(path.join(statusDir, f));
   add(metricsFile);
+  // subagent transcripts: only the recent ones (readSubagents skips the rest)
+  const projDir = path.join(os.homedir(), ".claude", "projects", projectDirName(root));
+  let sids = []; try { sids = fs.readdirSync(projDir); } catch { /* no transcripts yet */ }
+  const cutoff = Date.now() - SUB_TTL_S * 1000;
+  for (const sid of sids) {
+    const d = path.join(projDir, sid, "subagents");
+    let files = []; try { files = fs.readdirSync(d); } catch { continue; }
+    for (const f of files) if (f.endsWith(".jsonl")) {
+      try { const s = fs.statSync(path.join(d, f)); if (s.mtimeMs > cutoff) parts.push(f + ":" + s.mtimeMs + ":" + s.size); } catch { /* raced */ }
+    }
+  }
   return parts.join("|");
 }
 

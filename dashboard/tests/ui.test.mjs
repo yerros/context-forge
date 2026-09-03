@@ -34,7 +34,7 @@ function makeEl(ops) {
   };
 }
 
-// Minimal Image stub so the optional sprite atlas (?sprites=1) path constructs
+// Minimal Image stub so the sprite atlas constructs
 // cleanly; onload never fires here, so the render stays on the procedural path.
 class ImageStub {
   set src(_v) {}
@@ -55,8 +55,11 @@ const SAMPLE_STATE = {
   claims: [{ unit: "12", mode: "build" }], locks: [{ name: "tracker", ageMin: 2, stale: false }],
   sessions: [
     { session: "s1", skillState: "active", skill: "forge-build",
-      agents: [{ agent: "forge-reviewer", since: 1 }, { agent: "forge-tester", since: 2 },
-               { agent: "forge-typer", since: 3 }, { agent: "silent-failure-hunter", since: 4 }] },
+      wait: { state: "permission", since: Math.floor(Date.now() / 1000) - 5 },
+      agents: [{ agent: "forge-reviewer", since: 1, tool: "Read", detail: "…/auth.ts" },
+               { agent: "forge-tester", since: 2, tool: "Bash", detail: "npm test" },
+               { agent: "forge-typer", since: 3, description: "types lens" },
+               { agent: "silent-failure-hunter", since: 4, tool: "Grep", detail: "catch" }] },
   ],
 };
 const SAMPLE_FEED = [{ ts: "2026-07-18T10:00:00", event: "skill_invoked", project: "demo", skill: "forge-build" }];
@@ -107,6 +110,15 @@ test("inline UI script runs headlessly: refresh + 30 animation frames, no errors
   const draws = ops.filter((o) => ["fillRect", "fill", "stroke", "fillText"].includes(o)).length;
   assert.ok(draws > 2000, `expected heavy canvas activity, got ${draws}`);
 
+  // ---- formatToolStatus: shared human vocabulary for tool activity ----
+  const fts = ctxGlobal.formatToolStatus;
+  assert.equal(fts("Read", "/a/b/auth.ts"), "Reading auth.ts");
+  assert.equal(fts("Bash", "npm test"), "Running: npm test");
+  assert.equal(fts("Grep", "foo"), "Searching code");
+  assert.equal(fts("Agent", "review diff"), "Subtask: review diff");
+  assert.equal(fts("Skill", "context-forge:forge-build"), "Skill forge-build");
+  assert.equal(fts("Weird", ""), "Using Weird");
+
   // ---- renderMd: the spec drawer's markdown preview ----
   const md = ctxGlobal.renderMd([
     "# Unit 7: title",
@@ -144,7 +156,7 @@ test("inline UI script runs headlessly: refresh + 30 animation frames, no errors
   assert.ok(!md.includes("<img"), "raw html must be escaped");
 });
 
-test("sprite mode (?sprites=1): loads the atlas and blits agents via drawImage", async () => {
+test("sprite atlas loaded: agents blit via drawImage", async () => {
   const ops = [];
   const frames = [];
   // an Image whose onload fires immediately, so the sprite path goes live
@@ -164,7 +176,7 @@ test("sprite mode (?sprites=1): loads the atlas and blits agents via drawImage",
     requestAnimationFrame: (cb) => { frames.push(cb); },
     setInterval: () => 0,
     console,
-    location: { search: "?sprites=1" },
+    location: { search: "" },
     URLSearchParams, Image: LiveImage,
     queueMicrotask,
     Math, Date, JSON, Object, Array, String, Number, Promise, URL,
@@ -179,4 +191,52 @@ test("sprite mode (?sprites=1): loads the atlas and blits agents via drawImage",
 
   // sprite path is exercised: agents drawn with drawImage, no procedural error
   assert.ok(ops.includes("drawImage"), "forge agents should blit from the atlas");
+});
+
+// Movement soak: drive the office for ~25 simulated seconds and check the
+// three things people notice — working agents reach their seats, nobody
+// stands on top of someone else, nobody freezes mid-walk (the one-cell
+// corridor shove-fight). Cheap canvas stub: ops are not recorded.
+test("office soak: workers get seated, no standing overlap, no stuck walkers", async () => {
+  const frames = [];
+  const noopCtx = new Proxy({}, { get: (_, p) => p === "canvas" ? {} : () => {}, set: () => true });
+  const el = () => ({ ...makeEl([]), getContext: () => noopCtx });
+  class LiveImage { set src(_v) {} set onload(f) { queueMicrotask(() => f && f()); } }
+  const ctxGlobal = {
+    document: { getElementById: el, addEventListener() {}, createElement: () => ({ set textContent(_v){}, get textContent(){return "";}, get innerHTML(){return "";}, set innerHTML(_){}, classList:{add(){},remove(){}}, style:{} }) },
+    fetch: async (url) => ({ json: async () => (String(url).includes("feed") ? SAMPLE_FEED : SAMPLE_STATE) }),
+    EventSource: class { addEventListener(){} set onopen(v){ v && v(); } set onerror(_){} },
+    requestAnimationFrame: (cb) => { frames.push(cb); },
+    setInterval: () => 0, console, location: { search: "" }, URLSearchParams, Image: LiveImage, queueMicrotask,
+    Math, Date, JSON, Object, Array, String, Number, Promise, URL,
+  };
+  ctxGlobal.window = ctxGlobal;
+  vm.createContext(ctxGlobal);
+  vm.runInContext(script, ctxGlobal, { filename: "index.inline.js" });
+  await new Promise((r) => setTimeout(r, 20));
+
+  const office = vm.runInContext("office", ctxGlobal);   // const in the script, not a global
+  const bodies = () => office._bodies();
+  const stuckRun = new Map(); let maxStuck = 0, overlapFrames = 0;
+  const prev = new Map();
+  let t = 0;
+  for (let i = 0; i < 1500; i++) {
+    const cb = frames.shift(); assert.ok(cb, "frame scheduled"); t += 16; cb(t);
+    if (i < 300) continue;                       // settle-in
+    const bs = bodies();
+    const standing = (b) => !b.seat && b.path.length === 0 && Math.hypot(b.tx-b.x, b.ty-b.y) <= 2;
+    for (let a = 0; a < bs.length; a++) for (let c = a+1; c < bs.length; c++)
+      if (standing(bs[a]) && standing(bs[c]) && Math.hypot(bs[a].x-bs[c].x, bs[a].y-bs[c].y) < 8) overlapFrames++;
+    for (const b of bs) {
+      const p = prev.get(b.id), far = Math.hypot(b.tx-b.x, b.ty-b.y) > 6;
+      const run = p && far && Math.hypot(p[0]-b.x, p[1]-b.y) < 0.3 ? (stuckRun.get(b.id) || 0) + 1 : 0;
+      stuckRun.set(b.id, run); maxStuck = Math.max(maxStuck, run);
+      prev.set(b.id, [b.x, b.y]);
+    }
+  }
+  const seated = bodies().filter(b => b.seat && b.typing).map(b => b.id);
+  for (const id of ["forge-reviewer", "forge-tester", "forge-typer", "silent-failure-hunter"])
+    assert.ok(seated.includes(id), `${id} should be seated and working, got ${seated}`);
+  assert.equal(overlapFrames, 0, "standing characters must not overlap");
+  assert.ok(maxStuck < 60, `a walker froze for ${maxStuck} frames`);
 });

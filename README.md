@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.49.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.50.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -164,7 +164,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-compact` | Token-maintenance pass: measures every context file against its budget, compresses with approval, rotates history, (re)generates the digest. |
 | `forge-worktree` | Parallel builds across terminals: one unit = one git worktree = one branch. Dependency-gates the unit, claims it atomically (visible to every terminal), creates the worktree, and hands you the commands for the new terminal. `list` / `done` manage claims. Bundles `forge-lock.sh` — portable mkdir-based locks + in-place unit claims for multi-engineer setups without worktrees. |
 | `forge-migrate` | Moves the context directory `context/` → `.forge/`: preview, confirm, git-history-preserving move, entry-point rewrite, `.gitignore` guard. |
-| `forge-office` | Opens the bundled local web dashboard: kanban from the tracker + build plan, live claims/locks, activity feed, and a 2D pixel office where the nine agents visibly work. `stop` / `status` / `autostart on\|off` (start with every session). Read-only, 127.0.0.1 only, needs Node ≥ 18. |
+| `forge-office` | Opens the bundled local web dashboard: kanban from the tracker + build plan, live claims/locks, activity feed, and a 2D pixel office where the nine agents visibly work — each with its own live activity label (read vs write pose, "Needs approval" / "Waiting for input" bubbles for Claude), fed by the hooks plus the subagents' own transcripts. `stop` / `status` / `autostart on\|off` (start with every session). Read-only, 127.0.0.1 only, needs Node ≥ 18. |
 
 ## Agents
 

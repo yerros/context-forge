@@ -163,6 +163,19 @@
   .lvtool.skill{background:rgba(34,211,238,.14);color:var(--accent-2)}
   .lvtool.other{background:rgba(148,163,184,.14);color:var(--text-dim)}
   .lvmeta{margin-top:6px;font-size:10px;color:var(--text-faint)}
+  .lanes{margin-top:7px;border-top:1px dashed var(--line);padding-top:5px;display:flex;flex-direction:column}
+  .lane{display:flex;flex-wrap:wrap;align-items:center;gap:2px 7px;font-size:11px;padding:3px 2px;border-radius:5px;cursor:pointer}
+  .lane:hover{background:rgba(148,163,184,.07)}
+  .lane.open{background:rgba(148,163,184,.09)}
+  .lane .ld{width:6px;height:6px;border-radius:50%;flex:none;background:var(--ok);animation:blink 1.1s var(--ease) infinite alternate}
+  .lane.read .ld{background:#60a5fa;animation:none}
+  .lane.wait .ld{background:var(--warn);animation:none}
+  .lane .who{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis}
+  .lane .st{flex-basis:100%;padding-left:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);font-size:10.5px;color:var(--text-dim)}
+  .lane .bgt{flex:none;font-size:9px;font-weight:700;letter-spacing:.04em;color:var(--accent);
+    background:rgba(139,124,247,.16);border-radius:4px;padding:0 4px}
+  .lane .dur{flex:none;font-family:var(--font-mono);font-size:10px;color:var(--text-faint)}
+  .lanetl{padding:2px 0 4px 15px}
   /* live card: animated gradient edge + pulse */
   .card.live{background:linear-gradient(rgba(10,20,34,.9),rgba(10,20,34,.9)) padding-box,
     linear-gradient(120deg,var(--ok),var(--accent-2),var(--ok)) border-box;
@@ -227,6 +240,23 @@
   #notes li{padding:4px 0;border-bottom:1px dashed rgba(148,163,184,.08)} #notes li:last-child{border:none}
 
   footer{color:var(--text-faint);text-align:center;font-size:11px;padding:6px 0 20px}
+
+  /* ---------- office activity labels (DOM over the canvas) ---------- */
+  #office-wrap { position: relative; }
+  #office-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .olbl {
+    position: absolute; transform: translate(-50%, -100%); white-space: nowrap;
+    max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+    padding: 3px 7px 3px 6px; border-radius: 3px; font-size: 10.5px; line-height: 1;
+    color: #eef2f8; background: rgba(20, 24, 32, .92); border: 1px solid #3a4150;
+    box-shadow: 0 1px 0 #0c0f14; display: flex; align-items: center; gap: 5px;
+  }
+  .olbl .d { width: 5px; height: 5px; border-radius: 50%; background: #3fea6a; flex: none;
+    animation: opulse 1.2s ease-in-out infinite; }
+  .olbl.read .d { animation: none; background: #9fd0ff; }
+  .olbl.wait { border-color: #44bb66; } .olbl.wait .d { animation: none; background: #44bb66; }
+  .olbl.perm { border-color: #cca700; } .olbl.perm .d { animation: none; background: #cca700; }
+  @keyframes opulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
 
   /* ---------- drawer ---------- */
   #overlay{position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(2px);
@@ -334,7 +364,10 @@
         The office
         <span class="right" id="occupancy" style="color:var(--text-faint);font-size:11px"></span>
       </h2>
-      <canvas id="office" width="960" height="680" role="img" aria-label="live 2D office simulation of Claude Code agents"></canvas>
+      <div id="office-wrap">
+        <canvas id="office" width="960" height="680" role="img" aria-label="live 2D office simulation of Claude Code agents"></canvas>
+        <div id="office-labels" aria-hidden="true"></div>
+      </div>
       <div id="chatbar">
         <select id="chat-to" aria-label="message recipient">
           <option value="main session">Main session</option>
@@ -438,13 +471,45 @@ function nowNow(s) {
   const n = sess && sess.now;
   return n && Date.now()/1000 - n.since < NOW_TTL ? n : null;
 }
-const nowLabel = (n) => (n.tool + (n.detail ? " · " + n.detail : "")).slice(0, 46);
+// Human status for a tool call — "Reading auth.ts", "Running: npm test".
+// Same vocabulary for the main session (.now/.stream) and subagent transcripts.
+function formatToolStatus(tool, detail = "") {
+  const d = String(detail || "");
+  const tail = d.includes("/") ? d.slice(d.lastIndexOf("/") + 1) : d;
+  switch (tool) {
+    case "Read": return "Reading " + tail;
+    case "Edit": case "MultiEdit": return "Editing " + tail;
+    case "Write": return "Writing " + tail;
+    case "NotebookEdit": return "Editing notebook";
+    case "Bash": return "Running: " + d.slice(0, 60);
+    case "Glob": return "Searching files";
+    case "Grep": return "Searching code";
+    case "WebFetch": return "Fetching web content";
+    case "WebSearch": return "Searching the web";
+    case "Task": case "Agent": return d ? "Subtask: " + d.slice(0, 40) : "Running subtask";
+    case "Skill": return "Skill " + d.replace(/^.*:/, "");
+    case "AskUserQuestion": return "Waiting for your answer";
+    default: return tool ? "Using " + tool : "";
+  }
+}
+const nowLabel = (n) => formatToolStatus(n.tool, n.detail).slice(0, 46);
 
+// A "waiting for you" bubble that outlives a coffee break is noise; a
+// permission prompt blocks until answered, so it stays as long as the file.
+const WAIT_TTL = 600;
 function liveNow(s) {
   const sess = activeSession(s);
-  const agents = new Set((sess && sess.agents || []).map(a => a.agent));
+  const list = sess && sess.agents || [];
+  const agents = new Set(list.map(a => a.agent));
+  // per-agent realtime activity (subagent transcripts, joined server-side);
+  // first entry per agent type wins — two reviewers share one character
+  const agentInfo = {};
+  for (const a of list) if (!agentInfo[a.agent])
+    agentInfo[a.agent] = { tool: a.tool || null, detail: a.detail || "", description: a.description || "" };
   const skill = sess && freshSkill(sess) ? sess.skill : null;
-  return { agents, skill, skillIsActive: skill != null, now: nowNow(s) };
+  const w = sess && sess.wait;
+  const wait = w && Date.now()/1000 - w.since < (w.state === "permission" ? 7200 : WAIT_TTL) ? w : null;
+  return { agents, agentInfo, skill, skillIsActive: skill != null, now: nowNow(s), wait };
 }
 
 /* ------------------------------------------------- chat + assign (inbox) - */
@@ -508,7 +573,10 @@ function renderHeader(s) {
     : liveSkills.length ? "⚒ " + liveSkills.map(k=>k.replace(/^forge-/,"")).join(", ") : "idle";
   $("updated").textContent = new Date(s.generatedAt).toLocaleTimeString();
   $("k-agents").textContent = liveAgents.length;
-  $("k-agents-sub").textContent = liveAgents.length ? liveAgents.map(AGENT_LABEL).slice(0,3).join(", ") + (liveAgents.length>3?"…":"") : "right now";
+  const first = liveAgents[0] && lv.agentInfo[liveAgents[0]];
+  $("k-agents-sub").textContent = !liveAgents.length ? "right now"
+    : liveAgents.length === 1 && first && first.tool ? AGENT_LABEL(liveAgents[0]) + " · " + formatToolStatus(first.tool, first.detail)
+    : liveAgents.map(AGENT_LABEL).slice(0,3).join(", ") + (liveAgents.length>3?"…":"");
   const occ = liveAgents.length + (liveSkills.length ? 1 : 0);
   $("occupancy").textContent = occ ? `${occ} working` : "everyone idle";
 }
@@ -627,7 +695,8 @@ function renderBoard(s) {
   const liveSkills = lv.skill ? [lv.skill] : [];
   const nw = lv.now;
   if (liveSkills.length || liveAgents.length || nw) {
-    const who = liveAgents.length ? liveAgents.map(AGENT_LABEL).join(", ") : "main session";
+    const who = liveAgents.length > 2 ? `${liveAgents.length} agents`
+      : liveAgents.length ? liveAgents.map(AGENT_LABEL).join(", ") : "main session";
     // When agents are running, the honest label is the skill that launched
     // them (from the feed) — an "active" flag from another session may be a
     // different, older workflow.
@@ -702,25 +771,48 @@ function currentRun(s) {
   return ev.slice(i);
 }
 
-function liveCard(s, what, who, nw) {
-  const run = currentRun(s);
-  const last = run[run.length - 1];
-  const durMs = run.length > 1 ? (last.ts - run[0].ts) * 1000 : 0;
-  const files = new Set(run.filter(e => /[\/.]/.test(e.detail)).map(e => e.detail)).size;
-  const rows = run.slice(-6).reverse().map(e => {
+// One lane per live worker (Claude + every agent), click → its own timeline.
+let liveOpen = "claude";
+function toggleLane(id) { liveOpen = liveOpen === id ? null : id; if (state) renderBoard(state); }
+const READ_RE = /^(Read|Grep|Glob|WebFetch|WebSearch|LSP|ToolSearch)$/;
+function timelineRows(events) {
+  return events.slice(-6).reverse().map(e => {
     const hh = new Date(e.ts * 1000).toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit", second:"2-digit" });
     return `<div class="lvrow"><span class="t2">${esc(hh)}</span>` +
       `<span class="lvtool ${TOOL_CLASS(e.tool)}">${esc(e.tool)}</span>` +
       `<span class="d2">${esc(e.detail)}</span></div>`;
   }).join("");
-  const nowLine = nw
-    ? `<div class="lvnow">⌁ <b>${esc(nw.tool)}</b> ${esc(nw.detail)}</div>`
-    : last ? `<div class="lvnow" style="opacity:.65">last: <b>${esc(last.tool)}</b> ${esc(last.detail)}</div>` : "";
+}
+function lane(id, who, status, cls, since, bg, events) {
+  const open = liveOpen === id;
+  const dur = since ? fmtDur(Date.now() - since * 1000) : "";
+  return `<div class="lane ${cls}${open ? " open" : ""}" onclick="toggleLane('${esc(id)}')" role="button" tabindex="0">` +
+    `<span class="ld"></span><span class="who">${esc(who)}</span>` +
+    (bg ? `<span class="bgt">BG</span>` : "") + `<span class="dur">${dur}</span>` +
+    `<span class="st">${esc(status)}</span></div>` +
+    (open && events.length ? `<div class="lanetl"><div class="lvtl" style="border:0;margin:0;padding:0">${timelineRows(events)}</div></div>` : "");
+}
+function liveCard(s, what, who, nw) {
+  const sess = activeSession(s) || {};
+  const run = currentRun(s);
+  const last = run[run.length - 1];
+  const durMs = run.length > 1 ? (last.ts - run[0].ts) * 1000 : 0;
+  const files = new Set(run.filter(e => /[\/.]/.test(e.detail)).map(e => e.detail)).size;
+  const lv = liveNow(s);
+  // Claude's lane: realtime tool, else wait state, else last action
+  let cst, ccls = "";
+  if (nw) { cst = formatToolStatus(nw.tool, nw.detail); ccls = READ_RE.test(nw.tool) ? "read" : ""; }
+  else if (lv.wait) { cst = lv.wait.state === "permission" ? "Needs approval" : "Waiting for input"; ccls = "wait"; }
+  else cst = last ? "last: " + formatToolStatus(last.tool, last.detail) : "";
+  let lanes = lane("claude", "Claude", cst, ccls, run.length ? run[0].ts : 0, false, run);
+  for (const a of (sess.agents || [])) {
+    const st = a.tool ? formatToolStatus(a.tool, a.detail) : a.description || "Working…";
+    lanes += lane(a.agent, AGENT_LABEL(a.agent), st, a.tool && READ_RE.test(a.tool) ? "read" : "", a.since, a.bg, a.stream || []);
+  }
   return `<div class="card wip live"><div class="lvh"><span class="livedot"></span>` +
-    `⚒ ${esc(what)} — ${esc(who)}<span class="tag live">live</span>` +
+    `⚒ ${esc(what === "agents" ? who : what + " — " + who)}<span class="tag live">live</span>` +
     (durMs ? `<span class="lv-dur">${fmtDur(durMs)}</span>` : "") + `</div>` +
-    nowLine +
-    (rows ? `<div class="lvtl">${rows}</div>` : "") +
+    `<div class="lanes">${lanes}</div>` +
     (run.length ? `<div class="lvmeta">${run.length} actions this run` +
       (files ? ` · ${files} target${files>1?"s":""}` : "") + `</div>` : "") +
     `</div>`;
@@ -832,7 +924,10 @@ function renderFeed(events) {
      the bubble names the skill (e.g. "align…")
    - idle                          -> characters sit at their desks, take
      short breaks (coffee, water cooler, ping-pong), then return
-   - 3+ agents at once             -> stand-up around the meeting table
+   - every character has a bubble  -> its own tool activity (agents: from
+     their transcript), reading = still arms, writing/running = typing
+   - Claude blocked on the user    -> "? waiting" / "! permission" bubble
+   - non-forge visiting agents     -> work around the meeting table
    Presence is snapshot membership (no flapping); everything is procedural;
    logical 480x340 @2x.                                                     */
 
@@ -855,25 +950,22 @@ const office = (() => {
   const S = 2, W = 480, H = 340;
   ctx.scale(S, S);
 
-  /* ---- optional original sprite atlas (?sprites=1) ------------------------
+  /* ---- sprite atlas ---------------------------------------------------------
      Forge agents render from dashboard/public/sprites.png (24x32 cells, rows =
-     ROSTER order, cols = SCOL). Falls back to the procedural characters when
-     the flag is off or the atlas hasn't loaded; guests always stay procedural
-     (their identity comes from a per-name color the atlas can't provide).     */
-  // The redesigned sprite office is the DEFAULT; ?classic=1 restores the old
-  // procedural office. (?sprites=1 is still accepted and simply redundant.)
-  const USE_SPRITES = !new URLSearchParams(location.search).has("classic");
+     ROSTER order, cols = SCOL). Falls back to the procedural characters until
+     the atlas has loaded; guests always stay procedural (their identity comes
+     from a per-name color the atlas can't provide).                          */
   const AGENT_ROW = Object.fromEntries(ROSTER.map((r, i) => [r.id, i]));
   const SCOL = { down:0, down_walk:1, up:2, up_walk:3, left:4, left_walk:5,
                  right:6, right_walk:7, sit:8, sit_type:9 };
   let atlas = null, atlasReady = false;
-  if (USE_SPRITES) { atlas = new Image(); atlas.onload = () => { atlasReady = true; }; atlas.src = "/sprites.png?v=1"; }
+  atlas = new Image(); atlas.onload = () => { atlasReady = true; }; atlas.src = "/sprites.png?v=1";
   const hasSprite = (b) => atlasReady && !b.guest && (b.id in AGENT_ROW);
   function blit(col, row, dx, dy) { ctx.drawImage(atlas, col*24, row*32, 24, 32, dx|0, dy|0, 24, 32); }
 
-  /* ---- layout (two variants: classic procedural / v3 sprite office) ---- */
-  const WALL_B = USE_SPRITES ? 62 : 52;             // walkable only below this
-  const DESKS = USE_SPRITES ? {
+  /* ---- layout (the sprite office) ---- */
+  const WALL_B = 62;             // walkable only below this
+  const DESKS = {
     // v3: Claude works at the glass meeting room's table; Planning pod left
     // (architect, aligner, typer, commenter), Build pod right (reviewer,
     // tester, hunter, scout); the archivist has a bar seat at the coffee bar.
@@ -881,16 +973,11 @@ const office = (() => {
     A1:  { x:62,  y:152 }, L2:{ x:140, y:152 }, R0:{ x:62, y:214 }, R1:{ x:140, y:214 },
     L0:  { x:338, y:152 }, L1:{ x:416, y:152 }, L3:{ x:338, y:214 }, R2:{ x:416, y:214 },
     R3:  { x:412, y:92, bar:true },
-  } : {
-    boss:{ x:262, y:96, wide:true, top:"#3a7d8c" },   // Claude's command desk
-    A1:  { x:150, y:96,  top:"#b7a23a" },             // architect
-    L0:  { x:66,  y:158 }, L1:{ x:140, y:158 }, L2:{ x:66, y:222 }, L3:{ x:140, y:222 },
-    R0:  { x:346, y:158 }, R1:{ x:420, y:158 }, R2:{ x:346, y:222 }, R3:{ x:420, y:222 },
   };
-  const MEET = USE_SPRITES ? { x:240, y:184 } : { x:245, y:196 };
+  const MEET = { x:240, y:184 };
   const GLASS = { x:192, y:128, w:96, h:112 };      // v3 meeting room bounds
   // rectangles characters must not wander into (x,y,w,h)
-  const OBSTACLES = USE_SPRITES ? [
+  const OBSTACLES = [
     [0,0,480,WALL_B],                                // wall band
     [4,64,32,50],                                    // server rack
     [372,86,88,24],[448,62,28,46],                   // coffee bar, vending
@@ -904,14 +991,6 @@ const office = (() => {
     [23,282,64,24],[96,293,28,14],[136,262,34,46],[108,268,12,32], // sofa, table, shelf, lamp
     [226,300,68,28],                                 // ping-pong
     [0,236,16,26],[462,236,16,26],[196,298,14,16],[450,304,14,16], // plants
-  ] : [
-    [0,0,480,52],                                   // wall band
-    [16,52,46,46],[66,52,80,30],[218,54,20,18],     // bookshelf, couch, plant
-    [376,48,90,26],[442,66,32,48],[384,68,18,28],   // kitchen, vending, cooler
-    ...Object.values(DESKS).map(d => [d.x-(d.wide?42:28), d.y-16, d.wide?84:56, 52]),
-    [MEET.x-56,MEET.y-32,112,64],                   // meeting table
-    [214,244,72,38],                                // ping-pong
-    [294,240,16,16],[450,240,16,16],[4,240,16,16],  // dartboard/plants
   ];
 
   /* ---- walk grid + A* pathfinding (nobody walks through a desk) ---- */
@@ -968,19 +1047,12 @@ const office = (() => {
 
   // Break spots: where office people actually go — coffee, water, a quick
   // round of ping-pong — for a short while, then back to their desk.
-  const BREAK_SPOTS = USE_SPRITES ? [
+  const BREAK_SPOTS = [
     { x: 396, y: 122, what: "☕" },   // coffee bar
     { x: 440, y: 116, what: "🍫" },  // vending machine
     { x: 60,  y: 316, what: "☕" },   // lounge sofa corner
     { x: 214, y: 334, what: "🏓" },  // ping-pong left
     { x: 306, y: 334, what: "🏓" },  // ping-pong right
-  ] : [
-    { x: 398, y: 82,  what: "☕" },   // kitchen counter
-    { x: 392, y: 102, what: "🥤" },  // water cooler
-    { x: 452, y: 122, what: "🍫" },  // vending machine
-    { x: 102, y: 88,  what: "☕" },   // couch corner
-    { x: 205, y: 262, what: "🏓" },  // ping-pong left
-    { x: 295, y: 262, what: "🏓" },  // ping-pong right
   ];
   const bodies = ROSTER.map(r => ({ ...r, x:0, y:0, tx:0, ty:0, wanderAt:0, seat:null,
     typing:false, resting:false, breakUntil:0, nextBreakAt: 8000 + Math.random()*40000,
@@ -1003,7 +1075,25 @@ const office = (() => {
   const lastSeen = new Map();
   const guests = new Map();            // non-forge agents get visiting characters
   let skillNow = null, skillSeen = 0, skillActive = false, nowInfo = null;
+  let agentInfo = {}, waitInfo = null;
   const nowFresh = () => nowInfo && Date.now()/1000 - nowInfo.since < NOW_TTL;
+  const READ_TOOLS = /^(Read|Grep|Glob|WebFetch|WebSearch|LSP|ToolSearch)$/;
+  // What a character is doing right now → bubble label + pose (read vs type).
+  // Claude: the main session's tool stream, else the running skill.
+  // Agents: their own transcript activity, else the spawn description.
+  function statusOf(b) {
+    if (b.id === "claude") {
+      if (nowFresh()) return { label: formatToolStatus(nowInfo.tool, nowInfo.detail), read: READ_TOOLS.test(nowInfo.tool) };
+      if (skillNow && skillActive) return { label: "Skill " + skillNow.replace(/^forge-/, ""), read: false };
+      return null;
+    }
+    const i = agentInfo[b.id];
+    if (i && i.tool) return { label: formatToolStatus(i.tool, i.detail), read: READ_TOOLS.test(i.tool) };
+    if (i && i.description) return { label: i.description, read: false };
+    // live per the hook but no transcript detail (yet) — still honest
+    return currentSet.has(b.id) ? { label: "Working…", read: false } : null;
+  }
+  const claudeWaiting = (b) => b.id === "claude" && waitInfo && !isWorking("claude");
 
   const KNOWN = new Set(ROSTER.map(r => r.id));
   function guestFor(id) {
@@ -1021,9 +1111,11 @@ const office = (() => {
     return g;
   }
   let currentSet = new Set();          // agents in the LATEST state snapshot
-  function setLive({ agents, skill, skillIsActive, now: nw }) {
+  function setLive({ agents, agentInfo: info, skill, skillIsActive, now: nw, wait }) {
     const now = Date.now();
     currentSet = new Set(agents);
+    agentInfo = info || {};
+    waitInfo = wait || null;
     for (const a of agents) { lastSeen.set(a, now); if (!KNOWN.has(a)) guestFor(a); }
     if (skill) { skillNow = skill; skillSeen = now; }
     skillActive = !!skillIsActive;
@@ -1057,56 +1149,6 @@ const office = (() => {
     return { x:240, y:305 };
   }
 
-  /* ---- furniture ---- */
-  function drawDeskF(d, working, t) {
-    const w = d.wide?84:56, h=17, top=d.top||"#8a6a4a";
-    const x=d.x, y=d.y;
-    px(x-w/2+2, y+h+6, w-4, 3, "rgba(0,0,0,.12)");    // soft floor shadow
-    if (working) px(x-w/2-2, y-14, w+4, h+16, "rgba(88,166,255,.07)"); // work glow
-    px(x-w/2, y, w, h, top);
-    px(x-w/2, y, w, 2, shade(top,24));
-    px(x-w/2, y+h, w, 3, shade(top,-40));
-    px(x-w/2+2, y+h+3, 4, 4, "#4c3a28"); px(x+w/2-6, y+h+3, 4, 4, "#4c3a28");
-    const mons = d.wide ? [x-24, x+6] : [x-9];
-    for (const mx of mons) {
-      px(mx, y-11, 18, 13, "#20242c");
-      px(mx+1, y-10, 16, 10, working ? "#2f6fd9" : "#171b22");
-      if (working) {                                 // scrolling "code" lines
-        const ph = Math.floor(t/240)%3;
-        for (let l=0; l<3; l++)
-          px(mx+2, y-8+l*3, 4+((l+ph)%3)*4, 2, l===ph ? "#9fd0ff" : "#5b93e8");
-      }
-      px(mx+7, y+2, 4, 2, "#20242c");
-    }
-    px(x-8, y+h-4, 16, 3, "#2b2f38");                // keyboard
-  }
-  function drawMeetingTable(x,y,meeting){
-    px(x-52,y-16,104,32,"#7a5c40"); px(x-52,y-16,104,2,"#96754f"); px(x-52,y+16,104,3,"#57402a");
-    px(x-8,y-6,16,9, meeting ? "#2f6fd9" : "#20242c");
-    for (const cx of [-38,-14,10,34]){ px(x+cx,y-26,9,7,"#3d4553"); px(x+cx,y+22,9,7,"#3d4553"); }
-  }
-  function drawPingPong(x,y){ px(x-32,y-14,64,28,"#1e7e34"); px(x-32,y-14,64,2,"#2ba24a");
-    px(x-1,y-14,2,28,"#e8e8e8"); px(x-32,y-1,64,2,"#e8e8e8"); px(x-32,y+14,64,3,"#14571f"); }
-  function drawCouch(x,y,w=64){ px(x,y,w,15,"#23262c"); px(x,y-5,w,6,"#2c3038");
-    px(x-3,y-5,4,20,"#1b1e23"); px(x+w-1,y-5,4,20,"#1b1e23"); }
-  function drawBookshelf(x,y){ px(x,y,34,42,"#6a4e30"); px(x+1,y+1,32,40,"#553d24");
-    for (let r=0;r<3;r++){ let bx=x+3;
-      for (const c of ["#d0483e","#3b6fd4","#2ea043","#d29922","#9a5bd4","#39c5cf"]){ px(bx,y+4+r*13,4,9,c); bx+=5; } } }
-  function drawVending(x,y){ px(x,y,26,40,"#c03030"); px(x+2,y+2,15,28,"#1b2530");
-    for (let r=0;r<4;r++) for (let c=0;c<3;c++) px(x+4+c*4,y+4+r*6,3,4,["#e8c531","#39c5cf","#e06ad4"][c]);
-    px(x+19,y+4,5,12,"#8c1f1f"); }
-  function drawCabinet(x,y){ px(x,y,16,22,"#9aa2ad"); px(x+2,y+2,12,8,"#7d8590");
-    px(x+2,y+12,12,8,"#7d8590"); px(x+6,y+5,4,2,"#5d646e"); px(x+6,y+15,4,2,"#5d646e"); }
-  function drawPlant(x,y){ px(x+2,y+8,8,7,"#a5502e"); px(x+3,y+8,6,2,"#c26439");
-    px(x+4,y,4,8,"#2ea043"); px(x+1,y+2,4,5,"#1f7a33"); px(x+7,y+2,4,5,"#1f7a33"); }
-  function drawWindow(x,y){ px(x,y,30,24,"#3d4757"); px(x+2,y+2,26,20,"#141d33");
-    px(x+14,y+2,2,20,"#3d4757"); px(x+2,y+11,26,2,"#3d4757");
-    px(x+6,y+5,2,2,"#cfd8ea"); px(x+21,y+15,2,2,"#cfd8ea"); px(x+11,y+16,1,1,"#8fa0c0"); }
-  function drawWaterCooler(x,y){ px(x+2,y,8,8,"#bcd6f2"); px(x,y+8,12,16,"#e8ecf2"); px(x+3,y+12,6,3,"#39c5cf"); }
-  function drawKitchen(x,y){ px(x,y,78,16,"#e4e7ec"); px(x,y+16,78,3,"#b9bec8");
-    px(x+6,y+3,16,9,"#8f97a3"); px(x+30,y+3,12,9,"#20242c"); px(x+32,y+5,8,5,"#39c5cf"); }
-  function drawDartboard(x,y){ px(x-1,y-1,12,12,"#3a2c1c"); px(x+1,y+1,8,8,"#d0483e");
-    px(x+3,y+3,4,4,"#e8e8e8"); px(x+4,y+4,2,2,"#1b1e23"); }
   function drawPet(t){
     const b = pet;
     if (t > b.wanderAt){ const p = freePoint(); b.tx=p.x; b.ty=Math.max(p.y,260); b.wanderAt=t+rnd(3000,8000); }
@@ -1159,23 +1201,17 @@ const office = (() => {
     const x=b.x|0, y=b.y|0;                          // y = seat baseline
     px(x-6,y-2,12,5,"#2b2f38"); px(x-7,y-1,2,6,"#20242c"); px(x+5,y-1,2,6,"#20242c"); // chair
     px(x-6,y-16,12,12,b.shirt); px(x-6,y-16,12,2,shade(b.shirt,26));                  // back
-    const k = b.typing ? Math.floor(t/140)%2 : 0;
+    const st = b.typing ? statusOf(b) : null;
+    const k = b.typing && !(st && st.read) ? Math.floor(t/140)%2 : 0;   // reading = still arms
     px(x-8,y-14,2,6+(k?1:0),b.shirt); px(x+6,y-14,2,6+(k?0:1),b.shirt);
     px(x-8,y-8+(k?1:0),2,2,SKIN);     px(x+6,y-8+(k?0:1),2,2,SKIN);
     px(x-5,y-26,10,10,SKIN);                          // head from behind
     px(x-5,y-27,10,7,b.hair); px(x-6,y-24,2,6,b.hair); px(x+4,y-24,2,6,b.hair);
     drawTag(b, x, y-38);
     if (b.typing) {
-      const dots = ".".repeat(1+Math.floor(t/420)%3);
-      let label = null;
-      if (b.id === "claude") {
-        // realtime: the exact tool + target Claude Code touches right now;
-        // fall back to the running skill name
-        label = nowFresh() ? (nowInfo.tool + (nowInfo.detail ? "·" + nowInfo.detail : ""))
-          : skillNow ? skillNow.replace(/^forge-/,"") : null;
-      }
-      if (label) bubble(x, y-44, label, dots);
-      else text(dots, x+11, y-28, "#fff", 9);
+      // activity text is a DOM label (see updateLabels); nothing on canvas
+    } else if (claudeWaiting(b)) {
+      waitBubble(x, y-44);
     } else if (Math.floor(t/1300 + b.dx) % 5 === 0) { // idle at desk: rare doze
       text("z", x+10, y-32, "rgba(219,226,238,.5)", 7);
     }
@@ -1184,19 +1220,20 @@ const office = (() => {
   // Pixel speech bubble with a tail, clamped to the canvas. Width comes from
   // the LABEL only — animated dots render inside reserved space, so the box
   // never changes size frame-to-frame (a resizing box read as flicker).
-  function bubble(x, y, txt, dots) {
-    const label = txt.slice(0, 30);
-    const w = Math.min(label.length*5+26, 182);
-    const bx = Math.min(Math.max(x - w/2, 2), W - w - 2);
-    px(bx, y-11, w, 12, "#161a22");
-    px(bx, y-11, w, 1, "#3a4150"); px(bx, y, w, 1, "#0c0f14");
-    px(x-2, y+1, 4, 3, "#161a22");                    // tail
-    ctx.textAlign = "left";
-    ctx.font = "bold 7px monospace"; ctx.fillStyle = "#9fd0ff";
-    ctx.fillText(label, bx+5, y-3);
-    if (dots) ctx.fillText(dots, bx+5+label.length*5, y-3);
-    ctx.textAlign = "center";
+  // 11x13 pixel icon bubbles (white box + tail): "…" amber = needs approval,
+  // green ✓ = turn done / waiting for input. Text lives in the DOM labels.
+  const ICON = {
+    perm: ["BBBBBBBBBBB","BFFFFFFFFFB","BFFFFFFFFFB","BFFFFFFFFFB","BFFFFFFFFFB","BFFAFAFAFFB","BFFFFFFFFFB","BFFFFFFFFFB","BFFFFFFFFFB","BBBBBBBBBBB","____BBB____","_____B_____"],
+    wait: ["_BBBBBBBBB_","BFFFFFFFFFB","BFFFFFFFFFB","BFFFFFFFGFB","BFFFFFFGFFB","BFFGFFGFFFB","BFFFGGFFFFB","BFFFFFFFFFB","BFFFFFFFFFB","_BBBBBBBBB_","____BBB____","_____B_____"],
+  };
+  const ICON_PAL = { B:"#555566", F:"#eeeeff", A:"#cca700", G:"#44bb66" };
+  function iconBubble(x, y, kind) {
+    const rows = ICON[kind]; const ox = (x|0) - 5, oy = (y|0) - 12;
+    for (let r = 0; r < rows.length; r++) for (let c = 0; c < 11; c++) {
+      const k = rows[r][c]; if (k !== "_") px(ox + c, oy + r, 1, 1, ICON_PAL[k]);
+    }
   }
+  const waitBubble = (x, y) => iconBubble(x, y, waitInfo.state === "permission" ? "perm" : "wait");
 
   // Sprite-atlas versions of the two character draws (overlays reused as-is).
   function spriteStanding(b, t, moving) {
@@ -1214,55 +1251,23 @@ const office = (() => {
   }
   function spriteSeated(b, t) {
     const x = b.x|0, y = b.y|0;
-    const pose = b.typing && Math.floor(t/380)%2 ? "sit_type" : "sit";
+    const st = b.typing ? statusOf(b) : null;
+    const pose = b.typing && !(st && st.read) && Math.floor(t/380)%2 ? "sit_type" : "sit";
     blit(SCOL[pose], AGENT_ROW[b.id], b.x-12, b.y-28);
     // neighbours at the meeting table alternate tag height so names never
     // overlap when seats are 26px apart
     const stag = b.seat === "meet" && ((b.x/26|0)%2) ? 6 : 0;
     drawTag(b, x, y-36-stag);
-    if (b.typing) {
-      const dots = ".".repeat(1+Math.floor(t/420)%3);
-      let label = null;
-      if (b.id === "claude") label = nowFresh()
-        ? (nowInfo.tool + (nowInfo.detail ? "·"+nowInfo.detail : ""))
-        : skillNow ? skillNow.replace(/^forge-/,"") : null;
-      if (label) bubble(x, y-42, label, dots);
-      else text(dots, x+11, y-30, "#fff", 9);
-    }
+    if (!b.typing && claudeWaiting(b)) waitBubble(x, y-42);
   }
 
   function drawTag(b, x, ty) {
     const w = b.label.length*5+14;
     px(x-w/2, ty, w, 9, b.shirt); px(x-w/2, ty, w, 1, shade(b.shirt,30));
     // presence dot: green = working, yellow = on a break, gray = idle
-    const dot = b.typing ? "#3fea6a" : b.resting ? "#ffd35c" : "#c3cad6";
+    const dot = b.typing ? "#3fea6a" : (b.resting || claudeWaiting(b)) ? "#ffd35c" : "#c3cad6";
     px(x-w/2+2, ty+3, 3, 3, dot);
     text(b.label, x+3, ty+7, "#fff", 7);
-  }
-
-  /* ---- scene ---- */
-  function drawScene(t, meeting) {
-    for (let ty=0; ty<H; ty+=20) for (let tx=0; tx<W; tx+=20)
-      px(tx,ty,20,20,((tx+ty)/20)%2 ? "#8f939b" : "#9b9fa7");
-    px(24,132,180,116,"rgba(53,99,201,.06)");
-    px(300,132,156,116,"rgba(210,105,30,.07)");
-    px(0,0,W,46,"#333d4d"); px(0,44,W,3,"#232b38"); px(0,0,W,3,"#28303e");
-    drawWindow(16,9); drawWindow(180,9); drawWindow(300,9);
-    text("LOUNGE",92,22,"#39c5cf",12); text("KITCHEN",424,22,"#f85149",12);
-    ctx.beginPath(); ctx.arc(250,16,7,0,Math.PI*2); ctx.fillStyle="#e8ecf2"; ctx.fill();
-    ctx.strokeStyle="#20242c"; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(250,16); ctx.lineTo(250,11); ctx.stroke();
-    drawBookshelf(24,52); drawCouch(70,62);
-    drawKitchen(380,50); drawVending(446,70); drawWaterCooler(388,72);
-    px(24,120,180,8,"#3563c9"); px(24,120,180,2,"#5a86e0");
-    drawCabinet(28,100); drawCabinet(186,100);
-    px(300,120,156,8,"#cf6a1e"); px(300,120,156,2,"#e88b45");
-    drawCabinet(304,100); drawCabinet(438,100);
-    px(MEET.x-66, MEET.y-42, 132, 86, "rgba(43,90,160,.10)");   // meeting rug
-    px(MEET.x-66, MEET.y-42, 132, 2, "rgba(90,134,224,.18)");
-    drawPingPong(250,262);
-    drawDartboard(300,246); drawPlant(456,246); drawPlant(10,246); drawPlant(222,60);
-    if (meeting) text("review in session…", MEET.x, MEET.y+56, "#e8d5b0", 8);
   }
 
   /* ================= v3 sprite-office scene (approved mockup port) ======= */
@@ -1450,29 +1455,22 @@ const office = (() => {
     for (const [id, g] of guests) if (!isWorking(id)) guests.delete(id);
     const all = bodies.concat([...guests.values()]);
 
-    const workers = bodies.filter(b => isWorking(b.id));
-    const meeting = workers.filter(b => b.id!=="claude").length >= 3;
-    // everyone who sits around the meeting table: forge agents in meeting
-    // mode + all working guests (visitors work at the table, like consultants)
-    const tableGroup = (meeting ? workers.filter(x => x.id!=="claude") : [])
-      .concat([...guests.values()].filter(g => isWorking(g.id)));
+    // forge agents always work at their OWN desk (each has a live bubble
+    // now); the meeting table hosts working guests (visiting non-forge agents)
+    const tableGroup = [...guests.values()].filter(g => isWorking(g.id));
 
     for (const b of all) {
       const working = isWorking(b.id);
       b.seat = null; b.typing = false; b.resting = false;
       if (working && tableGroup.includes(b)) {
         const i = tableGroup.indexOf(b);
-        if (USE_SPRITES) {
-          // v3: seats MATCH the drawn glass-room chairs. South-centre is
-          // Claude's own work seat, so agents get the other five chairs;
-          // overflow stands at the table ends.
-          const MEET_SEATS = [[214,216],[266,216],[214,167],[240,167],[266,167],[176,196],[304,196]];
-          const p = MEET_SEATS[Math.min(i, MEET_SEATS.length-1)];
-          setGoal(b, p[0], p[1]);
-        } else {
-          const side = i%2 ? -1:1, slot = Math.floor(i/2);
-          setGoal(b, MEET.x - 38 + slot*25, MEET.y + (side<0 ? -24 : 30));
-        }
+        // seats MATCH the drawn glass-room chairs. South-centre is Claude's
+        // own work seat, so guests get the other chairs, north side first (a
+        // guest beside Claude would paint its label over Claude's); overflow
+        // stands at the table ends.
+        const MEET_SEATS = [[214,167],[240,167],[266,167],[176,196],[304,196],[214,216],[266,216]];
+        const p = MEET_SEATS[Math.min(i, MEET_SEATS.length-1)];
+        setGoal(b, p[0], p[1]);
         if (near(b)) { b.seat = "meet"; b.typing = true; }
         b.breakUntil = 0;
       } else if (working && !b.guest) {
@@ -1483,7 +1481,7 @@ const office = (() => {
       } else if (b.guest) {
         // visiting agent not working anymore — wanders briefly until removed
         if (t > b.wanderAt) { const p = freePoint(); setGoal(b, p.x, p.y); b.wanderAt = t + rnd(3000, 8000); }
-      } else if (t < b.breakUntil && b.breakSpot) {
+      } else if (t < b.breakUntil && b.breakSpot && !claudeWaiting(b)) {
         // short office break: coffee, water, ping-pong — then back to the desk
         setGoal(b, b.breakSpot.x, b.breakSpot.y);
         if (near(b)) b.resting = true;
@@ -1491,7 +1489,14 @@ const office = (() => {
         // idle default = AT YOUR DESK, like a real office (monitor dim, no
         // typing); occasionally take a short break
         if (t > b.nextBreakAt) {
-          b.breakSpot = BREAK_SPOTS[Math.floor(Math.random()*BREAK_SPOTS.length)];
+          // a spot nobody else is heading to, plus a small jitter — two idle
+          // characters on the same spot stood exactly on top of each other
+          const taken = new Set(bodies.filter(o => o !== b && t < o.breakUntil && o.breakBase).map(o => o.breakBase));
+          const pool = BREAK_SPOTS.filter(sp => !taken.has(sp));
+          const base = (pool.length ? pool : BREAK_SPOTS)[Math.floor(Math.random()*(pool.length || BREAK_SPOTS.length))];
+          const jx = base.x + rnd(-7, 7), jy = base.y + rnd(-3, 3);
+          b.breakBase = base;
+          b.breakSpot = inObstacle(jx, jy) ? base : { ...base, x: jx, y: jy };
           b.breakUntil = t + rnd(6000, 13000);
           b.nextBreakAt = t + rnd(35000, 95000);
         } else {
@@ -1502,13 +1507,14 @@ const office = (() => {
       }
       step(b);
     }
-    // gentle separation so wandering characters never stack — but never let a
-    // push shove someone inside furniture, and never fight someone who is
-    // settling onto a seat (push→walk-back oscillation looked like flicker)
-    const settling = (b) => Math.hypot(b.tx-b.x, b.ty-b.y) < 12;
+    // gentle separation so STANDING characters never stack. Walkers are
+    // exempt: pushing someone mid-path in a one-cell corridor (beside the
+    // glass room, between pod desks) made head-on pairs shove each other
+    // forever — they now simply pass by. Never shove anyone into furniture.
+    const walking = (b) => b.path.length > 0 || Math.hypot(b.tx-b.x, b.ty-b.y) > 2;
     for (let i=0;i<all.length;i++) for (let j=i+1;j<all.length;j++){
       const a=all[i], c=all[j];
-      if (a.seat || c.seat || settling(a) || settling(c)) continue;
+      if (a.seat || c.seat || walking(a) || walking(c)) continue;
       const dx=c.x-a.x, dy=c.y-a.y, d=Math.hypot(dx,dy);
       if (d>0 && d<14){ const push=(14-d)/2, nx=dx/d, ny=dy/d;
         for (const [bd, sgn] of [[a,-1],[c,1]]) {
@@ -1519,18 +1525,17 @@ const office = (() => {
     }
 
     ctx.clearRect(0,0,W,H);
-    if (USE_SPRITES) drawSceneV3(t);
-    else { drawScene(t, tableGroup.length > 0); drawMeetingTable(MEET.x, MEET.y, tableGroup.length > 0); }
+    drawSceneV3(t);
 
     // painter's order: desks and characters interleaved by y
     const items = [];
     for (const key of Object.keys(DESKS)) {
       const d = DESKS[key];
-      if (USE_SPRITES && (d.glass || d.bar)) continue;   // scene draws those
+      if (d.glass || d.bar) continue;   // scene draws those
       // monitor lights up only when its owner is actually TYPING (idle
       // sitters keep a dim screen — the room's light mirrors real work)
       const working = bodies.some(b => b.desk===key && b.seat==="desk" && b.typing);
-      items.push({ y: d.y+17, draw: () => (USE_SPRITES ? drawDeskV3 : drawDeskF)(d, working, t) });
+      items.push({ y: d.y+17, draw: () => drawDeskV3(d, working, t) });
     }
     for (const b of all) {
       const moving = Math.hypot(b.tx-b.x, b.ty-b.y) > 2;
@@ -1539,12 +1544,42 @@ const office = (() => {
           ? (hasSprite(b) ? spriteSeated(b, t) : drawSeated(b, t))
           : (hasSprite(b) ? spriteStanding(b, t, moving) : drawStanding(b, t, moving)) });
     }
-    if (USE_SPRITES)                                    // glass front over the people inside
-      items.push({ y: GLASS.y + GLASS.h - 1, draw: glassRoomFront });
+    // glass front over the people inside
+    items.push({ y: GLASS.y + GLASS.h - 1, draw: glassRoomFront });
     items.sort((a,z) => a.y - z.y).forEach(it => it.draw());
     drawPet(t);
-    if (USE_SPRITES) lightingV3();
+    lightingV3();
+    updateLabels(all);
     requestAnimationFrame(tick);
+  }
+
+  // Activity labels: one DOM pill per character that has something to say
+  // (its tool, or Claude's wait state). DOM text stays crisp at any zoom —
+  // the canvas is a 2x pixel surface where 7px text looked smeared.
+  const labelBox = $("office-labels"), labelEls = new Map();
+  function updateLabels(all) {
+    if (!labelBox || typeof labelBox.appendChild !== "function") return;   // headless test stub
+    const cw = cv.clientWidth || W * S, chh = cv.clientHeight || H * S;
+    const seen = new Set();
+    for (const b of all) {
+      let cls = "", txt = null;
+      const st = b.typing ? statusOf(b) : null;
+      if (st) { txt = st.label; cls = st.read ? "read" : ""; }
+      else if (claudeWaiting(b)) {
+        const perm = waitInfo.state === "permission";
+        txt = perm ? "Needs approval" : "Waiting for input"; cls = perm ? "perm" : "wait";
+      }
+      if (!txt) continue;
+      seen.add(b.id);
+      let el = labelEls.get(b.id);
+      if (!el) { el = document.createElement("div"); labelBox.appendChild(el); labelEls.set(b.id, el); el._txt = ""; }
+      const key = cls + "|" + txt;
+      if (el._txt !== key) { el._txt = key; el.className = "olbl " + cls; el.innerHTML = `<span class="d"></span>${esc(txt)}`; }
+      const lift = (b.seat ? 38 : 40) + (cls === "perm" || cls === "wait" ? 14 : 0);   // above tag (+ icon bubble)
+      el.style.left = (b.x / W * cw) + "px";
+      el.style.top = ((b.y - lift - 8) / H * chh) + "px";
+    }
+    for (const [id, el] of labelEls) if (!seen.has(id)) { el.remove(); labelEls.delete(id); }
   }
 
   function near(b){ return Math.hypot(b.tx-b.x, b.ty-b.y) < 3; }
@@ -1574,7 +1609,8 @@ const office = (() => {
   }
 
   requestAnimationFrame(tick);
-  return { setLive, bodyAt };
+  // _bodies: debug/test hook (positions, goals, seats) — not UI
+  return { setLive, bodyAt, _bodies: () => bodies.concat([...guests.values()]) };
 })();
 
 // Click a character → address them in the chat bar.

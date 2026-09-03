@@ -3,6 +3,53 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.50.0] — 2026-09-04
+
+### Changed (forge-office: agents-at-work UI rebuilt)
+
+The dashboard now shows **what each agent is doing**, not just that it exists.
+Reference design: pixel-agents' per-character activity model.
+
+- **Per-agent activity from transcripts** — `dashboard/src/lib.mjs` reads each
+  subagent's own JSONL under `~/.claude/projects/<project>/<session>/subagents/`
+  (64 KB tail, 2 h TTL, read-only) and joins it onto the hook-recorded agent
+  list by agent type: current tool + target, spawn description, model, last
+  20 actions. Agents whose spawn signal was missed still appear (transcript
+  active < 20 min). Unofficial format: any parse failure degrades to "no
+  detail", never an error.
+- **Blocked-on-user state** — new `hooks/scripts/wait-status.sh` records
+  `~/.claude/forge-status/<sid>.wait` (`waiting|permission`) from the
+  `Notification`, `PermissionRequest` and `Stop` hooks; cleared on
+  `PreToolUse` / `UserPromptSubmit`.
+- **Office** — every character gets a crisp DOM activity label ("Reading
+  auth.ts", "Running: npm test", blue dot = reading, pulsing green = writing);
+  reading tools use a still pose, writing/running the typing animation.
+  Claude blocked on you shows an 11×13 pixel bubble (amber "…" = needs
+  approval, green ✓ = waiting for input) and stays at the desk. Forge agents
+  always work at their own desks (the 3+ agents "stand-up" mode is gone);
+  visiting non-forge agents take the meeting table, north seats first.
+- **Live card** — one lane per worker (Claude, then each agent): current tool,
+  BG tag for background agents, run time; click a lane for its own timeline.
+- **Header** — tool chips use the same human vocabulary (`formatToolStatus`).
+
+### Fixed
+
+- Characters piling onto one spot / shoving each other forever: idle
+  characters now pick a break spot nobody else is heading to (plus a small
+  jitter), and the separation push only applies between standing characters
+  — walkers pass each other in one-cell corridors instead of oscillating.
+
+### Removed
+
+- The `?classic=1` procedural office (~250 lines); the sprite office is the
+  only renderer.
+
+### Tests
+
+- `wait-status.bats` (6), subagent transcript parsing/joining (5),
+  `formatToolStatus`, and an office soak test (1500 frames: workers seated, no
+  standing overlap, no stuck walkers — proven to fail on the old logic).
+
 ## [0.49.0] — 2026-09-04
 
 ### Added (professional standards per agent)
