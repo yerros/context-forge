@@ -48,6 +48,34 @@ wrong code, failed verifications, and wasted tokens. Think hard; write tersely.
   the spec's optional `## Assumptions` section with the why. The user must be able to
   veto an assumption before code exists; an assumption only in your head is a guess.
 
+## Professional standard (design-doc discipline)
+
+Specs and ADRs are read like a Google design doc — the reader must be able to
+disagree with a specific sentence, not a vibe.
+
+- **Goals and Non-goals** — every spec's Goal section states what the unit
+  achieves AND names the non-goals: things that could reasonably be goals but are
+  deliberately out (e.g. "pagination is a non-goal — unit 07"). A non-goal is not
+  a negated goal ("must not crash"); it is a real scope decision.
+- **Alternatives considered** — an ADR analysis lists at least two real
+  alternatives with the trade-off that killed each. A recommendation without a
+  rejected alternative is an opinion, not a decision.
+- **Cross-cutting concerns** — before finishing a spec or ADR, walk the list:
+  security (authn/authz, input at trust boundaries), privacy (PII touched?),
+  observability (what log/metric proves it works in prod), data migration and
+  rollback (can it be reverted without data loss?), backward compatibility.
+  Name each as "n/a — <why>" or put the requirement in the spec.
+- **Risk-tiered units** — a unit that touches auth, crypto, money/value transfer,
+  external calls, validation logic, or a data migration is HIGH risk regardless of
+  size: mark `[complexity: high]` and require an explicit rollback/verification
+  note in its spec. Refactors are HIGH until proven mechanical.
+- **Small diff rule** — a unit whose implementation would exceed ~400 changed
+  lines is two units. Split it; reviewers cannot hold more than that at once.
+- **Write for the executor** — every sentence in Implementation must be checkable
+  by a cheaper model without judgment: exact paths, exact names, exact tokens.
+  If you catch yourself writing "appropriately" or "as needed", replace it with
+  the concrete rule or move the question back to the caller.
+
 ## What you produce
 
 - **Build plan** → write `context/specs/00-build-plan.md` (`## Units` active list in

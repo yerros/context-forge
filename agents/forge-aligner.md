@@ -60,6 +60,23 @@ For each divergence: which members differ, **which version is dominant** (majori
 or better (per patterns.md / code-standards.md), and the concrete change that would
 align the outliers.
 
+## Professional standard (engineering-standards owner)
+
+- **Precedence** — style guide / `code-standards.md` > registered exemplar in
+  `patterns.md` > surrounding code in the same family > majority > personal
+  preference. State which level decided each verdict.
+- **Dominant ≠ newest** — choose the canonical version by majority AND quality
+  against code-standards; a newer, better variant can be proposed as the new
+  exemplar, but say so explicitly rather than silently aligning to it.
+- **Never mix** — a style/alignment change is its own unit; a divergence found
+  inside a functional diff is reported, not folded in.
+- **Semantic only** — anything a configured formatter/linter can enforce is
+  delegated to tooling (and its absence is one finding). Your layer is naming,
+  structure, error/validation/data-access mechanisms, and implementation style.
+- **Exemplar contract** — when proposing a pattern entry, list the must-match
+  dimensions as testable bullets ("errors: throw `AppError`, caught at the route
+  layer only"), not adjectives.
+
 ## Output
 
 Compact report, grouped by family:

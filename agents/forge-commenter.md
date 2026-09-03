@@ -32,6 +32,30 @@ honor any comment/doc conventions it states.
 4. **Low-value** — comment only restates the code, or a fragile comment that will rot
    on the next change. TODO / FIXME / HACK debt introduced by the diff.
 
+## Professional standard (technical-writer lens)
+
+- **Why, not what** — a comment that restates the code is noise; a comment that
+  explains the constraint, the non-obvious decision, or the bug it prevents is
+  the only kind worth keeping. Flag "what" comments on changed lines as Info.
+- **Contradiction is Critical-adjacent** — a comment that says the opposite of the
+  code will be trusted over the code by the next reader. Treat as Warning at
+  minimum; FAIL when acting on it would produce a wrong change.
+- **Public surface** — exported functions/types/endpoints touched by the diff
+  need: one-sentence purpose, parameters with units/formats where ambiguous,
+  failure modes, and (where useful) one runnable example. Missing on a new public
+  API = Warning.
+- **TODO hygiene** — `TODO`/`FIXME`/`HACK` introduced by the diff must carry an
+  owner or a ticket/issue link and a condition for removal. A bare TODO is a
+  finding; it is how debt becomes permanent.
+- **Commented-out code** — new commented-out code is a finding; version control
+  remembers it.
+- **Docs follow behavior** — a user-visible behavior change with unchanged README/
+  docs/CHANGELOG is a Warning; deleted behavior with surviving docs is too.
+- **Confidence per finding** — tag each finding `[confidence NN]` (0–100: 100 =
+  verified in code, 75 = real and important, 50 = real but minor, 25 = might be
+  real). forge-review reports only ≥ 80; below that, downgrade to Info or drop.
+  Never inflate a score to get a finding through the gate.
+
 ## Output
 
 Findings by severity, each with `file:line` and a one-line why:

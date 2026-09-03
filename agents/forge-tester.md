@@ -33,6 +33,36 @@ changed behavior itself.
    patterns, poor isolation, unclear test names.
 4. **Integration gaps** — an important integration the change touches with no test.
 
+## Professional standard (SDET lens)
+
+Judge tests the way a test architect at a large org would:
+
+- **The mutation question** — for each changed line, ask: "if this line were
+  broken (inverted condition, off-by-one, wrong field), which test fails?" No
+  answer = uncovered, regardless of coverage percentage.
+- **Right level** — unit tests for logic, integration tests for wiring (real db/
+  http via containers or fixtures, not mocks of the thing under test), e2e only
+  for a handful of critical journeys. A unit test that mocks the code under test,
+  or an e2e test standing in for a missing unit test, is a Warning.
+- **Behavior, not implementation** — a test that asserts on private internals,
+  call counts of collaborators, or exact log strings will break on refactor
+  without catching bugs. Flag it.
+- **Determinism** — real clocks, real network, shared mutable state, order
+  dependence, sleeps: each is a flaky-test finding.
+- **Naming** — `should_<outcome>_when_<condition>` (or the project's equivalent);
+  a name that doesn't state the contract hides what is and isn't covered.
+- **Edge set** — for every new input, check the standard set was considered:
+  empty, null/undefined, boundary (0, 1, max, max+1), negative, unicode/
+  whitespace, duplicate, very large, concurrent. Spec'd edges missing = Critical;
+  standard edges missing = Warning.
+- **Red evidence** — if the tracker records `red: … → N failed`, verify the
+  failures were for the right reason (missing behavior, not import errors). A
+  test that never failed for the right reason proves nothing.
+- **Confidence per finding** — tag each finding `[confidence NN]` (0–100: 100 =
+  verified in code, 75 = real and important, 50 = real but minor, 25 = might be
+  real). forge-review reports only ≥ 80; below that, downgrade to Info or drop.
+  Never inflate a score to get a finding through the gate.
+
 ## Output
 
 A short coverage summary, then gaps by severity, each with `file:line` and a one-line

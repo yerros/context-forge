@@ -7,7 +7,7 @@ description: >
   disciplined tests-first (red) → implement (green) → verify → close loop for a
   single spec'd unit and keeps the progress tracker in sync.
 metadata:
-  version: "0.26.0"
+  version: "0.49.0"
 ---
 
 # forge-build
@@ -123,6 +123,16 @@ included.
   unused; leave pre-existing dead code alone (mention it, don't delete it). Don't
   "improve" adjacent code, comments, or formatting — every changed line must trace
   to the spec.
+- **Trust boundaries are never "simplified away".** Input from HTTP, files,
+  env, CLI args, or the database is validated/parsed once at the boundary, then
+  handed on as a proven type. Simplicity governs internals, not the boundary.
+- **Make the change easy, then make the easy change.** If the spec'd behavior
+  needs a small restructuring first, do it as a separate step with the suite
+  still green (a pure refactor, no behavior change), then add the behavior. Never
+  interleave the two in one pass — a failing test then has two suspects.
+- **Diff size is a signal.** If the implementation heads past ~400 changed lines,
+  stop: the unit is too fat. Note it in the tracker as spec debt and ask the user
+  whether to split before continuing.
 
 ### 5. Verify — an explicit loop with a hard escape
 
@@ -134,6 +144,12 @@ when done" checklist, and the **standards compliance gate**: re-read
 rule** — for each rule, state pass or name the violating file:line. Do not check
 from memory of the rules; check from the files. A rule violation is a failure like
 any other: fix it and re-run. For a deeper pass, run the `forge-verify` skill.
+
+**Self-review first.** Before running anything, read your own `git diff` the way
+`forge-reviewer` will: every changed line traces to the spec, no orphaned imports,
+no adjacent "improvements", names say what things are, and you can state in one
+sentence *why* the change is shaped this way (that sentence becomes the commit body
+in `forge-pr`). Fix what you find now — it is cheaper than a failed verify.
 
 **Keep the output cheap:** run tests/linters with quiet or failures-only reporters
 (e.g. `--reporter=dot`, `--quiet`, `2>&1 | tail`) — a green suite needs one summary

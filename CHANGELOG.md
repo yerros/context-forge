@@ -3,6 +3,52 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.49.0] — 2026-09-04
+
+### Added (professional standards per agent)
+
+Each bundled agent now carries a `## Professional standard` section that encodes
+how its real-world counterpart at a large engineering org works — concrete
+checklists and calibration, not persona prose. Sources: Google eng-practices
+(code review), Google design docs, SRE on-call practice, "parse, don't
+validate", trailofbits differential-review triage.
+
+- **`forge-architect`** — Goals/Non-goals, alternatives considered, cross-cutting
+  concerns walk (security, privacy, observability, migration/rollback, compat),
+  risk-tiered units (auth/crypto/money/external/validation/migration → HIGH),
+  ~400-line split rule, "write for the executor".
+- **`forge-reviewer`** — Google review bar (approve when code health improves),
+  design-before-lines, user-path walk incl. concurrency, every-line rule, blast
+  radius via call-site count, `Nit:` discipline, consequence-stated findings.
+- **`forge-failure-hunter`** — the 3 a.m. test, log contract (severity, op,
+  ids, cause preserved), I/O contract (timeout, retry policy, idempotency),
+  blast radius, honest fallbacks, partial-failure/rollback.
+- **`forge-tester`** — mutation question per changed line, right test level,
+  behavior-not-implementation, determinism, `should_X_when_Y` naming, standard
+  edge set, red-evidence check.
+- **`forge-typer`** — parse at the boundary, illegal states unrepresentable,
+  primitive obsession (money-as-float Critical), nullability as a decision,
+  invariants in constructors, escape hatches, proportionality.
+- **`forge-commenter`** — why-not-what, contradiction severity, public-surface
+  docs, TODO hygiene (owner/link/removal condition), commented-out code, docs
+  follow behavior.
+- **`forge-aligner`** — precedence chain (standards > exemplar > family >
+  majority > preference), dominant ≠ newest, never mix style with function,
+  semantic-only, testable exemplar contract.
+- **`forge-scout`** — sweep scaled by repo size (SMALL/MEDIUM/LARGE), risk-tag
+  per file, blast radius as a number, recent-history check, strict evidence format.
+- **Confidence per finding** — the five review agents (reviewer, tester,
+  failure-hunter, typer, commenter) tag every finding `[confidence NN]`, matching
+  the `forge-review` ≥ 80 gate that previously had no agent-side score.
+
+### Changed (`forge-build` → 0.49.0)
+
+- Step 4 gains: trust boundaries are never simplified away; "make the change
+  easy, then make the easy change" (separate green refactor step); diff-size
+  signal (~400 lines → split as spec debt).
+- Step 5 gains a **self-review** pass before verification: read your own diff as
+  the reviewer will, and be able to state the why in one sentence.
+
 ## [0.48.0] — 2026-08-18
 
 ### Added (PR comments per fix round)

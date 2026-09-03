@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.36.2-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.49.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -184,6 +184,13 @@ conclusions do.
 | `forge-failure-hunter` | **sonnet** | `forge-review`'s **errors** lens: swallowed catches, dangerous fallbacks, broken error propagation — failures that never surface. Read-only. |
 | `forge-typer` | **sonnet** | `forge-review`'s **types** lens: encapsulation, invariants expressed in the type, illegal states left representable. Read-only. |
 | `forge-commenter` | **sonnet** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
+
+Every agent carries a **Professional standard** section — the working discipline of
+its real-world counterpart (Google-style code review bar, design-doc goals/non-goals
+and cross-cutting concerns, SRE on-call log/I-O contracts, SDET mutation question,
+"parse, don't validate", tech-writer comment rules, standards precedence, triage
+scaling) — and the review agents tag each finding with a `[confidence NN]` score
+that `forge-review` gates at ≥ 80.
 
 `forge-build` deliberately has no pinned agent — intelligence is paid up front in the
 spec, execution runs in your session's model (with an opus recommendation for units
