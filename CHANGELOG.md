@@ -3,6 +3,26 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.51.0] — 2026-09-04
+
+### Fixed (forge-office: kanban parsing)
+
+The board no longer mixes shipped work into In Progress or plan prose into
+Next Up. Both parsers in `dashboard/src/lib.mjs` now read real-world trackers
+and build plans the way they are actually written.
+
+- **Tracker** — a bold `**Unit N SHIPPED … — title**` paragraph left under
+  "In Progress" (and the sub-bullets below it) lands in Completed as
+  "Unit N — title" instead of six WIP cards. Only the bold lead-in decides;
+  body prose that merely mentions "shipped" is left alone.
+- **Build plan** — bullets without a unit number are prose (decisions, notes)
+  and are skipped; `| 160 | title | … |` table rows are parsed as units;
+  Shipped / Parked / Superseded / Retroactively-adopted headings and rows
+  marked `✅ Done` count as completed.
+- **`unitOf`** (lib + UI) accepts only `unit N` or a leading number, so
+  "maps 1:1" and "PR #243" are no longer read as units 1 and 243.
+- Two regression tests added (`dashboard/tests/lib.test.mjs`).
+
 ## [0.50.0] — 2026-09-04
 
 ### Changed (forge-office: agents-at-work UI rebuilt)
