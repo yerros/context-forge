@@ -322,7 +322,7 @@ export function readSubagents(root, projectsDir = path.join(os.homedir(), ".clau
     let files;
     try { files = fs.readdirSync(dir); } catch { continue; }
     for (const f of files) {
-      const m = f.match(/^agent-([A-Za-z0-9]+)\.jsonl$/);
+      const m = f.match(/^agent-([A-Za-z0-9_-]+)\.jsonl$/);   // ids now carry the agent name: agent-aKaren-2-<hash>
       if (!m) continue;
       const jsonl = path.join(dir, f);
       let st; try { st = fs.statSync(jsonl); } catch { continue; }
@@ -428,11 +428,19 @@ export function attachSubagents(sessions, bySession) {
     }
     const pool = new Map();
     for (const x of live) (pool.get(x.agentType) || pool.set(x.agentType, []).get(x.agentType)).push(x);
+    const enrich = (a, x) => Object.assign(a, { tool: x.tool, detail: x.detail, description: x.description, model: x.model, stream: x.stream, last: x.last });
+    const unmatched = [];
     for (const a of s.agents) {
       const q = pool.get(a.agent);
       const x = q && q.shift();
-      if (x) Object.assign(a, { tool: x.tool, detail: x.detail, description: x.description, model: x.model, stream: x.stream, last: x.last });
+      if (x) enrich(a, x); else unmatched.push(a);
     }
+    // ponytail: newer CC writes meta.agentType = the agent's NAME ("Karen-2"),
+    // not its subagent_type, so type-join fails. Pair leftovers positionally
+    // (oldest-first both sides) — same N spawns, same N transcripts.
+    const rest = [...pool.values()].flat().sort((p, q) => p.since - q.since);
+    for (const a of unmatched.sort((p, q) => p.since - q.since)) { const x = rest.shift(); if (x) enrich(a, x); }
+    pool.clear(); if (rest.length) pool.set("_rest", rest);
     for (const q of pool.values()) for (const x of q)
       s.agents.push({ agent: x.agentType, since: x.since, bg: false, fromTranscript: true,
         tool: x.tool, detail: x.detail, description: x.description, model: x.model, stream: x.stream, last: x.last });

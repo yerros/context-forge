@@ -240,3 +240,16 @@ bg_json() { printf '{"session_id":"%s","tool_name":"Task","tool_input":{"subagen
   printf '{"session_id":"s22","tool_name":"AgentOutput","tool_input":{}}' | bash "$AGENT_STATUS" stop
   [ "$(wc -l < "$STATE_DIR/s22.agents" | tr -d ' ')" -eq 1 ]
 }
+
+@test "agent-status: new CC spawn ack ('Spawned successfully') without run_in_background keeps agent live" {
+  # CC 2026-09: every Agent call is background; no run_in_background flag, no 'backgrounded' phrase.
+  printf '{"session_id":"s23","tool_name":"Agent","tool_input":{"subagent_type":"context-forge:forge-tester","name":"Karen","prompt":"x"}}' \
+    | bash "$AGENT_STATUS" start
+  printf '{"session_id":"s23","tool_name":"Agent","tool_input":{"subagent_type":"context-forge:forge-tester","name":"Karen"},"tool_response":"Spawned successfully. agent_id: Karen-2@session-abc\\nname: Karen-2\\nThe agent is now running and will receive instructions via mailbox."}' \
+    | bash "$AGENT_STATUS" stop
+  grep -qE '^forge-tester [0-9]+ B[0-9]+$' "$STATE_DIR/s23.agents"
+  # completion: SubagentStop carries agent_type = the NAME, not the subagent_type -> unnamed fallback drops the B entry
+  printf '{"session_id":"s23","hook_event_name":"SubagentStop","agent_id":"aKaren-2-811d","agent_type":"Karen-2"}' \
+    | bash "$AGENT_STATUS" subagent-stop
+  [ ! -f "$STATE_DIR/s23.agents" ]
+}

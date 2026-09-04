@@ -3,6 +3,26 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.51.1] — 2026-09-04
+
+### Fixed
+- **Dashboard showed "everyone idle" while 5 subagents ran** (Claude Code 2026-09 agent model).
+  - `agent-status.sh stop`: the Agent tool now returns at spawn for every call
+    (no `run_in_background` flag) with the text "Spawned successfully … The agent
+    is now running". The old phrase heuristic only knew "backgrounded agent", so
+    the spawn ack was misread as a foreground completion and the agent was
+    removed 1 s after launch ("Typer finished · worked 7s"). Spawn-ack phrase
+    list extended; entry is stamped `B` and lives until SubagentStop.
+  - `readSubagents`: transcript ids now carry the agent name
+    (`agent-aKaren-2-<hash>.jsonl`); the filename regex rejected hyphens, so
+    the transcript fallback silently skipped every named agent.
+  - `attachSubagents`: `meta.agentType` is now the agent's *name* ("Karen-2"),
+    not its subagent_type, so the type-join never matched. Leftover hook
+    entries are now paired positionally (oldest-first) with leftover live
+    transcripts instead of rendering as duplicates.
+  - Known: `SubagentStop.agent_type` is also the name, so exact removal falls
+    back to "drop the oldest background entry" — count stays correct.
+
 ## [0.51.0] — 2026-09-04
 
 ### Fixed (forge-office: kanban parsing)

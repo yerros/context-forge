@@ -160,9 +160,10 @@ if [ "$mode" = "stop" ]; then
     # Named signal (PostToolUse) — the Task/Agent tool returned.
     started=$(awk -v a="$agent" '$1 == a && NF == 2 { print $2; exit }' "$state")
     if [ -n "$started" ] \
-       && printf '%s' "$input" | grep -qi 'backgrounded agent' \
+       && printf '%s' "$input" | grep -qiE 'backgrounded agent|spawned successfully|is now running' \
        && [ $((now - started)) -le "$SPAWN_S" ]; then
-      # Background handoff (phrase heuristic): the tool returned AT SPAWN —
+      # Background handoff (phrase heuristic; CC 2026-09 says "Spawned
+      # successfully ... The agent is now running"): the tool returned AT SPAWN —
       # the agent is STILL RUNNING. Stamp B<now> so the imminent
       # SubagentStop echo is absorbed.
       awk -v a="$agent" -v s="B$now" \

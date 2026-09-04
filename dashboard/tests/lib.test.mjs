@@ -396,3 +396,20 @@ test("parseBuildPlan: prose bullets skipped, table rows + Active sections are pe
   assert.equal(unitOf("maps 1:1 to schema.org"), null);
   assert.equal(unitOf("176 (backend). GET /x"), 176);
 });
+
+test("readSubagents: hyphenated ids (agent-aKaren-2-<hash>) + name-typed meta join positionally", () => {
+  const projects = tmp();
+  const root = "/r";
+  const dir = path.join(projects, projectDirName(root), "s2", "subagents");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "agent-aKaren-2-811dd.meta.json"), JSON.stringify({ agentType: "Karen-2", name: "Karen-2", description: "Karen — tests lens" }));
+  fs.writeFileSync(path.join(dir, "agent-aKaren-2-811dd.jsonl"), use("t1", "Bash", { command: "bun test" }, 5));
+  const by = readSubagents(root, projects);
+  assert.equal(by["s2"].length, 1);
+  const now = Math.floor(Date.now() / 1000);
+  const sessions = [{ session: "s2", agents: [{ agent: "forge-tester", since: now - 10, bg: true }] }];
+  attachSubagents(sessions, by);
+  assert.equal(sessions[0].agents.length, 1);            // no duplicate guest row
+  assert.equal(sessions[0].agents[0].tool, "Bash");
+  assert.equal(sessions[0].agents[0].description, "Karen — tests lens");
+});
