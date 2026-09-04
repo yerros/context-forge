@@ -17,7 +17,9 @@ is structured and how to propose changes.
 skills/<name>/SKILL.md           # one directory per skill
 skills/forge-init/templates/   # the six context templates + entry point
 skills/forge-init/references/  # stack profiles
-skills/forge-init/scripts/     # deterministic detector (detect.sh)
+skills/forge-init/scripts/     # deterministic detector (detect.sh) + schema migration
+skills/forge-review/scripts/   # rules-check.sh — regex rules from context/rules.txt
+skills/forge-calibrate/golden/ # bundled reviewer golden set (before/ after/ expected.txt)
 hooks/hooks.json                 # SessionStart, Stop, PreToolUse
 ```
 

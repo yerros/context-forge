@@ -1,0 +1,7 @@
+# Deterministic rules — run by forge-review step 0 (rules-check.sh) over changed files.
+# One rule per line:  ID|Severity|glob|message|regex   (regex is last; may contain |)
+# glob matches the file path (* = every file). Lines starting with # are ignored.
+# Every line here has a matching rule card in code-standards.md with enforced: tool.
+#
+# CS-010|Critical|*.ts|No `any` — use explicit types|:\s*any\b
+# CS-030|Important|*.css|Raw hex color — use a token|#[0-9a-fA-F]{3,8}\b

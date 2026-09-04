@@ -34,8 +34,13 @@ load time, right after the digest (it's small). Other skills don't.
 **Budget: ~1.5 KB / ~400 tokens (≈ 12–15 lessons).** When full, don't just append:
 1. **Dedupe/generalize** — merge lessons that are instances of one rule.
 2. **Promote** — a lesson that has become a real convention belongs in
-   `code-standards.md` / `ai-workflow-rules.md` / `architecture.md` (invariant);
-   move it there and delete the lesson line.
+   `code-standards.md` (as a rule card: `CS-NNN`, severity, `enforced:`, ✗/✓
+   pair) / `ai-workflow-rules.md` / `architecture.md` (invariant); move it there
+   and delete the lesson line.
+2½. **Ratchet** — a lesson a regex can catch goes to `context/rules.txt` the
+   day it's written (`ID|Severity|glob|message|regex`) with an `enforced: tool`
+   card; the lesson line ends with `→ CS-NNN`. forge-review's step 0 then
+   enforces it at zero judgment cost.
 3. **Drop** — lessons about code that no longer exists.
 Promotion is the goal: `lessons.md` is a staging area for rules, not a landfill.
 

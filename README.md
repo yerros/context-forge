@@ -150,14 +150,15 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-build` | The disciplined tests-first (red) → implement (green) → verify → close loop for one spec'd unit: tests written from the spec before any code and run to a recorded failure, then frozen; full-suite regression gate, 2-failure escalation to `forge-debug`. |
 | `forge-build-all` | The autonomous multi-unit version: builds every remaining unit in order, verifying each, **stopping at the first failure**. |
 | `forge-verify` | The pre-close gate: spec checklist + the unit's tests + full suite + build/typecheck/lint + tiered adversarial review, with a hard PASS/FAIL verdict. |
-| `forge-review` | Comprehensive multi-lens review of a PR, branch, or working diff (spec, standards, tests, errors, types, comments, simplicity) — inventory-first (every changed hunk explicitly marked per lens), findings tracked in a persistent review ledger so passes accumulate instead of restarting, confidence-gated, severity-ranked, read-only. `--until-clean` loops review → fix → re-review until one full pass finds nothing, posting one PR comment per fix round as an audit trail. The wide sweep to `forge-verify`'s unit close-gate. |
+| `forge-review` | Comprehensive multi-lens review of a PR, branch, or working diff (spec, standards, tests, errors, types, comments, simplicity) — **deterministic gate first** (project lint/typecheck/tests + `rules.txt` regex rules via `rules-check.sh`; tool hits are findings by construction and never re-litigated by an agent), then inventory-first (every changed hunk explicitly marked per lens), findings tracked in a persistent review ledger so passes accumulate instead of restarting, confidence-gated, severity-ranked, read-only. `--until-clean` loops review → fix → re-review until one full pass finds nothing, posting one PR comment per fix round as an audit trail. The wide sweep to `forge-verify`'s unit close-gate. |
+| `forge-calibrate` | Measures the reviewer itself: runs `forge-review` N times over a golden set of small diffs with planted findings (bundled: swallowed error, scope creep, hollow test, silent breakage, rule-card violation) and reports **recall** and **run-to-run agreement**, naming blind spots and unstable findings. Grow the set from real misses; run before/after any change to a lens, agent, or rule. Read-only. |
 | `forge-fix` | Intake for bug reports in shipped work: reproduce, pin the bug with a red regression test before fixing (the bug can never silently return), triage (fix directly when obvious; hand off to `forge-debug` when not), verify, close with tracker + lesson + `fix/` branch. |
 | `forge-debug` | Stop-and-diagnose when stuck or after repeated failures: reproduce, isolate, re-read invariants, present root-cause options — no guess-fixing. |
 | `forge-align` | Finds and fixes consistency drift between similar features: maps feature families, registers canonical patterns with exemplars, and turns approved alignments into refactor units. |
 | `forge-health` | Whole-codebase QA pass across five dimensions — test-suite health, error handling on critical paths, basic security hygiene, performance smells, dead code — with evidence-backed findings routed into the normal fix/refactor pipeline. |
 | `forge-pr` | Ships a verified unit: branch (`feat/NN`, `fix/NN`), conventional commit, PR with a spec-derived summary. |
 | `forge-decision` | Logs an Architecture Decision Record to `decisions.md` and keeps `architecture.md` in sync. |
-| `forge-lesson` | "Remember this / forget that": distills corrections into one-line lessons (per project) or preferences (cross-project), within budget, promoting recurring ones into real standards. |
+| `forge-lesson` | "Remember this / forget that": distills corrections into one-line lessons (per project) or preferences (cross-project), within budget. **Ratchets** mechanically-checkable lessons straight into `rules.txt` + an `enforced: tool` rule card; promotes recurring ones into rule cards with ✗/✓ examples. |
 | `forge-resume` | Restores context tier by tier at session start (digest + tracker first, full files per task) and briefs you on where things stand. |
 | `forge-audit` | Detects drift between the context files (including the digest) and the actual codebase, checks token budgets, and offers doc updates. |
 | `forge-reconcile` | Adopts work done **outside** the process: detects commits with no unit/spec trail (deterministic git detector, also wired into `SessionStart` as a token-free warning), analyzes them via the scout, and — with approval — turns each cluster into a retroactive spec + tracker entry, or a conscious dismissal. |
@@ -305,7 +306,7 @@ Two mechanisms keep the cost flat as projects grow large:
 ```
 context-forge/
 ├── .claude-plugin/          # plugin + marketplace manifests
-├── skills/                  # the 21 forge-* skills (+ bundled templates,
+├── skills/                  # the 22 forge-* skills (+ bundled templates,
 │   └── .../                 #   references, detect/migrate scripts)
 ├── agents/                  # 9 model-pinned subagents
 ├── hooks/                   # hooks.json + zero-token shell scripts
@@ -323,7 +324,8 @@ context-forge/
 
 Every deterministic script is covered by a [bats-core](https://github.com/bats-core/bats-core)
 suite — hooks (including corrupt/empty/pre-digest context files), the worktree
-claim lifecycle, locks, schema migration, and metrics:
+claim lifecycle, locks, schema migration, metrics, the review rule checker, and
+the calibration scorer:
 
 ```bash
 bats tests/                              # the whole suite

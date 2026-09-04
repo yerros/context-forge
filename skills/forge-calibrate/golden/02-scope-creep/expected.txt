@@ -1,0 +1,2 @@
+spec:src/util.ts:orthogonal-edit         # slug() rewritten + clearCookie gained a param; spec says util.ts is out of scope
+simplify:src/logout.ts:unrequested-config # LogoutOptions (redirect, status code, cookie name) — spec asked for one fixed 204 handler

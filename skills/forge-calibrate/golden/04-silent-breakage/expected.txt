@@ -1,0 +1,1 @@
+silent-breakage:src/format.ts:return-type-changed   # formatPrice now returns a number; cart.ts (untouched) concatenates it and loses the "$" and trailing zeros

@@ -5,14 +5,15 @@ description: >
   request, a branch, or the local working changes in a Context Forge methodology
   project — phrases like "forge-review", "review this PR", "review my diff",
   "review the branch before I push", or "review PR 42". It resolves the review scope,
-  loads the project's context files, builds a mechanical inventory of the diff,
+  loads the project's context files, runs the deterministic gate (linters, tests,
+  rules.txt patterns) first, builds a mechanical inventory of the diff,
   reviews across quality lenses (spec, standards, tests, errors, types, comments,
   simplicity) with per-item coverage tracked in a persistent review ledger, gates
   on confidence, and reports findings ranked by severity. With --until-clean it
   loops review → fix → re-review until one full pass finds nothing. Read-only —
   reviews and reports, never fixes.
 metadata:
-  version: "0.27.0"
+  version: "0.28.0"
 ---
 
 # forge-review
@@ -60,6 +61,38 @@ If there is no `context/` (or `.forge/`) directory, say so and review against
 `CLAUDE.md` + repo conventions only — the lenses still apply, just without the
 Context Forge inputs (the ledger then lives at `.forge-reviews/<scope-id>.md`).
 
+## Step 0 — deterministic gate (tools before judgment)
+
+An LLM reviewer answers the same question differently on every run; a linter
+does not. So everything a tool can decide, a tool decides first, and the lenses
+only spend judgment on what is left. Before the inventory:
+
+1. **Project tools.** Run the project's real lint / typecheck / test commands
+   (from `ai-workflow-rules.md`'s verify step, or the manifest scripts). Capture
+   the output; do not summarize it from memory.
+2. **Rule patterns.** Run the bundled checker over the diff's files:
+
+   ```bash
+   bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-review/scripts/rules-check.sh" --base <base>
+   ```
+
+   It reads `<context-dir>/rules.txt` (`ID|Severity|glob|message|regex`, one rule
+   per line — the `enforced: tool` half of the rule cards) and prints
+   `file:line: CS-NNN [Severity] message` per hit. No `rules.txt` → it says so
+   and exits 0; that is fine, not a failure.
+3. **Record.** Every tool hit becomes a finding in the ledger (`T1`, `T2`… —
+   lens `tool`, severity from the rule or Critical for a failing build/test)
+   before any agent is spawned. Tool findings skip the confidence gate: they are
+   verified by construction.
+4. **Hand down.** Each agent's spawn prompt carries the tool output verbatim.
+   Agents **do not re-report** what a tool already caught — a duplicate of a
+   `T`-finding is noise, and a lens that mainly restates lint output is not
+   reviewing.
+
+The gate is the cheap, stable floor of the review; the lenses are the ceiling.
+When a lens finding turns out to be mechanically checkable, say so in the
+report ("add to `rules.txt`: …") — that is how the floor rises over time.
+
 ## Inventory first — coverage is explicit, never assumed
 
 "Find bugs in this diff" is a random walk: each pass notices different things,
@@ -93,7 +126,7 @@ review runs identically on any machine with no globally-installed agents require
 | Lens | Alias | Agent | What it hunts |
 | ---- | ----- | ----- | ------------- |
 | **spec** | — | `forge-reviewer` | Built what the spec doesn't say, or spec'd but missing (scope creep is a finding even when the extra code is good). Skipped if the diff maps to no unit. |
-| **standards** | `code` | `forge-reviewer` | Diff walked against `code-standards.md` + `lessons.md` **rule by rule, from the files** — any explicit-rule violation is Critical. |
+| **standards** | `code` | `forge-reviewer` | Diff walked against `code-standards.md` + `lessons.md` **rule by rule, from the files**. Every finding **cites a rule ID** (`CS-NNN`) or a lessons.md line; a "standards" finding that cites neither is an opinion and is downgraded to Advisory. A cited-rule violation is Critical at the card's severity or higher. |
 | **invariants** | — | `forge-reviewer` | Breaks an `architecture.md` rule or touches a protected file. |
 | **simplify** | `simplify` | `forge-reviewer` | Overengineering — abstractions wrapping single-use code, configurability nobody asked for, 200 lines where 50 do. Advisory unless it hides a bug. |
 | **silent-breakage** | — | `forge-reviewer` | Changed behavior other call sites rely on (search other uses of changed functions/components). |
@@ -136,7 +169,8 @@ hunt list, or walk the diff in-session against the lens table.
 
 ## Confidence gate
 
-Report only findings with **confidence ≥ 80**. A finding below that bar is noise in a
+Tool findings (`T`-numbered, from step 0) are exempt — they are verified by
+construction. For lens findings, report only those with **confidence ≥ 80**. A finding below that bar is noise in a
 review meant to be acted on. When a lens produces nothing above the bar, say the lens
 ran clean — don't manufacture Advisory items to fill space.
 
@@ -195,8 +229,9 @@ lens, and a one-line why:
 - **Advisory** — suggestions; simplifications and polish. Report only when the lens
   was explicitly requested or the finding is cheap and clearly right.
 
-State coverage before the verdict: "N inventory items × M lenses, all cells
-marked" (or name the unmarked cells — which make the verdict `INCOMPLETE`, never
+State the gate first: which tool commands ran, pass/fail, and the `T`-findings
+(or "rules-check: clean / no rules.txt"). Then coverage before the verdict: "N
+inventory items × M lenses, all cells marked" (or name the unmarked cells — which make the verdict `INCOMPLETE`, never
 a guess). Then the one-line verdict: `RECOMMEND MERGE` (no Critical/Important) or
 `RECOMMEND CHANGES: <the single most important reason>`. Never soften a Critical into
 Important because the code "mostly works". After changes land, re-run — the ledger

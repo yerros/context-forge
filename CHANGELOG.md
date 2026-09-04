@@ -3,6 +3,50 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.52.0] — 2026-09-04
+
+### Added — review consistency: standards that can be cited, a gate that can't disagree, a reviewer that can be measured
+
+The problem: an LLM reviewer reads prose standards differently on every run, so
+the same diff gets a different review twice. Four changes, each moving judgment
+toward something deterministic or measurable.
+
+- **Rule cards** (`forge-init`). `code-standards.md` template rewritten: every
+  rule is `### CS-NNN · Severity · enforced: tool|review` + one rule line + a
+  ✗/✓ snippet pair. A rule without an example is not a rule. IDs are stable.
+  Adopt & reconcile offers a one-time conversion of prose standards into cards
+  (`[needs-example]` where the codebase yields none). New template
+  `context/rules.txt` (`ID|Severity|glob|message|regex`) holds the
+  `enforced: tool` half.
+- **Step 0 deterministic gate** (`forge-review` 0.28.0). Before any agent
+  spawns: the project's lint/typecheck/tests, plus the bundled
+  `scripts/rules-check.sh` over the diff's files (reads `rules.txt`, prints
+  `file:line: CS-NNN [Severity] message`, exit 1 on hits). Tool hits become
+  `T`-findings in the ledger, exempt from the confidence gate, handed to every
+  agent verbatim, and never re-reported. The **standards** lens now must cite a
+  `CS-NNN` or a lessons.md line — an uncited standards finding is downgraded to
+  Advisory. `forge-reviewer` hunt list updated to match.
+- **Lesson ratchet** (`forge-lesson` 0.26.0, `references/memory.md`). New step
+  2½: if the lesson is regex-checkable it goes into `rules.txt` + an
+  `enforced: tool` rule card the day it's written, with the regex shown hitting
+  the original offending line. Promotion now targets rule cards with ✗/✓ pairs,
+  never bare bullets.
+- **`forge-calibrate`** (new skill, 0.1.0). Runs the full `forge-review`
+  pipeline N times over a golden set of before/after diffs with planted
+  findings and scores **recall** and **run-to-run agreement** (mean pairwise
+  Jaccard) with `scripts/score.sh`, naming blind spots and unstable keys. Five
+  bundled cases (swallowed error, scope creep + unrequested config, hollow test,
+  silent breakage of an untouched caller, rule-card violation step 0 must catch
+  by ID); `seed` copies them to `<context-dir>/review-golden/` to grow from real
+  misses. Read-only.
+
+### Tests
+- `tests/rules-check.bats` (9) — field split with `|` in regex, glob scoping,
+  HEAD vs `--base` file resolution, `.forge/` precedence, malformed lines,
+  bundled golden case 05 caught by its own rules.
+- `tests/calibrate-score.bats` (5) — recall, agreement, blind-spot / unstable
+  reporting, single-run and missing-input edge cases.
+
 ## [0.51.1] — 2026-09-04
 
 ### Fixed

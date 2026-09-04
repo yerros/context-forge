@@ -1,0 +1,1 @@
+standards:src/api.ts:CS-003   # must be caught by step 0 (rules-check) and cited by ID, not rediscovered as an opinion

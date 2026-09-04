@@ -1,0 +1,1 @@
+tests:test/user.test.ts:asserts-nothing   # both tests pass against any implementation — expect(true) and toBeDefined()

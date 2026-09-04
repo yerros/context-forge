@@ -9,7 +9,7 @@ description: >
   with approval), keeps both within budget, and promotes recurring lessons into the
   real context files.
 metadata:
-  version: "0.25.3"
+  version: "0.26.0"
 ---
 
 # forge-lesson
@@ -45,6 +45,24 @@ documentation; put it in the right context file instead and say so.
   `ai-workflow-rules.md` / `architecture.md`, don't add it — tell the user it's
   already covered (or fix the context file if it's wrong there).
 
+### 2½. Ratchet — can a tool catch it?
+
+Before writing, ask one question: **is the rule mechanically checkable** (a
+banned call, a naming pattern, a forbidden import, a raw literal)? If yes, the
+lesson does not stay a lesson:
+
+- Add a line to `context/rules.txt` (`ID|Severity|glob|message|regex`; create
+  the file from `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/context/rules.txt`
+  if absent), and a matching rule card in `code-standards.md` marked
+  `enforced: tool` — next ID in the section, ✗/✓ pair from the actual incident.
+- Or, when the project has a linter with an equivalent rule, propose that config
+  change instead.
+- The lesson line still goes in (it's the *why*), ending with `→ CS-NNN`.
+
+Show the regex hitting the original offending line before claiming it works.
+A lesson the reviewer must remember is re-paid every review; a rule a script
+runs is paid once.
+
 ### 3. Write (show the line first)
 
 Show the exact line to be added and where; append on approval, newest last. Check
@@ -54,7 +72,8 @@ for an existing similar lesson and merge instead of duplicating.
 
 If `lessons.md` is over ~1.5 KB after the write: propose dedupe/generalize merges,
 **promote** lessons that have become real conventions into the appropriate context
-file (that's the goal), and drop lines about code that no longer exists — with
+file (that's the goal — into `code-standards.md` as a rule card with a ✗/✓ pair,
+never as a bare bullet), and drop lines about code that no longer exists — with
 approval per change.
 
 ## Also handles

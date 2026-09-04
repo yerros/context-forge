@@ -11,7 +11,7 @@ description: >
   writing. Also recognizes projects that already have the context files (manual or prior
   runs) and reconciles gaps without overwriting.
 metadata:
-  version: "0.25.3"
+  version: "0.26.0"
 ---
 
 # forge-init
@@ -129,6 +129,14 @@ idempotent: running it on a healthy project changes nothing.
      profile of the existing setup.
    - **Remaining placeholders** in present files — offer to fill them from real evidence;
      leave anything the user wants to keep as-is.
+   - **Prose standards → rule cards.** If `code-standards.md` has no `CS-` IDs,
+     offer to convert it: each existing bullet becomes a card (`### CS-NNN ·
+     Severity · enforced: tool|review`) with a ✗/✓ pair drawn from the codebase;
+     a rule with no example you can find gets `[needs-example]` rather than an
+     invented one. Keep the user's wording as the rule line. Rules that a regex
+     can catch go to `context/rules.txt` as `enforced: tool`. Show the converted
+     file before writing — this is the one content rewrite the flow allows, and
+     only on approval.
    - **Entry point** — if missing, create `CLAUDE.md`/`AGENTS.md` from the template. If
      present but `entry_links_context: no`, merge in the "Application Building Context"
      section without disturbing the rest.
@@ -263,9 +271,15 @@ the files from their answers.
 - **ui-context.md** — Every color is a named token, never a raw hex used ad hoc.
   Layout patterns describe the real app structure. For brownfield, extract from the
   existing theme/tokens.
-- **code-standards.md** — Concrete conventions for TypeScript/language, framework
-  patterns, API structure, styling, file organization. For brownfield, reflect the
-  patterns actually in the code.
+- **code-standards.md** — **Rule cards, not prose.** Every rule is
+  `### CS-NNN · Severity · enforced: tool|review` + one line of rule + a ✗/✓
+  snippet pair. A rule you cannot write an example for is not a rule yet — leave
+  it out or mark `[needs-example]`. Rules marked `enforced: tool` also get a
+  regex line in `context/rules.txt` (copy the template from
+  `${CLAUDE_PLUGIN_ROOT}/skills/forge-init/templates/context/rules.txt`) or a
+  linter config entry — the tool catches them, the reviewer only cites the ID.
+  For brownfield, reflect the patterns actually in the code. IDs are stable —
+  never renumber.
 - **ai-workflow-rules.md** — Written as imperative rules, not suggestions. Include the
   protected files (e.g. generated UI components) and the real build/verify command.
 - **progress-tracker.md** — The living file. Note that it must be updated after every

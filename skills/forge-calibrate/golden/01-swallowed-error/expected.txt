@@ -1,0 +1,2 @@
+# One key per line: <lens>:<file>:<tag>. Map each run's findings onto these keys.
+errors:src/save.ts:swallowed-catch      # catch drops the error AND returns true — caller believes the draft was saved
