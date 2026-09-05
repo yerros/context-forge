@@ -36,10 +36,12 @@ A case is a directory with `before/` and `after/` trees (the diff is
 (`<lens>:<file>:<tag>`, one per line, `#` comments allowed), and optionally a
 `context/` with the spec / standards / `rules.txt` the case depends on.
 
-- Bundled: `${CLAUDE_PLUGIN_ROOT}/skills/forge-calibrate/golden/` — five cases, one
+- Bundled: `${CLAUDE_PLUGIN_ROOT}/skills/forge-calibrate/golden/` — eight cases, one
   per failure class: swallowed error, scope creep + unrequested config, hollow
   test, silent breakage of an untouched caller, rule-card violation that step 0
-  must catch by ID.
+  must catch by ID; and three **gate cases** for `forge-gatekeeper` — hardcoded
+  live token (step 0 must catch it), missing object-level authorization (IDOR),
+  irreversible migration shipped with its code change.
 - Project: `<context-dir>/review-golden/` — created by `seed` from the bundled
   set. **Grow it from real misses**: every finding a human caught that
   `forge-review` didn't becomes a case (minimal before/after + the key). The
@@ -53,8 +55,10 @@ Use the project set when it exists, else the bundled one, and say which.
    R runs, which set.
 2. **Per case, per run** — in a scratch directory (never the project tree):
    copy `after/` as the working tree over a git repo whose HEAD is `before/`, copy
-   the case's `context/` if present, then run **exactly** `forge-review`'s pipeline
-   on it: step 0 (`rules-check.sh`), inventory, lenses, confidence gate. Same
+   the case's `context/` if present, then run **exactly** the pipeline the case
+   targets: keys prefixed `security:`/`prod:` → `forge-gatekeeper` (step 0
+   `security-check.sh`, scope, the gatekeeper agent); every other key →
+   `forge-review` (step 0 `rules-check.sh`, inventory, lenses, confidence gate). Same
    agents, same prompts, same gate — a calibration that runs a lighter review
    measures nothing. Runs are independent: no ledger carried between them, no
    hints from a previous run's output.

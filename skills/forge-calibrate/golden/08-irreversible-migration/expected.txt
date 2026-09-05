@@ -1,0 +1,3 @@
+# One key per line: <lens>:<file>:<tag>. Gate cases use lens security:/prod: and run forge-gatekeeper's pipeline.
+prod:migrations/002_drop_legacy_plan.sql:GK-P10      # down path is a comment; column data is gone on rollback
+prod:migrations/002_drop_legacy_plan.sql:GK-P11      # destructive drop in the same release as the code change — old binary still selects legacy_plan during rolling deploy (expand/contract)

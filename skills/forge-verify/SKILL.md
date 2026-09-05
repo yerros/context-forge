@@ -107,6 +107,12 @@ the stakes:
 If the agent is unavailable for a high-risk unit, spawn a general-purpose subagent
 with the same instructions.
 
+**Trust-boundary units.** When the unit adds or changes a route, job, webhook,
+migration, auth/authz code, outbound integration, or config/dependency, also run
+`forge-gatekeeper` (security + production-readiness gate, `SHIP`/`HOLD`) — a
+`HOLD` is a FAIL here. It is the release gate `forge-pr` runs anyway; running it
+at verify time catches the problem one step earlier.
+
 ## Output
 
 A concise verdict:

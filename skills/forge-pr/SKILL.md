@@ -19,6 +19,11 @@ run this once the unit is implemented AND verified.
 - The unit's verification passed (run `forge-verify` first if unsure). For a
   last-mile sanity check on risky changes, the `forge-reviewer` agent can review
   the final diff before pushing.
+- **Release gate.** Before pushing, run `forge-gatekeeper` on the unit's diff when
+  it touches a trust boundary or production constraint listed in
+  `architecture.md` (a route, job, webhook, migration, outbound integration, auth,
+  config, or dependency change). A `HOLD` blocks the PR; put the verdict block in
+  the PR body either way. Units that touch none of those may skip it — say so.
 - `progress-tracker.md` shows the unit as complete or ready to close.
 - The repo is a git repository with a clean-enough working tree for this unit's changes.
 
@@ -85,7 +90,8 @@ PR so git history matches.
 
 ## Rules
 
-- Never push or open a PR for an unverified or partial unit.
+- Never push or open a PR for an unverified or partial unit, or one the gatekeeper
+  put on `HOLD`.
 - One unit per PR — never combine units.
 - Never force-push or rewrite shared history without explicit user instruction.
 - If git or `gh` isn't available or auth fails, stop and hand the exact commands to the

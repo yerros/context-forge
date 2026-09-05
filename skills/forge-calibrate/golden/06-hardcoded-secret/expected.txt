@@ -1,0 +1,2 @@
+# One key per line: <lens>:<file>:<tag>. Gate cases use lens security:/prod: and run forge-gatekeeper's pipeline.
+security:src/mailer.ts:GK-013      # live token literal — must be caught by step 0 (security-check.sh) and cited by ID, then HOLD

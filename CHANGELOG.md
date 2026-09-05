@@ -3,6 +3,81 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.53.0] — 2026-09-05
+
+### Added — `forge-gatekeeper`: the last gate before production
+
+`forge-review` answers "is this good code?". Nothing answered "if this ships
+tonight, what breaks, leaks, or cannot be rolled back?" — the plugin had nine
+review lenses and no security or production-readiness gate. One new skill, one
+new agent, both deliberately narrow and binary.
+
+- **`forge-gatekeeper` skill** — `SHIP` / `HOLD`, never advisory. Step 0 is
+  deterministic (`scripts/security-check.sh`): tracked `.env`/key/cert files
+  (`GK-001`), built-in regex rules with stable IDs + CWE for secret and token
+  literals, connection strings with passwords, debug leftovers, and dangerous
+  sinks (`eval`, shell strings, `shell=True`, string-built SQL, raw HTML,
+  unsafe deserializers, TLS off, CORS wildcard, MD5/SHA-1), project additions via
+  `<context-dir>/security-rules.txt`, then **gitleaks, semgrep
+  (`p/owasp-top-ten`, `p/secrets`), osv-scanner / trivy, `npm audit`,
+  `pip-audit`** — each only when installed, missing ones reported, never fatal.
+  Tool hits are findings by construction; a Critical hit is a `HOLD` before any
+  agent runs. Then scope (trust boundaries + entry points the diff touches, callers
+  grepped), then the agent. `--all` for a full release audit, `--focus=security|prod`.
+  Verdict recorded in the review ledger and, on PRs, as one **Gatekeeper: SHIP/HOLD**
+  comment; mechanically-catchable Criticals are ratcheted into `security-rules.txt`
+  via `forge-lesson`.
+- **`forge-gatekeeper` agent (Ingrid, opus, read-only)** — release-manager +
+  AppSec sign-off. Ten-item hunt list: secrets/config, authorization at every new
+  entry point (object-level, not endpoint-level), input at trust boundaries
+  followed to its sinks, data protection, sessions/crypto, rollback and data
+  safety, failure under load, observability of the new path, supply chain, kill
+  switch. One Critical is a HOLD; evidence or silence; scope by architecture, not
+  by fear; differential first, then the touched surface end to end. Reports a
+  "Not verified" list rather than implying coverage.
+- **Two reference checklists** with stable IDs the agent must cite:
+  `references/security-checklist.md` — a ~45-row subset of **OWASP ASVS 5.0
+  Level 2** (V1/V2/V5 input, V6/V7/V9 auth + sessions + tokens, V8 authorization,
+  V11/V12 crypto + transport, V13 config, V14/V16 data protection + logging),
+  **OWASP API Top 10** (BOLA, mass assignment, excessive exposure) and **CWE Top
+  25**, each row `GK-Snn · ASVS chapter · CWE · check · severity`;
+  `references/production-readiness.md` — Google SRE **Production Readiness
+  Review** reduced to what a repo review can verify (rollback + expand/contract,
+  timeouts, bounded retries, no unbounded growth, idempotent consumers,
+  observability, twelve-factor config/logs/shutdown, verification evidence), rows
+  `GK-Pnn`. Project additions at IDs ≥ 900.
+- **`architecture.md` template** gains **Trust Boundaries** (surface · caller ·
+  control · sensitive data · public endpoints) and **Production Constraints**
+  (deploy model, migration rule, kill switch, timeouts/limits, observability).
+  The gatekeeper scopes from these — a repo with no HTML surface gets no CSRF
+  finding; a missing section is reported as `GK-000`. `forge-init` quality bar
+  updated.
+- **Wiring** — `forge-pr` runs the gate before push for any unit touching a trust
+  boundary or production constraint (a `HOLD` blocks the PR; verdict goes in the
+  PR body); `forge-verify` runs it for the same units (HOLD = FAIL); the
+  Antigravity bundle lists the new agent.
+- **Calibration** — three golden gate cases in `forge-calibrate`:
+  `06-hardcoded-secret` (step 0 must catch `GK-013`), `07-missing-authz`
+  (`/invoices/:id/pdf` checks login, not ownership → `GK-S21`),
+  `08-irreversible-migration` (comment-only down path + destructive drop in the
+  same release → `GK-P10`, `GK-P11`). Keys prefixed `security:`/`prod:` route to
+  the gatekeeper pipeline.
+- **Tests** — `tests/security-check.bats` (12 cases: clean, credential literal,
+  live token even in tests, generic-secret/debug skipped in tests, tracked `.env`
+  vs `.env.example`, sinks per language glob, cross-language isolation, project
+  rules append, changed-vs-HEAD, `--base`, golden case 06, missing tools
+  non-fatal).
+
+### Notes
+
+- The gate raises the floor; it is not a pentest and does not see infra outside
+  the repo. Read the "Not verified" section.
+- `security-check.sh` uses `grep -E` (BSD and GNU) — no PCRE; AST-level checks
+  come from semgrep when it is installed. Install `gitleaks` + `semgrep` for the
+  intended coverage.
+- The dashboard (`forge-office`) renders the new agent as a visiting character at
+  the meeting table; a dedicated desk + sprite is a follow-up.
+
 ## [0.52.0] — 2026-09-04
 
 ### Added — review consistency: standards that can be cited, a gate that can't disagree, a reviewer that can be measured

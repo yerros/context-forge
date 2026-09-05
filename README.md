@@ -151,7 +151,8 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 | `forge-build-all` | The autonomous multi-unit version: builds every remaining unit in order, verifying each, **stopping at the first failure**. |
 | `forge-verify` | The pre-close gate: spec checklist + the unit's tests + full suite + build/typecheck/lint + tiered adversarial review, with a hard PASS/FAIL verdict. |
 | `forge-review` | Comprehensive multi-lens review of a PR, branch, or working diff (spec, standards, tests, errors, types, comments, simplicity) — **deterministic gate first** (project lint/typecheck/tests + `rules.txt` regex rules via `rules-check.sh`; tool hits are findings by construction and never re-litigated by an agent), then inventory-first (every changed hunk explicitly marked per lens), findings tracked in a persistent review ledger so passes accumulate instead of restarting, confidence-gated, severity-ranked, read-only. `--until-clean` loops review → fix → re-review until one full pass finds nothing, posting one PR comment per fix round as an audit trail. The wide sweep to `forge-verify`'s unit close-gate. |
-| `forge-calibrate` | Measures the reviewer itself: runs `forge-review` N times over a golden set of small diffs with planted findings (bundled: swallowed error, scope creep, hollow test, silent breakage, rule-card violation) and reports **recall** and **run-to-run agreement**, naming blind spots and unstable findings. Grow the set from real misses; run before/after any change to a lens, agent, or rule. Read-only. |
+| `forge-calibrate` | Measures the reviewer itself: runs `forge-review` (or `forge-gatekeeper`) N times over a golden set of small diffs with planted findings (bundled: swallowed error, scope creep, hollow test, silent breakage, rule-card violation, hardcoded secret, missing authorization, irreversible migration) and reports **recall** and **run-to-run agreement**, naming blind spots and unstable findings. Grow the set from real misses; run before/after any change to a lens, agent, or rule. Read-only. |
+| `forge-gatekeeper` | **The last gate before production.** Deterministic security scan first (`security-check.sh`: tracked secret files, secret/token literals, debug leftovers, dangerous sinks — plus gitleaks / semgrep / osv-scanner / `npm audit` / `pip-audit` when installed), then the opus `forge-gatekeeper` agent reviews the release diff and every trust boundary it touches against **OWASP ASVS L2 + CWE Top 25** and a **Google-SRE-style production readiness** checklist (rollback / expand-contract, timeouts, limits, kill switch, observability) — scoped by `architecture.md`'s Trust Boundaries and Production Constraints. Binary verdict **`SHIP` / `HOLD`**, every finding cites a `GK-` ID + CWE, "not verified" listed honestly. Wired into `forge-pr` (before push) and `forge-verify` (trust-boundary units). Read-only. |
 | `forge-fix` | Intake for bug reports in shipped work: reproduce, pin the bug with a red regression test before fixing (the bug can never silently return), triage (fix directly when obvious; hand off to `forge-debug` when not), verify, close with tracker + lesson + `fix/` branch. |
 | `forge-debug` | Stop-and-diagnose when stuck or after repeated failures: reproduce, isolate, re-read invariants, present root-cause options — no guess-fixing. |
 | `forge-align` | Finds and fixes consistency drift between similar features: maps feature families, registers canonical patterns with exemplars, and turns approved alignments into refactor units. |
@@ -169,7 +170,7 @@ corrections, `/forge-audit` and `/forge-compact` for upkeep.
 
 ## Agents
 
-Nine bundled subagents route each kind of work to the right model — maximum
+Ten bundled subagents route each kind of work to the right model — maximum
 intelligence at the highest-leverage, lowest-frequency point, cheap models for bulk
 work. An agent's reading never enters the main session's context; only its
 conclusions do.
@@ -177,6 +178,7 @@ conclusions do.
 | Agent | Model | Role |
 | ----- | ----- | ---- |
 | `forge-architect` | **opus** | Decomposes features into units and writes the specs; deep ADR analysis. Runs rarely; its output steers every downstream token. |
+| `forge-gatekeeper` | **opus** | The release gate: security (OWASP ASVS L2, CWE Top 25) + production readiness (SRE PRR) over the release diff and the trust boundaries it touches. Runs once per release; one Critical is a `HOLD`. Verdict: `SHIP` / `HOLD`. Read-only. |
 | `forge-reviewer` | **sonnet** | Adversarial, read-only diff-vs-spec review: scope creep, invariant violations, missing tests, silent breakage, overengineering, orthogonal edits. Verdict: `RECOMMEND PASS/FAIL`. |
 | `forge-aligner` | **sonnet** | Consistency checker: compares sibling features across eight dimensions (naming, layout, error handling, validation, data access, state, tests, implementation style) against the registered exemplar. |
 | `forge-scout` | **haiku** | Read-many-conclude-little sweeps: stack & structure mapping, drift evidence, failure isolation. Compact findings with file:line evidence. |
@@ -187,7 +189,7 @@ conclusions do.
 | `forge-commenter` | **sonnet** | `forge-review`'s **comments** lens: comment accuracy vs code, rot, stale docs. Read-only. |
 
 Every agent carries a **Professional standard** section — the working discipline of
-its real-world counterpart (Google-style code review bar, design-doc goals/non-goals
+its real-world counterpart (Google-style code review bar, release-manager + AppSec sign-off, design-doc goals/non-goals
 and cross-cutting concerns, SRE on-call log/I-O contracts, SDET mutation question,
 "parse, don't validate", tech-writer comment rules, standards precedence, triage
 scaling) — and the review agents tag each finding with a `[confidence NN]` score

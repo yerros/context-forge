@@ -1,0 +1,2 @@
+# One key per line: <lens>:<file>:<tag>. Gate cases use lens security:/prod: and run forge-gatekeeper's pipeline.
+security:src/routes/invoices.ts:GK-S21      # /invoices/:id/pdf checks login but not ownership — any user can fetch any invoice (BOLA/IDOR, CWE-639). HOLD.

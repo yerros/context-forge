@@ -268,6 +268,11 @@ the files from their answers.
 - **architecture.md** — Complete stack table with a role for every technology. System
   boundaries name exact folders. Storage model is unambiguous. **Invariants are stated
   as hard rules (at least four)**, e.g. "auth is enforced at every mutation boundary".
+  **Trust Boundaries** lists every surface where untrusted input enters (with its
+  control) and **Production Constraints** states the deploy model, migration rule,
+  kill switch, timeouts, and observability — `forge-gatekeeper` scopes the release
+  gate from these two sections; leave them out and the gate cannot strike
+  inapplicable checks.
 - **ui-context.md** — Every color is a named token, never a raw hex used ad hoc.
   Layout patterns describe the real app structure. For brownfield, extract from the
   existing theme/tokens.

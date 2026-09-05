@@ -7,7 +7,7 @@ Antigravity equivalent:
 - "Task tool" / "spawn a subagent via Task" → use the `invoke_subagent` tool.
   The plugin's custom agents (forge-reviewer, forge-architect, forge-scout,
   forge-tester, forge-failure-hunter, forge-aligner, forge-archivist,
-  forge-typer, forge-commenter) are available as custom subagents.
+  forge-typer, forge-commenter, forge-gatekeeper) are available as custom subagents.
 - "CLAUDE.md" → the project entry point. On Antigravity prefer `AGENTS.md`;
   if only CLAUDE.md exists, read that.
 - "Skill tool" / "invoke the skill" → skills are available directly; in the
