@@ -74,7 +74,9 @@ and load its Tier 2 file(s). No argument → standard resume to whatever is Next
    what's in progress, what's next up, and any open questions or recent architecture
    decisions. If `context/.last-session.md` exists (written by the Stop hook), read it too
    for a deterministic list of the most recently changed files — useful when the tracker
-   wasn't updated by hand.
+   wasn't updated by hand. `context/.compact-snapshot.md` (written by the PreCompact
+   hook, replayed automatically on compact/resume) holds the same kind of frozen state;
+   the tracker is authoritative if they differ.
 
 3. Give the user a short status briefing: where the project stands, what was last done,
    and the next unit to build. Surface any open questions that need a decision before

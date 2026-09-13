@@ -19,7 +19,7 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 changed=$(git status --porcelain -uall 2>/dev/null \
   | cut -c4- \
   | grep -vE "(^|/)$CTX/progress-tracker\.md$" \
-  | grep -vE "(^|/)$CTX/\.last-session\.md$")
+  | grep -vE "(^|/)$CTX/\.(last-session|compact-snapshot)\.md$")
 
 [ -z "$changed" ] && exit 0
 

@@ -3,6 +3,56 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.55.0] — 2026-09-13
+
+### Added — compaction memory, subagent briefing, sharper retrieval
+
+Lessons taken from a deep read of [mksglu/context-mode](https://github.com/mksglu/context-mode)
+(see `docs/REFERENCE-context-mode.md` for the full analysis and what was
+deliberately *not* copied). Everything below is hook + shell, zero model tokens,
+no new runtime: the plugin stays standalone.
+
+- **`PreCompact` hook** (`hooks/scripts/compact-snapshot.sh write`) — freezes the
+  live session state to `<ctx>/.compact-snapshot.md` before compaction: the
+  tracker's In Progress / Next Up blocks, the active forge skill, up to 30
+  uncommitted files, the trigger. **`SessionStart`** (`compact-snapshot.sh inject`)
+  now reads the payload's `source`: on `compact`/`resume` it replays the snapshot
+  under a directive to continue the in-progress work without asking the user to
+  re-explain, plus an anti-lock-in clause (earlier instructions are a memory aid,
+  the user's latest message wins); on `startup` it deletes the stale snapshot;
+  on `clear` nothing. The digest itself was already re-injected after compaction;
+  what was lost was the live state — now it survives. `track.sh` ignores the file.
+- **Subagent briefing** (`hooks/scripts/agent-inject.sh`, `PreToolUse
+  ^(Task|Agent)$`) — the SessionStart digest never reached subagents, so a forge
+  agent started blind unless the caller pasted context by hand. The hook now
+  appends a ~60-token Tier-1 pointer (read the digest, honor `architecture.md`
+  invariants and `ai-workflow-rules.md`, never guess) to the prompt via
+  `hookSpecificOutput.updatedInput`, sniffing the prompt field across
+  `prompt|request|objective|question|query|task`. Idempotent (skips prompts that
+  already carry `[Context Forge]`); requires `python3` for the JSON round-trip and
+  passes through silently without it.
+- **`forge-index.sh`** — `tokenize='porter unicode61'` (morphological variants
+  match), `bm25(docs, 1.0, 0, 5.0, 1.0)` (a section-title hit is a navigational
+  hit), a stopword filter on the query, and a fence-aware splitter (`#` lines inside
+  ``` blocks no longer open a phantom section). New `refresh` mode rebuilds only
+  when a `.md` is newer than the index; wired into `SessionStart` so a teammate's
+  fresh clone searches the same history with no manual build.
+- **Prompt-style contract test** (`tests/prompt-style.bats`) — reads skill/agent
+  descriptions and hook stdout strings as text and fails on framings shown by
+  context-mode's A/B trials to degrade tool selection (`BLOCKED`, `Do NOT retry`, a
+  bare `NOT a …` denial, `Never use`); every `guard.sh` deny reason must name what
+  to do instead.
+- Tests: `compact-snapshot.bats` (8), `agent-inject.bats` (6), `index.bats` (6),
+  `prompt-style.bats` (4) — suite now 209.
+
+### Changed
+
+- `forge-init` tells adopters to git-ignore `.compact-snapshot.md` alongside
+  `.index.db`; `forge-resume` step 2 names the snapshot as a second deterministic
+  state source (tracker stays authoritative).
+- Antigravity: no compaction event exists, so the snapshot is not produced there;
+  `agent-inject` not yet ported. Documented in `docs/PORTING-ANTIGRAVITY.md`.
+
 ## [0.54.0] — 2026-09-13
 
 ### Added — team sync at session start

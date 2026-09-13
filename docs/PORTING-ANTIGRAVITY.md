@@ -75,6 +75,8 @@ Body markdown (system prompt) bisa dipakai apa adanya.
 | Stop | `Stop` | Ada `fullyIdle` + bisa `{"decision":"continue"}` untuk melawan premature stop. |
 | SubagentStop | — | Tidak ada; dekati via PostToolUse matcher `invoke_subagent`/`manage_subagents`, atau Stop di sisi subagent. |
 | SessionEnd | ~`Stop` (`fullyIdle: true`) | Perkiraan terdekat. |
+| PreCompact (`compact-snapshot.sh write`) | — | Tidak ada event compaction di agy; snapshot tidak dibuat, `inject` tidak pernah punya sumber. Best-effort: tracker tetap sumber kebenaran. |
+| PreToolUse `Agent` (`agent-inject.sh`) | `PreToolUse` matcher `invoke_subagent` | Belum di-port: kontrak `updatedInput` agy belum diverifikasi. |
 
 **Kontrak stdin.** Field camelCase: `toolCall.name`, `toolCall.args` (arg tool juga beda: `TargetFile`, `CommandLine`, `Cwd`), `conversationId`, `workspacePaths`, `transcriptPath`, `modelName`. Semua script hook (`guard.sh`, `track.sh`, `now-status.sh`, `hook-logger.sh`, `skill-status.sh`, `agent-status.sh`) perlu branch parser: deteksi payload Antigravity vs Claude Code, lalu normalisasi field.
 
