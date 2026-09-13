@@ -39,7 +39,10 @@ EOF
 @test "index: build counts sections and ignores # lines inside code fences" {
   run bash "$INDEX" build
   [ "$status" -eq 0 ]
-  [[ "$output" == *'indexed 6 sections'* ]]   # 3 + 3, not 7
+  # decisions: Decisions, Webhook retries, Logging; spec: Unit 07, Implementation.
+  # The "# not a heading" line inside the fence must NOT add a sixth.
+  n=$(sqlite3 context/.index.db "SELECT count(*) FROM docs;")
+  [ "$n" -eq 5 ]
   n=$(sqlite3 context/.index.db "SELECT count(*) FROM docs WHERE title LIKE 'not a heading%';")
   [ "$n" -eq 0 ]
 }
