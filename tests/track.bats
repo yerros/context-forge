@@ -104,3 +104,12 @@ mk_tracker() { # $1 = context dir
   size2=$(wc -c < context/.last-session.md)
   [ "$size1" -eq "$size2" ]
 }
+
+@test "track: lesson candidates are counted in .last-session.md and never listed as changes" {
+  init_git; mk_tracker context; commit_all
+  printf '# c\n\n- 2026-09-13 no, use X; not Y\n' > context/.lesson-candidates.md
+  printf 'x' > src.txt
+  bash "$TRACK" <<< '{}'
+  grep -q 'Lesson candidates captured from corrections: 1' context/.last-session.md
+  ! grep -q 'lesson-candidates' <(grep '^- ' context/.last-session.md)
+}

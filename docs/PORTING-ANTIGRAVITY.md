@@ -76,7 +76,10 @@ Body markdown (system prompt) bisa dipakai apa adanya.
 | SubagentStop | — | Tidak ada; dekati via PostToolUse matcher `invoke_subagent`/`manage_subagents`, atau Stop di sisi subagent. |
 | SessionEnd | ~`Stop` (`fullyIdle: true`) | Perkiraan terdekat. |
 | PreCompact (`compact-snapshot.sh write`) | — | Tidak ada event compaction di agy; snapshot tidak dibuat, `inject` tidak pernah punya sumber. Best-effort: tracker tetap sumber kebenaran. |
-| PreToolUse `Agent` (`agent-inject.sh`) | `PreToolUse` matcher `invoke_subagent` | Belum di-port: kontrak `updatedInput` agy belum diverifikasi. |
+| PreToolUse `Agent` (`agent-inject.sh`) | — | Tidak bisa di-port: PreToolUse agy hanya `allow/deny/ask/force_ask`, tidak ada `updatedInput`. Subagent agy tetap tanpa pointer Tier-1. |
+| PreToolUse `Bash` (`bash-nudge.sh`) | — | Tidak ada `additionalContext` di PreToolUse agy; nudge tidak di-port. `forge-exec.sh` sendiri jalan di mana saja. |
+| PostToolUse `ExitPlanMode` (`compact-snapshot.sh plan`) | — | Tidak ada plan mode di agy. |
+| UserPromptSubmit (`lesson-candidates.sh`) | — | Tidak ada event prompt-level di agy. |
 
 **Kontrak stdin.** Field camelCase: `toolCall.name`, `toolCall.args` (arg tool juga beda: `TargetFile`, `CommandLine`, `Cwd`), `conversationId`, `workspacePaths`, `transcriptPath`, `modelName`. Semua script hook (`guard.sh`, `track.sh`, `now-status.sh`, `hook-logger.sh`, `skill-status.sh`, `agent-status.sh`) perlu branch parser: deteksi payload Antigravity vs Claude Code, lalu normalisasi field.
 

@@ -3,6 +3,49 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.56.0] — 2026-09-13
+
+### Added — output hygiene, correction capture, plan memory
+
+The second half of the context-mode lessons (`docs/REFERENCE-context-mode.md`
+§5, "do next"). Still hook + shell, still zero model tokens, still standalone.
+
+- **`forge-exec.sh`** (`skills/forge-build/scripts/`) — the standalone answer to a
+  sandbox: `forge-exec.sh [-n LINES] [-g PATTERN] "<command>"` runs the command,
+  writes the full combined output to `<ctx>/.runs/<timestamp>-<slug>.log`, and
+  prints only the exit code, the log path with its size, and the last 40 lines
+  (or the lines matching `-g`). Exit status is the command's. Logs older than 7
+  days are pruned. `forge-build` now points at it for anything longer than a
+  screen.
+- **`bash-nudge.sh`** (`PreToolUse ^Bash$`) — once per session, when a build/test
+  runner (`npm test`, `pytest`, `cargo build`, `./gradlew`, `go test`, `make`, …)
+  is about to run with nothing bounding its output (`| tail`, `| grep`, `-q`,
+  `--reporter`, `forge-exec.sh`, …), injects an `additionalContext` pointing at
+  `forge-exec.sh`. Advisory only, never denies; marker keyed on the payload
+  `session_id` with an O_EXCL create; silent in non-forge projects.
+- **`lesson-candidates.sh`** (`UserPromptSubmit`) — a coarse, language-agnostic
+  shape test for corrections: starts with a negation/correction cue (`no,`,
+  `don't`, `wrong`, `instead`, `jangan`, `bukan`, `salah`, `harusnya`, …), has a
+  clause separator, 15–500 chars, contains letters, not a question. Hits are
+  appended (deduped) to `<ctx>/.lesson-candidates.md`. `forge-lesson` gained a
+  step 0 that distills the file; the `Stop` hook reports the unreviewed count in
+  `.last-session.md`. Nothing is promoted automatically.
+- **Plan memory** — `compact-snapshot.sh plan` on `PostToolUse ^ExitPlanMode$`
+  records `approved|rejected` in `<ctx>/.plan-status`; the compaction snapshot
+  renders it as "APPROVED — do not re-enter plan mode or re-propose" /
+  "REJECTED — ask what the user wants changed". Cleared on `startup`.
+- Tests: `forge-exec.bats` (5), `bash-nudge.bats` (6), `lesson-candidates.bats`
+  (5), plan cases in `compact-snapshot.bats` (2), a `track.bats` case — suite now 228.
+
+### Changed
+
+- `track.sh` and `compact-snapshot.sh` ignore the local cache files
+  (`.lesson-candidates.md`, `.plan-status`, `.runs/`) in their changed-file lists;
+  `forge-init` lists them all for `.gitignore`.
+- Antigravity: none of the four new hooks is portable (no `updatedInput`, no
+  `additionalContext`, no plan mode, no prompt-level event in agy);
+  `forge-exec.sh` works there unchanged. Documented in `docs/PORTING-ANTIGRAVITY.md`.
+
 ## [0.55.0] — 2026-09-13
 
 ### Added — compaction memory, subagent briefing, sharper retrieval

@@ -144,8 +144,9 @@ idempotent: running it on a healthy project changes nothing.
      `context/decisions.md` if absent. For projects with history worth searching,
      offer the retrieval index: run
      `bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-init/scripts/forge-index.sh" build`
-     and add `.index.db` and `.compact-snapshot.md` to `.gitignore` (both are
-     rebuildable local caches — the markdown stays the source of truth). For large multi-boundary projects, offer
+     and add the local cache files to `.gitignore` — `.index.db`, `.compact-snapshot.md`,
+     `.lesson-candidates.md`, `.plan-status`, `.runs/` (all rebuildable or disposable;
+     the markdown stays the source of truth). For large multi-boundary projects, offer
      `context/modules/<area>.md` files per token-economy.md's module convention.
 
 4. **Offer a drift check.** For ADOPT projects with a codebase, recommend running

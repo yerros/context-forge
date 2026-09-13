@@ -154,7 +154,11 @@ in `forge-pr`). Fix what you find now — it is cheaper than a failed verify.
 **Keep the output cheap:** run tests/linters with quiet or failures-only reporters
 (e.g. `--reporter=dot`, `--quiet`, `2>&1 | tail`) — a green suite needs one summary
 line in context, not a thousand passing-test lines. Read full output only for the
-failures.
+failures. For anything that
+can print more than a screen (a full suite, a build, a migration), run it through
+`bash "${CLAUDE_PLUGIN_ROOT}/skills/forge-build/scripts/forge-exec.sh" "<command>"` —
+the full log lands in `context/.runs/`, only the exit code and the last 40 lines come
+back (`-g 'error|fail'` returns matching lines instead); grep the log for specifics.
 
 The loop obeys the contract in
 `${CLAUDE_PLUGIN_ROOT}/skills/forge-build/references/loop-contract.md` — completion

@@ -75,3 +75,23 @@ setup() {
   run bash "$SNAP" inject <<< '{"source":"compact"}'
   [[ "$output" == *'.forge/progress-tracker.md is authoritative'* ]]
 }
+
+@test "snapshot: plan approved/rejected is recorded and replayed with a directive" {
+  bash "$SNAP" plan <<< '{"tool_name":"ExitPlanMode","tool_response":"User has approved your plan. You can now start coding."}'
+  grep -q '^approved ' context/.plan-status
+  bash "$SNAP" write <<< '{}'
+  grep -q 'APPROVED' context/.compact-snapshot.md
+  grep -q 'do not re-enter plan mode' context/.compact-snapshot.md
+  bash "$SNAP" plan <<< '{"tool_name":"ExitPlanMode","tool_response":{"message":"The user rejected the plan","approved":false}}'
+  grep -q '^rejected ' context/.plan-status
+  bash "$SNAP" write <<< '{}'
+  grep -q 'REJECTED' context/.compact-snapshot.md
+}
+
+@test "snapshot: startup clears plan status too; unknown response leaves it untouched" {
+  bash "$SNAP" plan <<< '{"tool_response":"something else"}'
+  [ ! -f context/.plan-status ]
+  printf 'approved x\n' > context/.plan-status
+  bash "$SNAP" inject <<< '{"source":"startup"}'
+  [ ! -f context/.plan-status ]
+}

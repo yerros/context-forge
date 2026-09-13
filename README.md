@@ -5,7 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-plugin-6C5CE7.svg)](https://docs.claude.com/en/docs/claude-code/plugins)
-[![Version](https://img.shields.io/badge/version-0.55.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.56.0-blue.svg)](./CHANGELOG.md)
 
 **You are the architect; the AI is the implementation engine.** Context Forge captures
 your architectural thinking in a small set of context files, then makes every session —
@@ -209,9 +209,11 @@ that don't use the plugin:
 | ---- | ------------ |
 | `SessionStart` | Injects the compact context digest (~600 tokens) with tiered-loading instructions; falls back to the full tracker in projects that predate the digest. Also auto-applies **additive-only** schema migrations (`migrate-schema.sh --auto`) — pre-schema projects get their `.schema-version` stamped silently; content-rewriting migrations only ever surface a notice and wait for you. And warns (a few lines, only when true) if commits exist outside the forge process — `detect-oob.sh --hook`; `/forge-reconcile` is the follow-up. And **team sync**: fetches `origin` (bounded, never blocks offline) and injects the lessons / decisions / patterns your teammates committed to the default branch since this machine's last session — `team-sync.sh`; watermark lives in `~/.context-forge/team-sync/`, nothing is written to the repo. On `compact`/`resume` it also replays the **compaction snapshot** (below) and refreshes the retrieval index if any context file is newer than it. |
 | `PreCompact` | Freezes the live session state to `.compact-snapshot.md` before the conversation is compacted — the tracker's In Progress / Next Up blocks, the active skill, the uncommitted files — so the next `SessionStart` can replay it: "continue the in-progress work, do not ask the user to re-explain". Local, disposable, never committed (`compact-snapshot.sh`). |
-| `PreToolUse` | Deterministic guard: denies edits to generated/lock/vendor files and any glob in `protected-paths`. Also records which skill is in use (for the status line). On every `Agent`/`Task` launch, appends a ~60-token Tier-1 pointer to the subagent's prompt (read the digest, honor the invariants) so subagents stop starting blind — `agent-inject.sh`, needs `python3`, passthrough otherwise. |
+| `PreToolUse` | Deterministic guard: denies edits to generated/lock/vendor files and any glob in `protected-paths`. Also records which skill is in use (for the status line). On every `Agent`/`Task` launch, appends a ~60-token Tier-1 pointer to the subagent's prompt (read the digest, honor the invariants) so subagents stop starting blind — `agent-inject.sh`, needs `python3`, passthrough otherwise. And on `Bash`, once per session, an advisory when a build/test runner is about to dump its full log into the conversation: run it through `forge-exec.sh` instead (log to `.runs/`, only exit code + last 40 lines return) — `bash-nudge.sh`, never denies. |
+| `PostToolUse` | On `ExitPlanMode`, records whether the plan was approved or rejected (`.plan-status`) so the compaction snapshot can say "approved — do not re-propose" or "rejected — ask what to change". |
+| `UserPromptSubmit` | Captures prompts shaped like a correction (negation cue + clause separator, 15–500 chars, not a question; English and Indonesian cues) into `.lesson-candidates.md` for `/forge-lesson` to distill — nothing is promoted automatically (`lesson-candidates.sh`). |
 | `UserPromptExpansion` | Records `/forge-*` slash-command usage for the status line indicator. |
-| `Stop` | If code changed without the tracker being updated, writes `.last-session.md` with the changed files and any context files over their token budget. Marks the skill indicator idle. |
+| `Stop` | If code changed without the tracker being updated, writes `.last-session.md` with the changed files, any context files over their token budget, and the count of unreviewed lesson candidates. Marks the skill indicator idle. |
 
 **Local metrics (on by default, opt-out):** the hooks record NDJSON events (skill
 invocations, agent start/stop, stop-with-changes) to

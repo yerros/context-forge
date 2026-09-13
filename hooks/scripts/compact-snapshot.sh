@@ -8,6 +8,9 @@
 # to a file before compaction and replays it after.
 #
 #   compact-snapshot.sh write    # PreCompact: freeze state to <ctx>/.compact-snapshot.md
+#   compact-snapshot.sh plan     # PostToolUse ExitPlanMode: record approved|rejected in
+#                                #   <ctx>/.plan-status so a compacted session never
+#                                #   re-proposes an approved plan or forgets a rejection
 #   compact-snapshot.sh inject   # SessionStart: reads `source` from the hook payload;
 #                                #   compact|resume -> print snapshot + directive
 #                                #   startup        -> delete the stale snapshot
@@ -24,6 +27,7 @@ CTX=context
 { [ -f .forge/progress-tracker.md ] || [ -f .forge/context-digest.md ]; } && CTX=.forge
 [ -f "$CTX/progress-tracker.md" ] || exit 0
 snap="$CTX/.compact-snapshot.md"
+plan="$CTX/.plan-status"
 
 jfield() {
   printf '%s' "$input" \
@@ -52,7 +56,7 @@ write)
   changed=""
   if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     changed=$(git status --porcelain -uall 2>/dev/null | cut -c4- \
-      | grep -vE "(^|/)$CTX/\.(last-session|compact-snapshot)\.md$" | head -30)
+      | grep -vE "(^|/)$CTX/\.(last-session|compact-snapshot|lesson-candidates)\.md$|(^|/)$CTX/\.(plan-status|runs/)" | head -30)
   fi
   {
     printf '# Compaction snapshot\n\n'
@@ -60,6 +64,13 @@ write)
     printf '## In Progress (tracker)\n\n%s\n\n' "$(tracker_section 'In Progress')"
     printf '## Next Up (tracker)\n\n%s\n\n' "$(tracker_section 'Next Up')"
     [ -n "$skill" ] && printf '## Active skill\n\n%s\n\n' "$skill"
+    if [ -s "$plan" ]; then
+      read -r pst pdate < "$plan"
+      case "$pst" in
+        approved) printf '## Plan\n\nStatus: APPROVED (%s). The plan was approved and is being executed; do not re-enter plan mode or re-propose it.\n\n' "$pdate" ;;
+        rejected) printf '## Plan\n\nStatus: REJECTED (%s). Ask what the user wants changed before planning again.\n\n' "$pdate" ;;
+      esac
+    fi
     if [ -n "$changed" ]; then
       printf '## Uncommitted changes\n\n'
       printf '%s\n' "$changed" | sed 's/^/- /'
@@ -76,8 +87,15 @@ inject)
       cat "$snap"
       ;;
     startup)
-      rm -f "$snap" 2>/dev/null
+      rm -f "$snap" "$plan" 2>/dev/null
       ;;
+  esac
+  ;;
+plan)
+  resp=$(printf '%s' "$input" | grep -oE '"tool_response"[[:space:]]*:.*' | cut -c1-400 | tr '[:upper:]' '[:lower:]')
+  case "$resp" in
+    *reject*|*declin*|*denied*) printf 'rejected %s\n' "$(date '+%Y-%m-%d %H:%M')" > "$plan" ;;
+    *approv*)                   printf 'approved %s\n' "$(date '+%Y-%m-%d %H:%M')" > "$plan" ;;
   esac
   ;;
 esac

@@ -19,7 +19,8 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
 changed=$(git status --porcelain -uall 2>/dev/null \
   | cut -c4- \
   | grep -vE "(^|/)$CTX/progress-tracker\.md$" \
-  | grep -vE "(^|/)$CTX/\.(last-session|compact-snapshot)\.md$")
+  | grep -vE "(^|/)$CTX/\.(last-session|compact-snapshot|lesson-candidates)\.md$" \
+  | grep -vE "(^|/)$CTX/\.(plan-status|runs/)")
 
 [ -z "$changed" ] && exit 0
 
@@ -57,6 +58,10 @@ fi
   if [ -n "$budget_report" ]; then
     printf '\nContext files over their token budget:\n\n'
     printf '%s' "$budget_report"
+  fi
+  if [ -f "$CTX/.lesson-candidates.md" ]; then
+    nc=$(grep -c '^- ' "$CTX/.lesson-candidates.md" 2>/dev/null || echo 0)
+    [ "$nc" -gt 0 ] && printf '\nLesson candidates captured from corrections: %s — review with /forge-lesson (%s/.lesson-candidates.md).\n' "$nc" "$CTX"
   fi
 } > "$CTX/.last-session.md"
 

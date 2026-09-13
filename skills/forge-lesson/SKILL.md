@@ -27,6 +27,13 @@ distill/act on it directly. No argument → ask what to remember (or manage).
 
 ## Steps
 
+### 0. Check the candidates file
+
+If `context/.lesson-candidates.md` exists (the `UserPromptSubmit` hook appends every
+prompt shaped like a correction — "no, X; do Y instead"), read it first: each line is
+a candidate. Distill the real ones through steps 1–3, discard the noise, then delete
+the lines you handled. The file is local and never committed.
+
 ### 1. Distill
 
 Reduce what happened to one line: `- [area] symptom/trigger → rule`. The rule part
