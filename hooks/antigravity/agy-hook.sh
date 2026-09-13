@@ -257,6 +257,7 @@ $(cat "$CTX/progress-tracker.md")"
     fi
     bash "$ROOT/skills/forge-init/scripts/migrate-schema.sh" --auto >/dev/null 2>&1 || true
     add_step "$(bash "$ROOT/skills/forge-reconcile/scripts/detect-oob.sh" --hook 2>/dev/null || true)"
+    add_step "$(bash "$SCRIPTS/team-sync.sh" 2>/dev/null || true)"
     if [ -f "$HOME/.claude/forge-office/autostart" ]; then
       bash "$ROOT/skills/forge-office/scripts/forge-office.sh" start --hook >/dev/null 2>&1 || true
     fi

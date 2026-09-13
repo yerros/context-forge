@@ -3,6 +3,25 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.54.0] — 2026-09-13
+
+### Added — team sync at session start
+
+Teams share `context/` (or `.forge/`) through git, but nothing made an agent
+notice what a teammate had learned. A lesson committed yesterday stayed
+invisible until someone remembered to pull *and* re-read `lessons.md`. One new
+zero-token hook closes that window to "every session":
+
+- **`hooks/scripts/team-sync.sh`** (`SessionStart`, Antigravity `PreInvocation`)
+  — bounded `git fetch origin` (8 s watchdog, silent offline), then the lines
+  *added* to `lessons.md`, `decisions.md`, `patterns.md` on the default branch
+  since this machine's last session, capped at 20, injected as
+  `[Context Forge] Team sync: …` together with how far the local branch is
+  behind. Silent in non-forge projects, repos without `origin`, on the first run
+  (watermark only), and when nothing knowledge-related changed. Watermark:
+  `~/.context-forge/team-sync/<repo-id>` — per machine, never in the repo.
+- `tests/team-sync.bats` — 7 cases including a real fetch against a bare origin.
+
 ## [0.53.0] — 2026-09-05
 
 ### Added — `forge-gatekeeper`: the last gate before production
