@@ -15,7 +15,8 @@ mk_team_repo() {
   printf 'digest\n' > context/context-digest.md
   printf '# Lessons\n\n- [old] first lesson\n' > context/lessons.md
   commit_all
-  git init -q --bare "$BATS_TEST_TMPDIR/origin.git"
+  git init -q --bare -b main "$BATS_TEST_TMPDIR/origin.git" 2>/dev/null \
+    || { git init -q --bare "$BATS_TEST_TMPDIR/origin.git"; git --git-dir="$BATS_TEST_TMPDIR/origin.git" symbolic-ref HEAD refs/heads/main; }
   git remote add origin "$BATS_TEST_TMPDIR/origin.git"
   git push -q -u origin main
   git remote set-head origin main
@@ -24,7 +25,7 @@ mk_team_repo() {
 # Teammate commits $1 to lessons.md on main and pushes.
 teammate_adds_lesson() {
   local mate="$BATS_TEST_TMPDIR/mate"
-  git clone -q "$BATS_TEST_TMPDIR/origin.git" "$mate"
+  git clone -q -b main "$BATS_TEST_TMPDIR/origin.git" "$mate"
   ( cd "$mate" \
     && git config user.email "mate@context-forge.invalid" \
     && git config user.name "Mate" \
