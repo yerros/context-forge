@@ -80,7 +80,7 @@ Body markdown (system prompt) bisa dipakai apa adanya.
 | PreToolUse `Agent` (`agent-inject.sh`) | — | Tidak bisa di-port: PreToolUse agy hanya `allow/deny/ask/force_ask`, tidak ada `updatedInput`. Subagent agy tetap tanpa pointer Tier-1. |
 | PreToolUse `Bash` (`bash-nudge.sh`) | — | Tidak ada `additionalContext` di PreToolUse agy; nudge tidak di-port. `forge-exec.sh` sendiri jalan di mana saja. |
 | PostToolUse `ExitPlanMode` (`compact-snapshot.sh plan`) | — | Tidak ada plan mode di agy. |
-| UserPromptSubmit (`lesson-candidates.sh`) | — | Tidak ada event prompt-level di agy. |
+| UserPromptSubmit (`lesson-candidates.sh`) | `PreInvocation` | Di-port: adapter membaca `USER_INPUT` terakhir dari `transcriptPath` (`<USER_REQUEST>…</USER_REQUEST>`) tiap invocation; script dedup. |
 
 **Kontrak stdin.** Field camelCase: `toolCall.name`, `toolCall.args` (arg tool juga beda: `TargetFile`, `CommandLine`, `Cwd`), `conversationId`, `workspacePaths`, `transcriptPath`, `modelName`. Semua script hook (`guard.sh`, `track.sh`, `now-status.sh`, `hook-logger.sh`, `skill-status.sh`, `agent-status.sh`) perlu branch parser: deteksi payload Antigravity vs Claude Code, lalu normalisasi field.
 

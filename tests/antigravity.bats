@@ -117,6 +117,32 @@ pre_invocation() { # $1=invocationNum
   [ -n "$(find context/.index.db -newer context/decisions.md -print)" ]
 }
 
+agy_transcript() { # writes t.jsonl with the given last USER_REQUEST text
+  printf '{"step_index":0,"type":"USER_INPUT","content":"<USER_REQUEST>\\npahami project ini\\n</USER_REQUEST>\\n<ADDITIONAL_METADATA>\\nx\\n</ADDITIONAL_METADATA>"}\n' > t.jsonl
+  printf '{"step_index":2,"type":"PLANNER_RESPONSE","content":"ok"}\n' >> t.jsonl
+  printf '{"step_index":5,"type":"USER_INPUT","content":"<USER_REQUEST>\\n%s\\n</USER_REQUEST>"}\n' "$1" >> t.jsonl
+  printf '{"conversationId":"agy-test-1","workspacePaths":["%s"],"invocationNum":3,"transcriptPath":"%s/t.jsonl"}' \
+    "$PROJECT_DIR" "$PROJECT_DIR"
+}
+
+@test "agy: a correction in the latest USER_REQUEST becomes a lesson candidate" {
+  mkdir -p context
+  printf '# t\n' > context/progress-tracker.md
+  run bash "$AGY" PreInvocation <<< "$(agy_transcript "no, do not retry on 4xx, only on 5xx")"
+  [ "$status" -eq 0 ]
+  grep -qF "no, do not retry on 4xx, only on 5xx" context/.lesson-candidates.md
+  run bash "$AGY" PreInvocation <<< "$(agy_transcript "no, do not retry on 4xx, only on 5xx")"
+  [ "$(grep -c '^- ' context/.lesson-candidates.md)" -eq 1 ]
+}
+
+@test "agy: a plain request in the transcript is not captured" {
+  mkdir -p context
+  printf '# t\n' > context/progress-tracker.md
+  run bash "$AGY" PreInvocation <<< "$(agy_transcript "add retry to the client, with backoff")"
+  [ "$status" -eq 0 ]
+  [ ! -f context/.lesson-candidates.md ]
+}
+
 @test "agy: non-forge project injects nothing" {
   run bash "$AGY" PreInvocation <<< "$(pre_invocation 0)"
   [ "$output" = '{}' ]

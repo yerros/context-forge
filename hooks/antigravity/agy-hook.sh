@@ -60,6 +60,7 @@ wp = d.get("workspacePaths") or []
 out["ws"]   = wp[0] if wp and isinstance(wp, list) else ""
 inv = d.get("invocationNum", "")
 out["inv"]  = "" if inv == "" else str(inv)
+out["tp"]   = d.get("transcriptPath", "")
 out["idle"] = "true" if d.get("fullyIdle") else ""
 tc = d.get("toolCall") or {}
 out["tool"] = tc.get("name", "") if isinstance(tc, dict) else ""
@@ -94,6 +95,7 @@ for k, v in out.items():
         ["sid",  (.conversationId // "")],
         ["ws",   ((.workspacePaths // [])[0] // "")],
         ["inv",  (if .invocationNum == null then "" else (.invocationNum|tostring) end)],
+        ["tp",   (.transcriptPath // "")],
         ["idle", (if .fullyIdle == true then "true" else "" end)],
         ["tool", (.toolCall.name // "")],
         ["file", (.toolCall.args.TargetFile // .toolCall.args.AbsolutePath // .toolCall.args.NotebookPath // "")],
@@ -113,12 +115,12 @@ for k, v in out.items():
   # safe default output for its event.
 }
 
-sid="" ws="" inv="" idle="" tool="" file="" cmd="" pattern="" query="" url=""
+sid="" ws="" inv="" tp="" idle="" tool="" file="" cmd="" pattern="" query="" url=""
 prompt="" desc="" dirpath="" skillfile="" agtype=""
 while IFS=$(printf '\t') read -r k v; do
   # shellcheck disable=SC2034 # skillfile parsed for parity with agy_hook.py payload; not consumed downstream yet
   case "$k" in
-    sid) sid=$v ;; ws) ws=$v ;; inv) inv=$v ;; idle) idle=$v ;;
+    sid) sid=$v ;; ws) ws=$v ;; inv) inv=$v ;; tp) tp=$v ;; idle) idle=$v ;;
     tool) tool=$v ;; file) file=$v ;; cmd) cmd=$v ;; pattern) pattern=$v ;;
     query) query=$v ;; url) url=$v ;; prompt) prompt=$v ;; desc) desc=$v ;;
     dirpath) dirpath=$v ;; skillfile) skillfile=$v ;; agtype) agtype=$v ;;
@@ -204,6 +206,29 @@ json_str() { # JSON-encode $1 (multiline-safe) — prints a quoted JSON string
   fi
 }
 
+# Latest <USER_REQUEST> from the Antigravity transcript, as one JSON string
+# line (empty when there is none). python3 preferred, jq fallback.
+last_user_request() {
+  [ -n "$tp" ] && [ -f "$tp" ] || return 0
+  if [ -n "$PY" ]; then
+    python3 - "$tp" <<'PY' 2>/dev/null
+import json, re, sys
+last = ""
+for line in open(sys.argv[1], encoding="utf-8", errors="replace"):
+    try: d = json.loads(line)
+    except Exception: continue
+    if d.get("type") != "USER_INPUT": continue
+    m = re.search(r"<USER_REQUEST>\n?(.*?)\n?</USER_REQUEST>", d.get("content") or "", re.S)
+    if m: last = m.group(1)
+print(json.dumps(last, ensure_ascii=False) if last else "")
+PY
+  elif command -v jq >/dev/null 2>&1; then
+    jq -r 'select(.type=="USER_INPUT") | (.content // "")
+           | capture("<USER_REQUEST>\n?(?<r>[\\s\\S]*?)\n?</USER_REQUEST>").r | @json' \
+      "$tp" 2>/dev/null | tail -1
+  fi
+}
+
 # ------------------------------------------------------------------ events ----
 case "$EVENT" in
 
@@ -266,6 +291,12 @@ $(cat "$CTX/progress-tracker.md")"
   fi
   # -- forge-office inbox (Claude Code: UserPromptSubmit stdout), every turn --
   add_step "$(printf '%s' "$RAW" | bash "$SCRIPTS/office-inbox.sh" 2>/dev/null || true)"
+  # -- correction capture (Claude Code: UserPromptSubmit lesson-candidates.sh) --
+  # Antigravity has no prompt-level event; the latest USER_INPUT step of the
+  # transcript is the prompt. lesson-candidates.sh dedupes, so re-feeding the
+  # same prompt on every invocation of a turn is harmless.
+  last_user_request | { read -r q; [ -n "$q" ] && printf '{"prompt":%s}' "$q" \
+    | bash "$SCRIPTS/lesson-candidates.sh" >/dev/null 2>&1; } || true
   if [ -n "$inject" ]; then
     printf '{"injectSteps":[%s]}\n' "$inject"
   else

@@ -227,6 +227,8 @@ Known platform differences (best-effort on Antigravity):
   dashboard's agent list uses TTL-based cleanup instead.
 - The forge-office inbox is delivered per model invocation (no
   UserPromptSubmit event).
+- Correction capture (.lesson-candidates.md) reads the latest USER_REQUEST
+  from the transcript on each model invocation instead of a prompt event.
 EOF
 
 # --------------------------------------------------------------- validation ----
