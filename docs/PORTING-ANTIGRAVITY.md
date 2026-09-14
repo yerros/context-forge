@@ -75,6 +75,7 @@ Body markdown (system prompt) bisa dipakai apa adanya.
 | Stop | `Stop` | Ada `fullyIdle` + bisa `{"decision":"continue"}` untuk melawan premature stop. |
 | SubagentStop | — | Tidak ada; dekati via PostToolUse matcher `invoke_subagent`/`manage_subagents`, atau Stop di sisi subagent. |
 | SessionEnd | ~`Stop` (`fullyIdle: true`) | Perkiraan terdekat. |
+| SessionStart `forge-index.sh refresh` | `PreInvocation` (inv 0) | Di-port: adapter memanggil `refresh` setelah migrate-schema; no-op tanpa index. |
 | PreCompact (`compact-snapshot.sh write`) | — | Tidak ada event compaction di agy; snapshot tidak dibuat, `inject` tidak pernah punya sumber. Best-effort: tracker tetap sumber kebenaran. |
 | PreToolUse `Agent` (`agent-inject.sh`) | — | Tidak bisa di-port: PreToolUse agy hanya `allow/deny/ask/force_ask`, tidak ada `updatedInput`. Subagent agy tetap tanpa pointer Tier-1. |
 | PreToolUse `Bash` (`bash-nudge.sh`) | — | Tidak ada `additionalContext` di PreToolUse agy; nudge tidak di-port. `forge-exec.sh` sendiri jalan di mana saja. |

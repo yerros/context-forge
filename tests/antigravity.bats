@@ -103,6 +103,20 @@ pre_invocation() { # $1=invocationNum
   [ "$output" = '{}' ]
 }
 
+@test "agy: first invocation refreshes the retrieval index" {
+  command -v sqlite3 >/dev/null || skip "sqlite3 not installed"
+  sqlite3 :memory: "CREATE VIRTUAL TABLE t USING fts5(a, tokenize='porter unicode61');" 2>/dev/null \
+    || skip "sqlite3 without FTS5"
+  mkdir -p context
+  printf '# Digest\n' > context/context-digest.md
+  printf '# Decisions\n\n## D1 sqlite\n\nUse sqlite.\n' > context/decisions.md
+  bash "$PLUGIN_ROOT/skills/forge-init/scripts/forge-index.sh" build >/dev/null
+  touch -t 202001010000 context/.index.db
+  run bash "$AGY" PreInvocation <<< "$(pre_invocation 0)"
+  [ "$status" -eq 0 ]
+  [ -n "$(find context/.index.db -newer context/decisions.md -print)" ]
+}
+
 @test "agy: non-forge project injects nothing" {
   run bash "$AGY" PreInvocation <<< "$(pre_invocation 0)"
   [ "$output" = '{}' ]
