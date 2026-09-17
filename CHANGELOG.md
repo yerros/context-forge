@@ -3,6 +3,40 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.57.0] — 2026-09-17
+
+### Added — `forge-security-audit`
+
+Vendors Cloudflare's [security-audit-skill](https://github.com/cloudflare/security-audit-skill)
+(commit `c1c8a8c`, MIT — `skills/forge-security-audit/LICENSE-cloudflare`) as the
+26th skill: a whole-codebase vulnerability hunt, where `forge-gatekeeper` stays the
+fast release-diff gate.
+
+- **Six phases, upstream verbatim** — reconnaissance into a deterministic
+  `coverage-ledger.json`, coverage-led hunting by isolated agents (core attack
+  classes + nine domain companions), adversarial validation of every candidate by a
+  fresh agent, schema-validated `findings.json` (`confirmed` / `needs_validation` /
+  `rejected`; severity only on `confirmed`), independent record verification, and a
+  target-neutral `REPORT.md` / `FINDINGS-DETAIL.md` / `NEEDS-VALIDATION.md`.
+  Profiles `quick` / `standard` / `deep`, scoped and diff runs, strict agent
+  budgets, additive re-runs over prior ledgers.
+- **Layout** — upstream companions in `references/`, the two zero-dependency Node
+  validators + `report-schema.json` in `scripts/` (the only paths rewritten:
+  `<skill-dir>/` → `${CLAUDE_PLUGIN_ROOT}/…/scripts/`), so a later upstream refresh
+  is a copy plus two seds (documented at the top of `SKILL.md`).
+- **Context Forge integration** (final section of `SKILL.md`) — platform map
+  (`research` → `Explore`, `general` → `general-purpose`, spawns titled
+  `"Audit — <role> <id>"` for `forge-office`), recon seeded from
+  `architecture.md`'s Trust Boundaries / Production Constraints,
+  `security-rules.txt`, and a `security-check.sh --all` pass whose hits are leads,
+  not findings; explicit "no OS sandbox in a plain session → static only,
+  execution-dependent leads stay `needs_validation`"; results appended to
+  `review-ledger.md` under `## Security audit — …`; confirmed findings routed to
+  `forge-fix`, regex-catchable ones to `security-rules.txt` via `forge-lesson`.
+- **Tests** — `tests/security-audit.bats` runs both upstream `node:test` suites as
+  shipped, checks the validators' CLI contract, and asserts every companion
+  `SKILL.md` links to exists (skips without `node`).
+
 ## [0.56.0] — 2026-09-13
 
 ### Added — output hygiene, correction capture, plan memory
