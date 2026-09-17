@@ -231,12 +231,14 @@ anti-patterns above never relax.
 
 ### Argument
 
-`/forge-security-audit [<path>…] [--profile quick|standard|deep] [--budget <N>]
-[--output <dir>] [--diff <base>..<head>]`
+`/forge-security-audit [<path>…] [--plan] [--profile quick|standard|deep]
+[--budget <N>] [--output <dir>] [--diff <base>..<head>]`
 
 - Paths or `--diff` make it a **scoped run**; nothing else is `covered`.
 - No profile → `standard`, or propose `quick` for a small target / `deep` for a
   high-stakes one and say why.
+- `--plan` — reconnaissance only: map the target, seed the ledger, print ranked
+  scan targets, stop. Costs 4 agents, no hunters. See the `--plan` section.
 - A bare question ("is this JWT check safe?") stays in **guidance mode**. When the
   request could mean either mode, ask one question before writing any file.
 
@@ -289,6 +291,40 @@ node "${CLAUDE_PLUGIN_ROOT}/skills/forge-security-audit/scripts/validate-finding
 ```
 
 `scripts/report-schema.json` is the schema hunters and verifiers receive verbatim.
+
+### `--plan` — map first, scan later
+
+For a large or unfamiliar target, run the map before paying for hunters:
+
+1. Apply the budget gate for the four reconnaissance calls only; run
+   `security-check.sh --all` and save its output as `<output-dir>/security-check.log`.
+2. Run Phase 1 exactly as written: the four `research` agents, `architecture.md`,
+   the seeded `coverage-ledger.json` (every unit `planned`), validated. Write
+   `run-metadata.json` with `run_status: "planned"`.
+3. Launch no hunter, critic, or verifier. Do not write `findings.json` or any report.
+4. Rank the units and print the table:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/skills/forge-security-audit/scripts/plan-rank.cjs" \
+  <output-dir>/coverage-ledger.json --hits <output-dir>/security-check.log --repo <target>
+```
+
+   One row per subsystem × boundary: unit count, estimated agents (one hunter per
+   unit plus about half a verifier), and the signals that put it there — tool hits
+   under its paths (×3), files changed in the last 90 days (×1), and a low-trust
+   surface such as unauthenticated, public, external, or webhook (×5). Add one
+   line of judgment per top row only where the ledger labels hide something the
+   agents reported (a boundary that guards money, a parser fed by the internet).
+5. Stop. Report the output directory, the table, and the command for the top row:
+
+```
+/forge-security-audit <paths of row 1> --profile quick --budget <est. agents + 4> --output <output-dir>
+```
+
+A later run with the same `--output` continues that run: it flips `run_status` to
+`in_progress`, marks units outside the new scope `out_of_scope`, and hunts the rest
+from the existing ledger, so reconnaissance is paid once. A run with a different
+output directory treats the plan as a prior run (its ledger, no findings).
 
 ### Sandbox reality
 

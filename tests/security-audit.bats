@@ -43,3 +43,34 @@ setup() {
     [ -f "$SA/scripts/$f" ]
   done
 }
+
+@test "plan-rank: groups by subsystem+boundary, tool hits and low-trust rank first" {
+  cat > ledger.json <<'JSON'
+[
+ {"coverage_id":"a1","subsystem":"packages/api","boundary":"src/authz.ts#requireOwner","surface":"POST /users/:id","starting_paths":["src/users"],"status":"planned"},
+ {"coverage_id":"a2","subsystem":"packages/api","boundary":"src/authz.ts#requireOwner","surface":"DELETE /users/:id","starting_paths":["src/users"],"status":"planned"},
+ {"coverage_id":"b1","subsystem":"packages/api","boundary":"unauthenticated","surface":"POST /login","starting_paths":["src/auth"],"status":"planned"},
+ {"coverage_id":"c1","subsystem":"packages/worker","boundary":"queue","surface":"job","starting_paths":["src/jobs"],"status":"out_of_scope"}
+]
+JSON
+  printf 'src/users/update.ts:12: GK-020 [Important] string-built SQL\nsrc/users/update.ts:40: GK-020 [Important] string-built SQL\nsecurity-check: 2 hits\n' > hits.log
+  run node "$SA/scripts/plan-rank.cjs" ledger.json --hits hits.log
+  [ "$status" -eq 0 ]
+  [[ "${lines[0]}" == '#  | Subsystem / boundary | Units | Est. agents | Why first' ]]
+  [[ "${lines[1]}" == *'requireOwner | 2 | 2-3 | 2 tool hits'* ]]   # 2 hits x3 = 6 beats low-trust 5
+  [[ "${lines[2]}" == *'unauthenticated | 1 | 1-2 | low-trust surface'* ]]
+  [[ "$output" != *'packages/worker'* ]]                             # out_of_scope dropped
+  [[ "$output" == *'total: 2 targets, 3 units'* ]]
+  run node "$SA/scripts/plan-rank.cjs" ledger.json --hits hits.log --json
+  [ "$status" -eq 0 ]
+  [ "$(printf '%s' "$output" | node -e 'const r=JSON.parse(require("fs").readFileSync(0,"utf8"));console.log(r.length, r[0].score, r[1].low_trust)')" = "2 6 true" ]
+}
+
+@test "plan-rank: bad input exits non-zero, no args prints usage" {
+  printf 'nope' > bad.json
+  run node "$SA/scripts/plan-rank.cjs" bad.json
+  [ "$status" -eq 1 ]
+  run node "$SA/scripts/plan-rank.cjs"
+  [ "$status" -eq 2 ]
+  [[ "$output" == *Usage* ]]
+}

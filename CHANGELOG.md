@@ -3,6 +3,22 @@
 All notable changes to the **context-forge** plugin are documented here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [0.58.0] — 2026-09-17
+
+### Added — `forge-security-audit --plan`
+
+Map first, scan later. `--plan` runs Phase 1 reconnaissance only (four agents, no
+hunters), seeds and validates `coverage-ledger.json`, then prints ranked scan
+targets and stops. A later run with the same `--output` continues from that
+ledger, so reconnaissance is paid once on a large codebase.
+
+- **`scripts/plan-rank.cjs`** — zero-dependency ranker: groups ledger units by
+  subsystem × boundary, scores tool hits under the group's paths (×3), files
+  changed in 90 days (×1, via `git log`, optional), and low-trust surfaces (×5);
+  prints a table with unit count and estimated agents per target, or `--json`.
+- **Tests** — two `plan-rank` cases in `tests/security-audit.bats` (ranking +
+  grouping on a fixture ledger, out-of-scope units dropped, CLI contract).
+
 ## [0.57.0] — 2026-09-17
 
 ### Added — `forge-security-audit`
